@@ -4,6 +4,14 @@ Todas las modificaciones, análisis y versiones del proyecto quedan documentadas
 
 ---
 
+## [1.1.1] - 2026-10-23
+### Añadido y Optimizado
+- **Forzado de Máxima Resolución en ExoPlayer (`DefaultTrackSelector`)**: Se configuró el selector de pistas para forzar siempre la calidad y bitrate más altos posibles (`setForceHighestSupportedBitrate(true)`, `setMaxVideoSize(3840, 2160)`, `setExceedVideoConstraintsIfNecessary(true)`).
+- **Insignia de Resolución en Pantalla (`tvResolutionBadge`)**: Medidor visual dinámico en la esquina superior derecha que muestra la resolución activa real (ej. `1024x576 (576p) [MÁX]`, `1080p FHD`, etc.) al arrancar la reproducción o al presionar las flechas Arriba/Abajo/Info en el control remoto.
+- **Telemetría de Calidad de Video**: Envío a Supabase de la resolución exacta seleccionada para cada stream y evento deportivo.
+
+---
+
 ## [1.0.5] - 2026-10-23
 ### Añadido
 - **Actualizador OTA en la App (`AppUpdater.kt`)**: Sistema de actualización automática desde la web (Over-The-Air) mediante el Gist de GitHub.
