@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Errado TV</string>
+    <string name="featured_title">Partidos y Eventos Destacados</string>
+    <string name="loading_events">Cargando eventos...</string>
+    <string name="no_events">No hay eventos disponibles en este momento.</string>
+    <string name="stream_option">Opción %d</string>
+    <string name="select_stream">Seleccionar Transmisión</string>
+</resources>
