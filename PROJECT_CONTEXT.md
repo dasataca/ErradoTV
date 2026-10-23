@@ -87,25 +87,24 @@ Para evitar tener que reinstalar el APK en caso de que los creadores actualicen 
  
 ---
  
-## 6. Sistema de Actualización Automática desde la Web (OTA)
+## 6. Sistema de Actualización Automática desde GitHub (OTA Automatizado)
 
-Para actualizar el APK sin cables ni reinstalación manual por USB:
-1. **Repositorio Oficial de Distribución**:
-   `https://github.com/dasataca/ErradoTV`
-2. **Icono en la Cabecera de la TV**: Al lado del reloj y del botón de recarga se ubica el botón `btnUpdate` navegable con el control remoto.
-3. **Verificación**: Consulta el Gist de GitHub (`config.json`), el cual además de `active_key` contiene:
+Igual que en el proyecto `proyectarAplicacion`, el sistema es 100% autónomo y no requiere editar ningún archivo manualmente ni usar Gist:
+1. **Archivo Maestro de Versión (`version.json`)**:
+   Ubicado en la raíz del repositorio:
+   `https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json`
+2. **Contenido Autogenerado**:
    ```json
    {
      "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-     "latest_version_code": 2,
-     "latest_version_name": "1.1.0",
-     "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/ErradoTV.apk",
-     "changelog": "- Nuevos canales agregados\n- Mejoras de rendimiento"
+     "latest_version_code": 4,
+     "latest_version_name": "1.1.2",
+     "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/ErradoTV.apk",
+     "changelog": "Actualizacion automatica nativa desde GitHub y maxima resolucion ExoPlayer"
    }
    ```
-   *(También compatible con GitHub Releases: `https://github.com/dasataca/ErradoTV/releases/latest/download/ErradoTV.apk`)*
-4. **Flujo de Usuario en TV**:
-   - Si `latest_version_code > current_code`, muestra una ventana emergente nativa con los cambios.
-   - Al presionar **Actualizar Ahora**, descarga el APK mostrando una barra de progreso porcentual con cliente optimizado (timeout 120s, soporte de redirecciones y cabecera User-Agent).
-   - Al completar la descarga, invoca automáticamente el instalador nativo de paquetes de Android TV (`ACTION_VIEW` con `FileProvider`).
+3. **Flujo de Publicación en 1 Solo Paso**:
+   El script `./publish_release.sh [version_name] [version_code] [changelog]` compila, genera `version.json`, organiza los APKs en `release/` y hace el `git push` a GitHub automáticamente.
+4. **Detección en la Smart TV**:
+   La app consulta `version.json` directamente en GitHub. Al detectar una versión superior, muestra el diálogo nativo en la TV y se actualiza sola por WiFi.
 
