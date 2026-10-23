@@ -21,11 +21,34 @@
 ### Servidores de Origen
 La aplicación no utiliza un backend con base de datos dinámico, sino que consume archivos JSON cifrados alojados en el CDN estático **Cloudflare Pages**:
 
-* `https://errado-app.pages.dev/data/event.json` → Partidos de la fecha y lista de enlaces de streaming (`event_url_1` a `event_url_16`).
-* `https://errado-app.pages.dev/data/destacado.json` → Canales de TV y eventos destacados con streams HLS directos (`.m3u8`).
+* `https://errado-app.pages.dev/data/event.json` → Partidos de la fecha, horarios y lista de enlaces de streaming (`event_url_1` a `event_url_16`).
+* `https://errado-app.pages.dev/data/destacado.json` → Canales de TV 24/7 y eventos destacados con streams HLS directos (`.m3u8`).
 * `https://errado-app.pages.dev/data/golazoapp.json` → Configuración general de la app e identificadores de anuncios.
 * `https://errado-app.pages.dev/data/channel.json` → Canales secundarios.
 * `https://errado-app.pages.dev/data/home.json` → Carrusel principal.
+
+### ¿Qué URLs y páginas vienen DENTRO de `event.json`?
+Al descifrar `event.json`, cada partido contiene de 1 a 16 opciones de transmisión que apuntan a dos tipos de servidores:
+
+1. **Resolutores de CDN Privados (Tipo `config`)**:
+   * **Dominios**: `https://cdnapp3.pages.dev/d/teveplay-*.json?gox=x` y `https://cdnapp3.pages.dev/d/fawanews-*.json?gox=x`
+   * **Función**: Al consultarlos, devuelven la URL directa del flujo de video HLS sin anuncios:
+     `https://teveplay.net/api/stream/{hash}/index.m3u8`
+   * **Reproducción**: Se envían directamente a **ExoPlayer nativo** con forzado de máxima resolución.
+2. **Páginas Web Externas (Tipo `web`)**:
+   * **Dominios**: `https://la18hd.su/vivo/canales.php?stream=...` y `https://www.tarjetarojita.xyz/sw3.html?get=...`
+   * **Función**: Páginas web de terceros que embeben reproductores web con publicidad y que frecuentemente sufren bloqueos judiciales por DNS de proveedores como Telecentro o errores `403 Forbidden`.
+
+### Proceso de Recarga de Datos y Horarios
+Al presionar el botón **Recargar** (`btnRefresh`) en la TV o al abrir la app:
+1. Se consulta nuevamente `event.json` y `destacado.json` sin usar caché HTTP.
+2. Se extrae la hora de cada encuentro (formato `HH:mm`) y se compara con la hora actual en **GMT-3 (Argentina)**.
+3. Se recalcula el estado dinámico del partido:
+   - `● EN VIVO` (0 a 135 minutos desde el inicio).
+   - `POR EMPEZAR` (30 minutos o menos para el pitazo).
+   - `PROGRAMADO` (más de 30 minutos).
+   - `FINALIZADO` (más de 2 horas y 15 minutos).
+4. Se actualiza el RecyclerView y la fecha del servidor en pantalla.
 
 ### Arquitectura Criptográfica
 1. **Sin autenticación HTTP**: Cloudflare Pages sirve los archivos con cabecera pública `Access-Control-Allow-Origin: *`. No se requieren tokens de sesión, cookies ni headers especiales.

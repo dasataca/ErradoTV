@@ -53,7 +53,24 @@ El script analizará los DEX, extraerá la clave Base64 y te la mostrará en pan
 
 ---
 
-## 📚 Documentación para Desarrolladores e Inteligencias Artificiales
+---
 
-* Consulta [`PROJECT_CONTEXT.md`](file:///home/sataca/Descargas/APLICACIONES/errado/PROJECT_CONTEXT.md) para conocer en detalle la ingeniería inversa, análisis criptográfico y la arquitectura técnica del proyecto.
-* Consulta [`CHANGELOG.md`](file:///home/sataca/Descargas/APLICACIONES/errado/CHANGELOG.md) para el historial de versiones y avances.
+## 📚 Los 4 Documentos Maestros del Proyecto (Estándar de Desarrollo)
+
+Este proyecto mantiene 4 documentos estándar para que cualquier desarrollador o modelo de IA (Antigravity, Cursor, Claude, GPT) cuente con el 100% del contexto:
+
+1. 🤖 **[`AGENTS.md`](file:///home/sataca/Descargas/APLICACIONES/errado/AGENTS.md)**: Directivas maestras, arquitectura técnica y reglas inmutables para Agentes de Inteligencia Artificial.
+2. 📋 **[`PROJECT_CONTEXT.md`](file:///home/sataca/Descargas/APLICACIONES/errado/PROJECT_CONTEXT.md)**: Documento integral del proyecto: descubrimientos de ingeniería inversa, endpoints, descifrado AES-256 y comportamiento en Smart TV.
+3. 📜 **[`CHANGELOG.md`](file:///home/sataca/Descargas/APLICACIONES/errado/CHANGELOG.md)**: Historial cronológico de cambios, correcciones de errores y nuevas funciones por versión.
+4. 📖 **[`README.md`](file:///home/sataca/Descargas/APLICACIONES/errado/README.md)**: Guía rápida para usuarios, instalación de APK y scripts de automatización.
+
+---
+
+## 🔄 Sistema de Actualización Automática (OTA Autónomo)
+
+El proyecto incluye el archivo maestro [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en GitHub.  
+Para compilar y publicar una nueva versión sin tocar ningún archivo manualmente:
+```bash
+./publish_release.sh 1.1.3 5 "Descripción de mejoras"
+```
+El script compila, versiona los APKs en `release/`, actualiza `version.json` y sube todo a GitHub automáticamente. Todas las Smart TVs detectarán la nueva versión sola por WiFi.
