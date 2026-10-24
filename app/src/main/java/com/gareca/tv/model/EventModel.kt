@@ -21,6 +21,13 @@ data class StreamOption(
     val userAgent: String? = null
 )
 
+data class EventTimingInfo(
+    val status: EventStatus,
+    val localTime: String?,
+    val countdown: String?,
+    val startEpochMillis: Long = 0L
+)
+
 data class EventItem(
     val title: String,
     var time: String? = null,
@@ -42,9 +49,9 @@ data class EventItem(
         fun calculateTimesAndStatus(
             timeStr: String?,
             dateStr: String? = null
-        ): Triple<EventStatus, String?, String?> {
+        ): EventTimingInfo {
             if (timeStr == null || !timeStr.contains(":")) {
-                return Triple(EventStatus.CHANNEL_24_7, null, null)
+                return EventTimingInfo(EventStatus.CHANNEL_24_7, null, null, 0L)
             }
 
             return try {
@@ -111,14 +118,14 @@ data class EventItem(
                     }
                 }
 
-                Triple(calculatedStatus, localFormattedTime, countdown)
+                EventTimingInfo(calculatedStatus, localFormattedTime, countdown, startMillis)
             } catch (_: Exception) {
-                Triple(EventStatus.SCHEDULED, timeStr, null)
+                EventTimingInfo(EventStatus.SCHEDULED, timeStr, null, 0L)
             }
         }
 
         fun calculateStatus(timeStr: String?): EventStatus {
-            return calculateTimesAndStatus(timeStr).first
+            return calculateTimesAndStatus(timeStr).status
         }
     }
 }

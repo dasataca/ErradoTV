@@ -79,7 +79,7 @@ object ApiClient {
                         }
 
                         if (streams.isNotEmpty()) {
-                            val (eventStatus, localTime, countdown) = EventItem.calculateTimesAndStatus(extractedTime, eventDate)
+                            val (eventStatus, localTime, countdown, startMillis) = EventItem.calculateTimesAndStatus(extractedTime, eventDate)
                             val subtitleText = if (localTime != null && localTime != extractedTime) {
                                 "${streams.size} opciones • Tu hora: $localTime (Arg: $extractedTime)"
                             } else {
@@ -94,6 +94,7 @@ object ApiClient {
                                     streams = streams,
                                     status = eventStatus,
                                     localTime = localTime,
+                                    startEpochMillis = startMillis,
                                     countdownText = countdown
                                 )
                             )

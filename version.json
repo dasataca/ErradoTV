@@ -1,7 +1,7 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "latest_version_code": 36,
-  "latest_version_name": "1.5.7",
+  "latest_version_code": 37,
+  "latest_version_name": "1.5.8",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Icono oficial e insignia para TV en formato circular con fondo transparente"
+  "changelog": "GarecaTV: Ordenacion de eventos - En vivo primero, programados despues, 24/7 luego con no disponibles en su lugar, y finalizados siempre al final"
 }

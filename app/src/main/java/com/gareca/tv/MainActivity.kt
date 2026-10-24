@@ -705,7 +705,8 @@ class MainActivity : AppCompatActivity() {
         for (item in cachedLiveChannels) syncItemAvailability(item)
 
         if (updated) {
-            cachedDailyEvents = cachedDailyEvents.sortedBy { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+            cachedDailyEvents = sortEventList(cachedDailyEvents)
+            cachedLiveChannels = sortEventList(cachedLiveChannels)
             filterAndDisplayEvents(silent = true)
         }
 
@@ -812,12 +813,14 @@ class MainActivity : AppCompatActivity() {
                 for (item in replayMatches) applyAvailability(item)
                 for (item in liveChannels) applyAvailability(item)
 
-                // Colocar los partidos 'NO DISPONIBLE' al final de la lista de partidos del día
-                val sortedTodayMatches = todayMatches.sortedBy { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
-
-                cachedDailyEvents = sortedTodayMatches
+                // Ordenar según la regla estricta:
+                // 1. En vivo primero (LIVE y STARTING_SOON)
+                // 2. Programados después (SCHEDULED)
+                // 3. Canales 24/7 luego (los canales 24/7 con NO DISPONIBLE se quedan en su lugar entre los 24/7)
+                // 4. Finalizados SIEMPRE al final de la lista
+                cachedDailyEvents = sortEventList(todayMatches)
                 cachedReplayEvents = replayMatches
-                cachedLiveChannels = liveChannels
+                cachedLiveChannels = sortEventList(liveChannels)
                 prefs.edit().putLong("last_sync_time", System.currentTimeMillis()).apply()
 
                 if (!silent) {
@@ -860,6 +863,7 @@ class MainActivity : AppCompatActivity() {
                     channel.localTime = matched.localTime
                     channel.countdownText = matched.countdownText
                     channel.originalStatus = matched.status
+                    channel.startEpochMillis = matched.startEpochMillis
                     if (channel.status != EventStatus.REPLAY_UNAVAILABLE) {
                         channel.status = matched.status
                     }
@@ -916,11 +920,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         val displayList = when (currentCategory) {
-            "🔍 Buscar Todo" -> getFilteredGlobalEvents()
+            "🔍 Buscar Todo" -> sortEventList(getFilteredGlobalEvents())
             "⚽ Partidos del Día" -> cachedDailyEvents
             "🔁 Repeticiones" -> getFilteredAndSortedReplays()
             "🌐 Todos los Canales" -> cachedLiveChannels
-            else -> cachedLiveChannels.filter { it.category == currentCategory }
+            else -> sortEventList(cachedLiveChannels.filter { it.category == currentCategory })
         }
 
         if (displayList.isEmpty()) {
@@ -984,6 +988,46 @@ class MainActivity : AppCompatActivity() {
                     .thenByDescending { it.title.lowercase() }
             )
         }
+    }
+
+    /**
+     * Ordenación estricta de eventos y canales según la regla oficial:
+     * 1. ● EN VIVO van primero (LIVE y STARTING_SOON)
+     * 2. PROGRAMADOS van después (SCHEDULED, orden cronológico por hora de inicio)
+     * 3. CANALES 24/7 van luego (los canales 24/7 con NO DISPONIBLE se quedan en su lugar entre los 24/7)
+     * 4. Partidos no disponibles que no sean 24/7 ni finalizados
+     * 5. FINALIZADOS van SIEMPRE al último de todo
+     */
+    private fun sortEventList(list: List<EventItem>): List<EventItem> {
+        return list.sortedWith(
+            compareBy<EventItem> { item ->
+                when {
+                    // Finalizados SIEMPRE van al final de la lista
+                    item.status == EventStatus.FINISHED || item.originalStatus == EventStatus.FINISHED -> 100
+
+                    // En vivo van primero
+                    item.status == EventStatus.LIVE -> 10
+                    item.status == EventStatus.STARTING_SOON -> 20
+
+                    // Programados van después
+                    item.status == EventStatus.SCHEDULED -> 30
+
+                    // Luego los canales 24/7 (si están NO DISPONIBLE, se quedan en su lugar entre los 24/7)
+                    item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 -> 40
+
+                    // Repeticiones (en búsqueda global)
+                    item.status == EventStatus.REPLAY -> 50
+
+                    // Partidos no disponibles (que no sean 24/7 ni finalizados)
+                    item.status == EventStatus.REPLAY_UNAVAILABLE -> 90
+
+                    else -> 60
+                }
+            }.thenBy { item ->
+                // Dentro de la misma prioridad, ordenar cronológicamente si tienen hora programada
+                if (item.startEpochMillis > 0L) item.startEpochMillis else Long.MAX_VALUE
+            }
+        )
     }
 
     private fun checkAndPromptUpdate(userInitiated: Boolean) {
