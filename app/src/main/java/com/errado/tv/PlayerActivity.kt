@@ -43,6 +43,7 @@ class PlayerActivity : AppCompatActivity() {
         tvResolutionBadge = findViewById(R.id.tvResolutionBadge)
 
         val streamUrl = intent.getStringExtra("EXTRA_URL") ?: ""
+        val streamTitle = intent.getStringExtra("EXTRA_TITLE") ?: ""
         val drmLicenseUrl = intent.getStringExtra("EXTRA_DRM_LICENSE")
         val customUserAgent = intent.getStringExtra("EXTRA_USER_AGENT")
 
@@ -51,10 +52,10 @@ class PlayerActivity : AppCompatActivity() {
             return
         }
 
-        initializePlayer(streamUrl, drmLicenseUrl, customUserAgent)
+        initializePlayer(streamUrl, drmLicenseUrl, customUserAgent, streamTitle)
     }
 
-    private fun initializePlayer(url: String, drmLicenseUrl: String? = null, customUserAgent: String? = null) {
+    private fun initializePlayer(url: String, drmLicenseUrl: String? = null, customUserAgent: String? = null, title: String = "") {
         try {
             // Configuramos el selector de pistas para forzar SIEMPRE la máxima calidad y bitrate disponible
             val trackSelector = DefaultTrackSelector(this).apply {
@@ -166,37 +167,56 @@ class PlayerActivity : AppCompatActivity() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                StreamCache.markUnavailable(this@PlayerActivity, url)
+                StreamCache.markUnavailable(
+                    this@PlayerActivity,
+                    url,
+                    reason = "player_error: ${error.errorCodeName}",
+                    title = title,
+                    broadcast = true
+                )
                 playerBuffering.visibility = View.GONE
                 playerError.visibility = View.VISIBLE
                 playerError.text = "⚠️ Señal temporalmente fuera del aire o finalizada.\nPresiona la tecla ATRÁS en tu control remoto para elegir otro canal."
                 SupabaseLogger.error(
                     "player_error",
                     "Error de reproducción en ExoPlayer: ${error.message}",
-                    mapOf("url" to url, "errorCode" to error.errorCode, "errorName" to error.errorCodeName)
+                    mapOf("url" to url, "errorCode" to error.errorCode, "errorName" to error.errorCodeName, "title" to title)
                 )
             }
         })
 
-        // Watchdog de 10 segundos: si el stream no produce fotogramas válidos (como un PNG falso)
+        // Watchdog de 10 segundos: si el stream no produce fotogramas válidos
         handler.postDelayed({
             if (!videoFrameReceived && !isFinishing && !isDestroyed) {
-                StreamCache.markUnavailable(this@PlayerActivity, url)
+                StreamCache.markUnavailable(
+                    this@PlayerActivity,
+                    url,
+                    reason = "watchdog_timeout_no_video",
+                    title = title,
+                    broadcast = true
+                )
                 playerBuffering.visibility = View.GONE
                 playerError.visibility = View.VISIBLE
-                playerError.text = "⚠️ Esta repetición no contiene video válido o los archivos han caducado.\nPresione ATRÁS en su control remoto para elegir otro partido."
-                SupabaseLogger.warn("video_playback_timeout", "Video no produjo fotogramas válidos: $url")
+                playerError.text = "⚠️ Esta transmisión no devolvió respuesta de video o los archivos han caducado.\nPresione ATRÁS en su control remoto para elegir otro partido."
+                SupabaseLogger.warn("video_playback_timeout", "Video no produjo fotogramas válidos: $url", mapOf("title" to title))
             }
         }, 10000)
         } catch (t: Throwable) {
             t.printStackTrace()
+            StreamCache.markUnavailable(
+                this@PlayerActivity,
+                url,
+                reason = "player_init_exception: ${t.message}",
+                title = title,
+                broadcast = true
+            )
             playerBuffering.visibility = View.GONE
             playerError.visibility = View.VISIBLE
             playerError.text = "⚠️ Error al iniciar la reproducción.\nEsta señal no está disponible en este momento.\nPresione VOLVER en su control para elegir otra opción."
             SupabaseLogger.warn(
                 "player_init_error",
                 "Error inicializando reproductor: ${t.message}",
-                mapOf("url" to url, "error" to (t.message ?: ""))
+                mapOf("url" to url, "error" to (t.message ?: ""), "title" to title)
             )
         }
     }

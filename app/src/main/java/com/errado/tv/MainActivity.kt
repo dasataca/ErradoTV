@@ -139,6 +139,26 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Si algún stream falló o fue marcado como no disponible mientras se reproducía, reflejarlo inmediatamente
+        var updated = false
+        for (item in cachedDailyEvents) {
+            val streamUrl = item.streams.firstOrNull()?.url ?: ""
+            if (StreamCache.isUnavailable(streamUrl) && item.status != EventStatus.REPLAY_UNAVAILABLE) {
+                item.status = EventStatus.REPLAY_UNAVAILABLE
+                updated = true
+            }
+        }
+        for (item in cachedLiveChannels) {
+            val streamUrl = item.streams.firstOrNull()?.url ?: ""
+            if (StreamCache.isUnavailable(streamUrl) && item.status != EventStatus.REPLAY_UNAVAILABLE) {
+                item.status = EventStatus.REPLAY_UNAVAILABLE
+                updated = true
+            }
+        }
+        if (updated) {
+            adapter.notifyDataSetChanged()
+        }
+
         val prefs = getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
         val lastSync = prefs.getLong("last_sync_time", 0L)
         val now = System.currentTimeMillis()
@@ -186,9 +206,18 @@ class MainActivity : AppCompatActivity() {
                 // Sincroniza la clave remota si está disponible
                 CryptoUtils.syncRemoteKey(this@MainActivity, ApiClient.httpClient)
 
-                val dailyResponse = ApiClient.fetchDailyEvents()
-                val featuredList = ApiClient.fetchFeaturedEvents()
-                val liveChannels = ApiClient.fetchTeveplayChannels()
+                // Sincronización comunitaria desde Supabase en paralelo con los catálogos de canales
+                val communityJob = async(Dispatchers.IO) {
+                    CommunityStreamManager.syncFromCommunity(this@MainActivity)
+                }
+                val dailyJob = async { ApiClient.fetchDailyEvents() }
+                val featuredJob = async { ApiClient.fetchFeaturedEvents() }
+                val liveChannelsJob = async { ApiClient.fetchTeveplayChannels() }
+
+                communityJob.await()
+                val dailyResponse = dailyJob.await()
+                val featuredList = featuredJob.await()
+                val liveChannels = liveChannelsJob.await()
 
                 tvDate.text = dailyResponse.date
 
@@ -196,7 +225,7 @@ class MainActivity : AppCompatActivity() {
                 allEvents.addAll(dailyResponse.events)
                 allEvents.addAll(featuredList)
 
-                // Aprendizaje automático: si el sistema ya aprendió que un enlace está caído, etiquetarlo como no disponible
+                // Aprendizaje comunitario y local: sólo las señales reportadas por fallo real se muestran como no disponibles
                 for (item in allEvents) {
                     val streamUrl = item.streams.firstOrNull()?.url ?: ""
                     if (StreamCache.isUnavailable(streamUrl)) {
@@ -214,9 +243,6 @@ class MainActivity : AppCompatActivity() {
 
                 filterAndDisplayEvents(silent)
 
-                // Pretesteo en segundo plano de partidos en repetición
-                pretestReplaysAsync(allEvents)
-
                 // Verificación en segundo plano sin molestar si no hay actualización
                 checkAndPromptUpdate(userInitiated = false)
             } catch (e: Exception) {
@@ -224,32 +250,6 @@ class MainActivity : AppCompatActivity() {
                     progressBar.visibility = View.GONE
                     tvEmpty.visibility = View.VISIBLE
                     tvEmpty.text = "Error al cargar eventos: ${e.message}"
-                }
-            }
-        }
-    }
-
-    private fun pretestReplaysAsync(events: List<EventItem>) {
-        lifecycleScope.launch {
-            val replays = events.filter {
-                it.status == EventStatus.REPLAY ||
-                it.status == EventStatus.REPLAY_AVAILABLE ||
-                it.status == EventStatus.REPLAY_UNAVAILABLE
-            }
-            if (replays.isEmpty()) return@launch
-
-            val chunks = replays.chunked(15)
-            for (chunk in chunks) {
-                chunk.map { item ->
-                    async(Dispatchers.IO) {
-                        val streamUrl = item.streams.firstOrNull()?.url ?: ""
-                        val isAvailable = ApiClient.checkReplayUrl(streamUrl)
-                        item.status = if (isAvailable) EventStatus.REPLAY_AVAILABLE else EventStatus.REPLAY_UNAVAILABLE
-                    }
-                }.awaitAll()
-
-                if (currentCategory == "⚽ Partidos del Día") {
-                    adapter.notifyDataSetChanged()
                 }
             }
         }
@@ -385,8 +385,11 @@ class MainActivity : AppCompatActivity() {
 
         for ((index, stream) in sortedStreams.withIndex()) {
             val isConfig = stream.type.equals("config", ignoreCase = true)
+            val isDead = StreamCache.isUnavailable(stream.url)
             val cachedRes = StreamCache.getResolution(stream.url)
-            val initialText = if (cachedRes != null) {
+            val initialText = if (isDead) {
+                "⚪ ${stream.title}  [SIN SEÑAL / CAÍDO]"
+            } else if (cachedRes != null) {
                 "🟢 ${stream.title}  [$cachedRes - VERIFICADO]"
             } else if (isConfig) {
                 "🟢 ${stream.title}  [HD DIRECTO - RECOMENDADO]"
@@ -399,6 +402,7 @@ class MainActivity : AppCompatActivity() {
                 textSize = 15f
                 isFocusable = true
                 isClickable = true
+                if (isDead) alpha = 0.5f
                 setBackgroundResource(R.drawable.button_focus_selector)
 
                 // Máximo contraste en Smart TV:
@@ -482,6 +486,7 @@ class MainActivity : AppCompatActivity() {
                 if (resolved.type.equals("exo", ignoreCase = true) || resolved.url.contains(".m3u8") || resolved.url.contains(".mpd")) {
                     val intent = Intent(this@MainActivity, PlayerActivity::class.java).apply {
                         putExtra("EXTRA_URL", resolved.url)
+                        putExtra("EXTRA_TITLE", stream.title)
                         putExtra("EXTRA_DRM_LICENSE", resolved.drmLicenseUrl)
                         putExtra("EXTRA_USER_AGENT", resolved.userAgent)
                     }

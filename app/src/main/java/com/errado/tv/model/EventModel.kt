@@ -9,7 +9,6 @@ enum class EventStatus(val label: String, val colorHex: String) {
     SCHEDULED("PROGRAMADO", "#3B82F6"),
     FINISHED("FINALIZADO", "#6B7280"),
     REPLAY("REPETICIÓN", "#8B5CF6"),
-    REPLAY_AVAILABLE("REPETICIÓN DISPONIBLE", "#10B981"),
     REPLAY_UNAVAILABLE("NO DISPONIBLE", "#6B7280"),
     CHANNEL_24_7("CANAL 24/7", "#10B981")
 }

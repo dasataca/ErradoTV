@@ -23,9 +23,15 @@ object StreamCache {
         return resolutionMap[url]
     }
 
-    fun markUnavailable(context: Context?, url: String) {
+    fun markUnavailable(
+        context: Context?,
+        url: String,
+        reason: String = "error",
+        title: String? = null,
+        broadcast: Boolean = true
+    ) {
         if (url.isEmpty()) return
-        unavailableUrls.add(url)
+        val isNew = unavailableUrls.add(url)
         context?.let {
             try {
                 val prefs = it.getSharedPreferences("stream_cache_prefs", Context.MODE_PRIVATE)
@@ -33,6 +39,9 @@ object StreamCache {
                 set.add(url)
                 prefs.edit().putStringSet("dead_urls", set).apply()
             } catch (_: Exception) {}
+        }
+        if (isNew && broadcast) {
+            CommunityStreamManager.reportUnavailable(url, reason, title)
         }
     }
 

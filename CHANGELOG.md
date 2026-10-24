@@ -2,6 +2,15 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.3.2] - 2026-10-24
+### Añadido y Optimizado
+- **Base de Datos Comunitaria Compartida (Supabase)**: Se implementó un gestor de reportes comunitarios (`CommunityStreamManager`). Cuando un usuario pulsa un enlace y este no responde (error de reproducción o watchdog de 10 segundos), el fallo se archiva automáticamente en Supabase y se comparte en tiempo real con todos los demás televisores que utilicen ErradoTV.
+- **Saneamiento de Estados y Eliminación de Falsos Positivos**: Se eliminó el pretesteo masivo automatizado que marcaba erróneamente partidos viables como no disponibles. La insignia morada **`REPETICIÓN`** se aplica a todos los partidos cuya fecha es anterior al día de hoy.
+- **Criterio Estricto de Disponibilidad**: La etiqueta gris **`NO DISPONIBLE`** (y su atenuación visual) se reserva exclusivamente para señales que hayan sido probadas por un usuario y no hayan devuelto respuesta, o que hayan sido registradas en la base comunitaria.
+- **Sincronización en Paralelo (0 Esperas)**: La consulta de enlaces caídos comunitarios se realiza en paralelo con la carga de partidos, garantizando una apertura instantánea de la interfaz.
+
+---
+
 ## [1.3.1] - 2026-10-24
 ### Añadido y Optimizado
 - **Control de Frecuencia de Actualización (Ventana de 15 Minutos) y Apertura Ultrarrápida**: Se introdujo un punto de control temporal (`SYNC_INTERVAL_MS = 15 min`). Al abrir o regresar a la app, si los datos ya fueron sincronizados recientemente, se despliegan directamente de la memoria sin demoras de red. Si transcurrieron más de 15 minutos, la actualización se efectúa de manera silenciosa en segundo plano sin interrumpir la navegación.

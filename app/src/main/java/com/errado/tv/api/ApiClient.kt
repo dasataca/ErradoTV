@@ -147,7 +147,27 @@ object ApiClient {
                                 "Repetición del $d/$m/$y (ExoPlayer)"
                             } ?: "Canal 24/7 (ExoPlayer directo)"
 
-                            val itemStatus = if (extractedDate != null) EventStatus.REPLAY else EventStatus.CHANNEL_24_7
+                            // Comprobar si el día es anterior al día actual
+                            val isPreviousDay = match?.let {
+                                val (y, m, d) = it.destructured
+                                val eventCal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("America/Argentina/Buenos_Aires")).apply {
+                                    set(java.util.Calendar.YEAR, y.toInt())
+                                    set(java.util.Calendar.MONTH, m.toInt() - 1)
+                                    set(java.util.Calendar.DAY_OF_MONTH, d.toInt())
+                                    set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                    set(java.util.Calendar.MINUTE, 59)
+                                    set(java.util.Calendar.SECOND, 59)
+                                }
+                                val todayCal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("America/Argentina/Buenos_Aires")).apply {
+                                    set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                    set(java.util.Calendar.MINUTE, 0)
+                                    set(java.util.Calendar.SECOND, 0)
+                                    set(java.util.Calendar.MILLISECOND, 0)
+                                }
+                                eventCal.before(todayCal)
+                            } ?: false
+
+                            val itemStatus = if (isPreviousDay) EventStatus.REPLAY else EventStatus.CHANNEL_24_7
 
                             list.add(
                                 EventItem(
