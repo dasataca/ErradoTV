@@ -2,6 +2,12 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.5.4] - 2026-10-24
+### Añadido y Optimizado
+- **Botones de Micrófono de Voz Exclusivamente con Icono**:
+  - Se eliminó la palabra "Voz" en los dos botones de dictado por voz (tanto en "🔁 Repeticiones" como en "🔍 Buscar Todo").
+  - Ambos botones pasaron a ser cuadrados compactos de 44x44dp, mostrando únicamente el icono clásico multicolor del micrófono de Google centrado con efectos de enfoque D-Pad.
+
 ## [1.5.3] - 2026-10-24
 ### Añadido y Optimizado
 - **Icono Oficial Definitivo (Gareca Arriba, Tigre en el Medio y TV Abajo)**:
