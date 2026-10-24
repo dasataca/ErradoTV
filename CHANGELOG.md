@@ -2,6 +2,12 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.3.3] - 2026-10-24
+### Añadido y Optimizado
+- **Tabla Exclusiva Comunitaria (`errado_community_streams`)**: La app ahora consulta y registra directamente en la tabla exclusiva dedicada `public.errado_community_streams` en la base de datos de Supabase, con clave primaria por URL para deduplicación instantánea y fallback de compatibilidad a `errado_tv_logs`.
+
+---
+
 ## [1.3.2] - 2026-10-24
 ### Añadido y Optimizado
 - **Base de Datos Comunitaria Compartida (Supabase)**: Se implementó un gestor de reportes comunitarios (`CommunityStreamManager`). Cuando un usuario pulsa un enlace y este no responde (error de reproducción o watchdog de 10 segundos), el fallo se archiva automáticamente en Supabase y se comparte en tiempo real con todos los demás televisores que utilicen ErradoTV.
