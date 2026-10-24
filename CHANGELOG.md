@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.5.6] - 2026-10-24
+### Corregido y Optimizado
+- **Invalidación Forzada de Caché en Android TV y Google TV (Cache-Busting v3)**:
+  - Los lanzadores de Android TV y Google TV almacenan en su base de datos local los banners e iconos usando el nombre del recurso de la versión previa (`tv_banner_v2` e `ic_launcher_v2`), lo que impedía que el televisor actualizara la imagen en su menú principal al recibir el nuevo APK.
+  - Se crearon y registraron formalmente en `AndroidManifest.xml` los nuevos identificadores `@drawable/tv_banner_v3` y `@mipmap/ic_launcher_v3`.
+  - Se añadieron además los banners dedicados por densidad de pantalla (`drawable-hdpi`, `drawable-xhdpi`, `drawable-xxhdpi`), garantizando que tanto en televisores 1080p como 4K el sistema cargue el banner oficial sin compresión ni caché obsoleto.
+
 ## [1.5.5] - 2026-10-24
 ### Corregido y Optimizado
 - **Estructura Oficial Estricta del Icono (Gareca Arriba, Tigre en el Medio y Tv Abajo)**:
