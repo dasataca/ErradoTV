@@ -1,4 +1,4 @@
-# 📋 ErradoTV — Contexto Integral y Documento Maestro del Proyecto
+# 📋 GarecaTV — Contexto Integral y Documento Maestro del Proyecto
 
 > **Nota para IAs y Desarrolladores**: Este documento es el estándar maestro de contexto del proyecto. Cualquier modelo de Inteligencia Artificial (Antigravity, Claude, Cursor, Copilot, ChatGPT) o desarrollador debe leer este archivo en primer lugar para comprender la arquitectura, el análisis criptográfico, los endpoints y el estado de avance del software.
 
@@ -6,134 +6,79 @@
 
 ## 1. Visión y Propósito del Proyecto
 
-### ¿Qué es ErradoTV?
-**ErradoTV** es una aplicación nativa de código abierto diseñada específicamente para **Android TV, Google TV y Fire TV Stick**. Nació como una reingeniería de la aplicación móvil `mta.xer.errado` (Errado / Golazo App), con los siguientes objetivos:
+### ¿Qué es GarecaTV?
+**GarecaTV** (anteriormente conocido como ErradoTV) es una aplicación nativa de código abierto diseñada específicamente para **Android TV, Google TV y Fire TV Stick**. Nació como una reingeniería de la aplicación móvil `mta.xer.errado` (Errado / Golazo App), con los siguientes objetivos:
 
-1. **Eliminación Total de Anuncios**: La app móvil original contenía más de 6 SDKs publicitarios invasivos (*Google AdMob, Yandex Mobile Ads, AppLovin MAX, Vungle, Facebook Audience Network y Clever Ads Solutions*). ErradoTV prescinde del 100% de estas librerías.
-2. **Experiencia Nativa de Televisión**: La app original está pensada para pantallas táctiles verticales de teléfonos móviles. ErradoTV está diseñada desde cero para pantallas horizontales (Landscape) con control remoto (D-Pad), tarjetas enfocables, animaciones de foco y menú de selección de transmisiones con el botón OK.
-3. **Reproducción Limpia**: Reproducción directa de streams HLS (`.m3u8`) a través de la librería oficial **AndroidX Media3 (ExoPlayer)** y un visor web con bloqueo de scripts publicitarios para transmisiones de tipo WebView.
-4. **Resiliencia y Sincronización Remota**: Soporte para actualización de claves en la nube sin requerir reinstalación de la app en la TV.
+1. **Eliminación Total de Anuncios**: La app móvil original contenía más de 6 SDKs publicitarios invasivos (*Google AdMob, Yandex Mobile Ads, AppLovin MAX, Vungle, Facebook Audience Network y Clever Ads Solutions*). GarecaTV prescinde del 100% de estas librerías.
+2. **Identidad Visual Propia y Exclusiva**:
+   * Icono y banner de alta definición con cabeza de tigre en perfil (un solo ojo visible y mandíbula rugiente en colores naturales), zarpazos de garras en rojo intenso y tipografía atlética sobre fondo negro.
+   * Suite completa de iconos para el sistema Android (`mipmap-mdpi` a `mipmap-xxxhdpi` e icono adaptativo `mipmap-anydpi-v26`).
+   * Visualización limpia: El icono del tigre aparece exclusivamente en la cabecera superior principal de la app y no se repite en cada fila de partidos.
+3. **Experiencia Nativa de Televisión (Leanback D-Pad)**:
+   * Diseñada 100% para pantallas horizontales (Landscape) con control remoto (D-Pad), tarjetas enfocables, animaciones de escala y selectores visuales de alto contraste.
+   * **Buscador Integrado para TV**: En la pestaña de Repeticiones, cuenta con una barra de búsqueda y opciones de ordenación (Fecha y Nombre) con manejo ergonómico del control remoto.
+4. **Reproducción Limpia y de Máxima Calidad**: Reproducción directa de streams HLS (`.m3u8`) a través de la librería oficial **AndroidX Media3 (ExoPlayer)** forzando 4K/UHD y máxima tasa de bits, junto a un visor web limpio con bloqueo de scripts para enlaces externos.
+5. **Resiliencia y Sincronización Remota**: Soporte para actualización de claves en la nube y actualización automática Over-The-Air (OTA) directa desde GitHub sin tocar la TV.
+6. **Inteligencia Comunitaria (Supabase)**: Enlaces caídos reportados por cualquier usuario se archivan en `errado_community_streams` y se comparten en tiempo real entre todos los televisores, reordenando automáticamente los partidos `NO DISPONIBLE` al final de la lista.
 
 ---
 
 ## 2. Descubrimientos de Ingeniería Inversa (Origen de los Datos)
 
 ### Servidores de Origen
-La aplicación no utiliza un backend con base de datos dinámico, sino que consume archivos JSON cifrados alojados en el CDN estático **Cloudflare Pages**:
+La aplicación consume archivos JSON cifrados alojados en el CDN estático **Cloudflare Pages** (`errado-app.pages.dev`):
 
-* `https://errado-app.pages.dev/data/event.json` → Partidos de la fecha, horarios y lista de enlaces de streaming (`event_url_1` a `event_url_16`).
-* `https://errado-app.pages.dev/data/destacado.json` → Canales de TV 24/7 y eventos destacados con streams HLS directos (`.m3u8`).
+* `https://errado-app.pages.dev/data/event.json` → Partidos de la fecha de hoy, horarios y lista de opciones de streaming (`event_url_1` a `event_url_16`).
+* `https://errado-app.pages.dev/data/destacado.json` → Catálogo de repeticiones históricas completas con fecha (`refooty.com/..._YYYY-MM-DD.m3u8`) y canales de TV 24/7 con streams HLS directos.
 * `https://teveplay.net/api/channels` → Catálogo de más de 470 señales y canales en vivo clasificados por países y ligas.
-* `https://errado-app.pages.dev/data/golazoapp.json` → Configuración general de la app e identificadores de anuncios.
+* `https://errado-app.pages.dev/data/golazoapp.json` → Configuración general de la app original.
 * `https://errado-app.pages.dev/data/channel.json` → Canales secundarios.
 * `https://errado-app.pages.dev/data/home.json` → Carrusel principal.
 
-### ¿Qué URLs y páginas vienen DENTRO de `event.json`?
-Al descifrar `event.json`, cada partido contiene de 1 a 16 opciones de transmisión que apuntan a dos tipos de servidores:
-
-1. **Resolutores de CDN Privados (Tipo `config`)**:
-   * **Dominios**: `https://cdnapp3.pages.dev/d/teveplay-*.json?gox=x` y `https://cdnapp3.pages.dev/d/fawanews-*.json?gox=x`
-   * **Función**: Al consultarlos, devuelven la URL directa del flujo de video HLS sin anuncios:
-     `https://teveplay.net/api/stream/{hash}/index.m3u8`
-   * **Reproducción**: Se envían directamente a **ExoPlayer nativo** con forzado de máxima resolución.
-2. **Páginas Web Externas (Tipo `web`)**:
-   * **Dominios**: `https://la18hd.su/vivo/canales.php?stream=...` y `https://www.tarjetarojita.xyz/sw3.html?get=...`
-   * **Función**: Páginas web de terceros que embeben reproductores web con publicidad y que frecuentemente sufren bloqueos judiciales por DNS de proveedores como Telecentro o errores `403 Forbidden`.
-
-### Proceso de Recarga de Datos y Horarios
-1. **Actualización Automática**:
-   - **Al iniciar la app**: Se descargan y procesan de inmediato `event.json` y `destacado.json`.
-   - **En segundo plano cada 5 minutos**: Un temporizador periódico (`startAutoRefresh`) sincroniza silenciosamente la cartelera deportiva mientras la aplicación está en ejecución sin interrumpir al usuario.
-   - **Bajo demanda**: El botón **Recargar** (`btnRefresh`) permite forzar la sincronización manual inmediata.
-2. Se extrae la hora de cada encuentro (formato `HH:mm`) y se compara con la hora actual en **GMT-3 (Argentina)**.
-3. Se detectan automáticamente partidos diferidos / históricos (`destacado.json`) extrayendo la fecha del flujo (`refooty.com/..._YYYY_MM_DD.m3u8`) para etiquetarlos como `REPETICIÓN` con su día correspondiente (`DD/MM`).
-4. Se recalcula el estado dinámico del partido:
-   - `● EN VIVO` (0 a 135 minutos desde el inicio).
-   - `POR EMPEZAR` (30 minutos o menos para el pitazo).
-   - `PROGRAMADO` (más de 30 minutos).
-   - `FINALIZADO` (más de 2 horas y 15 minutos).
-   - `REPETICIÓN` (partidos históricos con fecha detectada).
-   - `CANAL 24/7` (canales de TV continuos sin hora fija).
-5. Se actualiza el RecyclerView y la fecha del servidor en pantalla.
-
-### Arquitectura Criptográfica
-1. **Sin autenticación HTTP**: Cloudflare Pages sirve los archivos con cabecera pública `Access-Control-Allow-Origin: *`. No se requieren tokens de sesión, cookies ni headers especiales.
-2. **Cifrado del Contenido**: El servidor responde con una cadena en Base64 que contiene la carga cifrada.
-3. **Mecanismo de Descifrado**:
-   * **Algoritmo**: `AES/CBC/PKCS5Padding`.
-   * **Clave Base64 Embebida**: `R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==` (Texto decodificado: `GolazooAppSecretKey2024Secure!!`).
-   * **Derivación de Clave**: Debido a que la cadena decodificada mide 31 bytes (< 32 bytes necesarios para AES-256), la aplicación obtiene el hash **SHA-256** del string en base64 para derivar la clave simétrica de 256 bits (`3e2998e90f7fdb6becafd0df6889e1578a8032a41823a0f2f2e036d7be15b783`).
-   * **Vector de Inicialización (IV)**: Los primeros 16 bytes de los datos decodificados en Base64.
-   * **Texto Cifrado**: Los bytes a partir del byte 16 en adelante.
+### Separación de Catálogos y Búsqueda en TV
+1. **Partidos del Día (`⚽ Partidos del Día`)**: Muestra únicamente los partidos en vivo, por empezar o programados de la jornada actual (`cachedDailyEvents`). Se excluyen todas las repeticiones.
+2. **Pestaña Exclusiva de Repeticiones (`🔁 Repeticiones`)**: Situada justo antes de `📺 Regionales`, reúne el catálogo de partidos históricos (`cachedReplayEvents`).
+3. **Buscador y Ordenación Leanback**:
+   * Permite filtrar repeticiones al instante por equipo, título o fecha.
+   * Botones de ordenación por **Fecha** (más recientes o más antiguos) y por **Nombre** (alfabético A-Z o Z-A).
+   * **Navegación con control remoto**: Al pulsar flecha abajo desde la pestaña, el foco pasa a la caja de texto. Si el usuario pulsa OK/Center, se activa el cursor y se abre el teclado; si pulsa abajo directamente sin presionar OK, el foco salta al primer partido de la lista.
 
 ---
 
 ## 3. Arquitectura del Código Fuente (Android TV)
 
-El proyecto está construido bajo Gradle y Kotlin:
-
-* **`com.errado.tv.api.CryptoUtils`**: Módulo criptográfico con soporte para clave local de fábrica, persistencia en `SharedPreferences` y sincronización con URL remota en la nube.
-* **`com.errado.tv.api.ApiClient`**: Cliente HTTP basado en `OkHttpClient` y corrutinas Kotlin (`Dispatchers.IO`). Descarga, descifra y mapea los modelos de datos.
-* **`com.errado.tv.model.EventModel`**: Clases de datos (`EventItem`, `StreamOption`). Separa automáticamente la hora del partido (`18:00`) del título de los equipos.
-* **`com.errado.tv.MainActivity`**: Pantalla principal de Android TV. Integra reloj en tiempo real (`TextClock`), fecha del servidor, botón de recarga con control remoto y lista RecyclerView con selector de foco `card_selector`.
-* **`com.errado.tv.EventAdapter`**: Adaptador de lista con animación de escala (`scaleX/scaleY: 1.02f`) y cálculo de insignia de estado dinámico (`● EN VIVO`, `POR EMPEZAR`, `PROGRAMADO`, `FINALIZADO`, `CANAL 24/7`).
-* **`com.errado.tv.telemetry.SupabaseLogger`**: Cliente de telemetría asíncrona hacia Supabase (`pfhjrplnfuupftgzdnop`) que registra flujos de usuario, reproducciones y errores con metadata de hardware de la TV.
-* **`com.errado.tv.PlayerActivity`**: Reproductor de video en pantalla completa con AndroidX Media3 (ExoPlayer). Soporte de controles de reproducción en el mando (`KEY_DPAD_CENTER`, `KEY_MEDIA_PLAY_PAUSE`, `KEY_BACK`).
-* **`com.errado.tv.WebStreamActivity`**: Visor web con interceptor de recursos (`shouldInterceptRequest`) que neutraliza dominios publicitarios comunes (`popads`, `adsterra`, etc.).
+* **`com.errado.tv.api.CryptoUtils`**: Módulo criptográfico AES-256-CBC con clave local de fábrica, almacenamiento en `SharedPreferences` y sincronización con GitHub/Gist.
+* **`com.errado.tv.api.ApiClient`**: Cliente HTTP basado en `OkHttpClient` y corrutinas. Descarga, descifra y mapea `event.json`, `destacado.json` y los canales de `teveplay.net`. Extrae fechas y timestamps (`YYYY-MM-DD`) para ordenación.
+* **`com.errado.tv.model.EventModel`**: Modelos de datos (`EventItem`, `StreamOption`, `EventStatus`). Soporta cálculo dinámico de estados (`● EN VIVO`, `POR EMPEZAR`, `PROGRAMADO`, `FINALIZADO`, `REPETICIÓN`, `NO DISPONIBLE`, `CANAL 24/7`), marcas de fecha (`rawDate`) y milisegundos (`timestamp`).
+* **`com.errado.tv.MainActivity`**: Actividad principal Leanback. Gestiona el ciclo de vida, reloj en tiempo real (`TextClock`), control de frecuencia de refresco (ventana de 15 min), buscador dinámico, botones de ordenación y navegación D-Pad.
+* **`com.errado.tv.CategoryAdapter`**: Barra de pestañas horizontal (`rvCategories`) con animación de escala (`1.06f`) y captura de evento de flecha abajo para transferir el foco al buscador o lista.
+* **`com.errado.tv.EventAdapter`**: Adaptador para las tarjetas de partidos y canales con selector `card_selector.xml` y atenuación visual (`alpha = 0.5f`) para partidos finalizados o no disponibles.
+* **`com.errado.tv.CommunityStreamManager`**: Sincronizador con la base comunitaria de Supabase (`public.errado_community_streams`), permitiendo deduplicar enlaces caídos y compartirlos entre dispositivos.
+* **`com.errado.tv.telemetry.SupabaseLogger`**: Telemetría en segundo plano para auditoría de inicio, clics y errores de reproducción.
+* **`com.errado.tv.PlayerActivity`**: Reproductor nativo AndroidX Media3 ExoPlayer en pantalla completa con soporte de mandos a distancia.
+* **`com.errado.tv.WebStreamActivity`**: Visor WebView seguro con bloqueo de publicidad para señales externas web.
 
 ---
 
 ## 4. Herramientas y Scripts Auxiliares
 
-1. **[`extract_key.py`](file:///home/sataca/Descargas/APLICACIONES/errado/extract_key.py)**:
-   * Script automatizado que analiza cualquier archivo `.apk` o carpeta de APKs.
-   * Extrae los archivos DEX, escanea candidatos a claves Base64, calcula su hash SHA-256 y verifica el descifrado contra el servidor en vivo en menos de 3 segundos.
-2. **[`generate_playlist.py`](file:///home/sataca/Descargas/APLICACIONES/errado/generate_playlist.py)**:
-   * Generador de listas IPTV en formato `.m3u8` (`errado_tv.m3u8`).
-   * Descarga y descifra todos los partidos del día y canales destacados para reproducirlos en aplicaciones como TiviMate, VLC u OTT Navigator.
-3. **[`view_logs.py`](file:///home/sataca/Descargas/APLICACIONES/errado/view_logs.py)**:
-   * Visor de logs en vivo desde Supabase en la consola (`python3 view_logs.py --watch`).
-4. **[`supabase_setup.sql`](file:///home/sataca/Descargas/APLICACIONES/errado/supabase_setup.sql)**:
-   * Script DDL con trigger de limpieza circular para mantener un máximo estricto de 1,000 registros en Supabase.
+1. **[`publish_release.sh`](file:///home/sataca/Descargas/APLICACIONES/errado/publish_release.sh)**:
+   * Script de compilación y publicación OTA 100% automatizado en 1 comando: `./publish_release.sh [versionName] [versionCode] "[changelog]"`. Compila el APK, actualiza `version.json`, organiza en `release/` y hace push a GitHub.
+2. **[`extract_key.py`](file:///home/sataca/Descargas/APLICACIONES/errado/extract_key.py)**:
+   * Extractor automático de claves DEX para futuras versiones de la APK móvil original.
+3. **[`generate_playlist.py`](file:///home/sataca/Descargas/APLICACIONES/errado/generate_playlist.py)**:
+   * Generador de listas IPTV en formato `.m3u8` (`errado_tv.m3u8`) para TiviMate, VLC o reproductores externos.
+4. **[`view_logs.py`](file:///home/sataca/Descargas/APLICACIONES/errado/view_logs.py)**:
+   * Visor de telemetría en tiempo real (`--watch`) y visor de enlaces caídos reportados por la comunidad (`--community`).
+5. **[`supabase_setup.sql`](file:///home/sataca/Descargas/APLICACIONES/errado/supabase_setup.sql)**:
+   * Definición DDL de las tablas `errado_tv_logs` y `errado_community_streams` en Supabase con trigger de limpieza circular.
 
 ---
 
-## 5. Estrategia de Clave Remota (Resiliencia ante Cambios)
+## 5. Sistema de Actualización Automática desde GitHub (OTA Automatizado)
 
-Para evitar tener que reinstalar el APK en caso de que los creadores actualicen la clave:
-1. `CryptoUtils.kt` cuenta con una clave local predeterminada.
-2. Al iniciar o refrescar, intenta consultar `remoteConfigUrl` en segundo plano.
-3. Si la URL remota entrega un JSON con formato:
-   ```json
-   {
-     "active_key": "NUEVA_CLAVE_BASE64_AQUI"
-   }
-   ```
-   La aplicación almacena la nueva clave en `SharedPreferences` y la utiliza de inmediato.
-4. **URL de Gist Vinculada en la App**:
-   `https://gist.githubusercontent.com/dasataca/b5f27059b9db7e878e6a0fab05a7a951/raw/config.json`
-5. Si la consulta remota falla o no hay conexión a internet, utiliza la clave local de respaldo.
- 
----
- 
-## 6. Sistema de Actualización Automática desde GitHub (OTA Automatizado)
-
-Igual que en el proyecto `proyectarAplicacion`, el sistema es 100% autónomo y no requiere editar ningún archivo manualmente ni usar Gist:
 1. **Archivo Maestro de Versión (`version.json`)**:
    Ubicado en la raíz del repositorio:
    `https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json`
-2. **Contenido Autogenerado**:
-   ```json
-   {
-     "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-     "latest_version_code": 4,
-     "latest_version_name": "1.1.2",
-     "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/ErradoTV.apk",
-     "changelog": "Actualizacion automatica nativa desde GitHub y maxima resolucion ExoPlayer"
-   }
-   ```
-3. **Flujo de Publicación en 1 Solo Paso**:
-   El script `./publish_release.sh [version_name] [version_code] [changelog]` compila, genera `version.json`, organiza los APKs en `release/` y hace el `git push` a GitHub automáticamente.
-4. **Detección en la Smart TV**:
-   La app consulta `version.json` directamente en GitHub. Al detectar una versión superior, muestra el diálogo nativo en la TV y se actualiza sola por WiFi.
-
+2. **Detección Autónoma en la TV**:
+   La app consulta `version.json` al iniciar y en segundo plano. Al detectar una versión superior a la instalada, presenta el diálogo de confirmación en la TV y descarga/actualiza el APK por WiFi sin requerir intervención manual.

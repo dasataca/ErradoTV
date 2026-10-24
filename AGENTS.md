@@ -1,21 +1,30 @@
 # 🤖 AGENTS.md — Protocolo y Contexto Integral para Inteligencias Artificiales
 
 > **Audiencia**: Agentes de IA autónomos (Antigravity, Cursor, Claude 3.7 Sonnet, Copilot, ChatGPT) y desarrolladores.  
-> **Objetivo**: Proveer un contexto completo, exacto e inmutable sobre la arquitectura, ingeniería inversa, endpoints, cifrado y estándares de codificación de **ErradoTV**.
+> **Objetivo**: Proveer un contexto completo, exacto e inmutable sobre la arquitectura, ingeniería inversa, endpoints, cifrado y estándares de codificación de **GarecaTV** (anteriormente ErradoTV).
 
 ---
 
 ## 1. Misión del Proyecto y Restricciones Absolutas
 
 1. **Sin Publicidad**: Prohibido bajo cualquier circunstancia importar SDKs de monetización publicitaria (AdMob, AppLovin, Vungle, Clever Ads Solutions, UnityAds, etc.).
-2. **Experiencia Nativa para TV (Leanback)**:
+2. **Identidad Visual Oficial — GarecaTV**:
+   * Icono y banner oficial con cabeza de tigre en perfil (con un solo ojo visible y mandíbula rugiente en colores vibrantes), zarpazos de garras en rojo y letras rojas sobre fondo negro profundo.
+   * Icono de launcher para todo el sistema Android: suite completa de densidades en `res/mipmap-*` e icono adaptativo en `mipmap-anydpi-v26` (`ic_launcher.xml` e `ic_launcher_round.xml`).
+   * El icono del tigre solo se muestra en la cabecera superior principal de la pantalla, manteniendo las filas de partidos limpias y sin repeticiones innecesarias.
+3. **Experiencia Nativa para TV (Leanback D-Pad)**:
    * Toda la navegación debe ser 100% operable con control remoto (D-Pad: Arriba, Abajo, Izquierda, Derecha, OK/Center, Back).
    * La app debe mantener `android.hardware.touchscreen=false` y la categoría `LEANBACK_LAUNCHER`.
-   * Los elementos enfocables deben utilizar animaciones de escala y selectores visuales (`card_selector.xml`, `button_focus_selector.xml`).
-3. **Reproducción de Video Nativa**:
+   * Los elementos enfocables deben utilizar animaciones de escala y selectores visuales (`card_selector.xml`, `button_focus_selector.xml`, `search_box_selector.xml`).
+4. **Organización de Catálogos y Búsqueda en TV**:
+   * **⚽ Partidos del Día**: Muestra única y exclusivamente los partidos en vivo, por empezar o programados de la fecha de hoy.
+   * **🔁 Repeticiones**: Pestaña dedicada situada inmediatamente antes de `📺 Regionales`, con buscador en tiempo real y botones de ordenación por Fecha (recientes/antiguos) y Nombre (A-Z/Z-A).
+   * **Navegación Ergonómica en Búsqueda**: Al pulsar abajo desde la pestaña de Repeticiones, el foco pasa a la caja de texto. Para escribir se pulsa OK/Center (activa el cursor y despliega teclado); si se pulsa abajo de nuevo sin presionar OK, el foco salta directamente al primer partido de la lista.
+   * **Resiliencia de Disponibilidad**: Los partidos etiquetados como `NO DISPONIBLE` se desplazan siempre de forma automática al fondo de la lista.
+5. **Reproducción de Video Nativa**:
    * Prioridad absoluta a **AndroidX Media3 ExoPlayer** para reproducir flujos HLS (`.m3u8`).
    * Configuración de `DefaultTrackSelector` forzando siempre la máxima resolución (`setMaxVideoSize(3840, 2160)`) y bitrate disponible (`setForceHighestSupportedBitrate(true)`).
-4. **Resiliencia y Actualización OTA Autónoma**:
+6. **Resiliencia y Actualización OTA Autónoma**:
    * El sistema de actualización remota Over-The-Air se gestiona a través del archivo [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en el repositorio GitHub (`dasataca/ErradoTV`).
 
 ---
@@ -37,7 +46,7 @@ La aplicación consume archivos JSON cifrados alojados en el CDN global **Cloudf
 | Endpoint | Propósito | Frecuencia de Actualización |
 | :--- | :--- | :--- |
 | `https://errado-app.pages.dev/data/event.json` | Partidos del día, horarios y opciones de streaming | Se actualiza varias veces al día según agenda deportiva |
-| `https://errado-app.pages.dev/data/destacado.json` | Canales 24/7 y eventos principales con HLS directo | Actualización continua |
+| `https://errado-app.pages.dev/data/destacado.json` | Catálogo de repeticiones históricas y canales 24/7 con HLS directo | Actualización continua |
 | `https://teveplay.net/api/channels` | Catálogo de más de 470 señales y canales deportivos en vivo | Actualización continua |
 | `https://errado-app.pages.dev/data/golazoapp.json` | Configuración general de la app móvil original | Estático / ocasional |
 | `https://errado-app.pages.dev/data/channel.json` | Canales de televisión secundarios | Estático / semanal |
@@ -87,6 +96,6 @@ Para generar y subir una nueva versión del software:
 ```bash
 ./publish_release.sh [versionName] [versionCode] "[changelog]"
 # Ejemplo:
-./publish_release.sh 1.1.3 5 "Optimización de red y nuevos canales"
+./publish_release.sh 1.3.7 20 "Pestaña Repeticiones antes de Regionales con buscador y ordenacion"
 ```
 El script compila el APK, actualiza `version.json`, organiza los archivos en `release/` y realiza el `git push` a `origin main` de manera completamente autónoma.
