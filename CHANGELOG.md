@@ -2,6 +2,17 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.5.8] - 2026-10-24
+### Añadido y Optimizado
+- **Ordenación Jerárquica de Eventos y Canales**:
+  - Implementación de la regla estricta de ordenación en cada lista (`sortEventList`):
+    1. **● EN VIVO primero**: Eventos `LIVE` y `STARTING_SOON` al inicio de la lista.
+    2. **PROGRAMADOS después**: Eventos `SCHEDULED` ordenados cronológicamente por hora de inicio.
+    3. **CANALES 24/7 luego**: Los canales continuos 24/7 van tras los programados. Si un canal 24/7 se marca como `NO DISPONIBLE`, **permanece en su lugar** entre los canales 24/7 y no es desplazado al fondo.
+    4. **Partidos no disponibles**: Partidos caídos van antes de los finalizados.
+    5. **FINALIZADOS siempre al último**: Todos los partidos con estado `FINALIZADO` se sitúan estrictamente al fondo de la lista.
+  - Aplicado a **⚽ Partidos del Día**, **🌐 Todos los Canales**, cada categoría de canal por separado y **🔍 Buscar Todo**.
+
 ## [1.5.7] - 2026-10-24
 ### Añadido y Optimizado
 - **Insignia y Escudo Oficial en Formato Circular con Fondo Transparente**:
