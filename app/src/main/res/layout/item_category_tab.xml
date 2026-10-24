@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:focusable="true"
+    android:clickable="true"
+    android:layout_marginEnd="10dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:background="@drawable/category_tab_selector">
+
+    <TextView
+        android:id="@+id/tvTabTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🇦🇷 Argentina"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:duplicateParentState="true"
+        android:textColor="@color/tab_text_selector" />
+
+</LinearLayout>

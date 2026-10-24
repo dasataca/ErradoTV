@@ -29,19 +29,41 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private lateinit var rvEvents: RecyclerView
+    private lateinit var rvCategories: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmpty: TextView
     private lateinit var tvDate: TextView
     private lateinit var btnRefresh: View
     private lateinit var btnUpdate: View
     private lateinit var adapter: EventAdapter
+    private lateinit var categoryAdapter: CategoryAdapter
     private var autoRefreshJob: Job? = null
+
+    private val categoryList = listOf(
+        "⚽ Partidos del Día",
+        "🇦🇷 Argentina",
+        "🏆 Deportes",
+        "🇪🇸 España",
+        "🇲🇽 México",
+        "🇨🇴 Colombia",
+        "🇵🇪 Perú",
+        "🇧🇷 Brasil",
+        "🇬🇧 Premier League",
+        "🏎️ F1 / Motor",
+        "🏀 NBA",
+        "🥊 Boxeo / UFC",
+        "🌐 Todos los Canales"
+    )
+    private var currentCategory = "⚽ Partidos del Día"
+    private var cachedDailyEvents = listOf<EventItem>()
+    private var cachedLiveChannels = listOf<EventItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         rvEvents = findViewById(R.id.rvEvents)
+        rvCategories = findViewById(R.id.rvCategories)
         progressBar = findViewById(R.id.progressBar)
         tvEmpty = findViewById(R.id.tvEmpty)
         tvDate = findViewById(R.id.tvDate)
@@ -62,6 +84,13 @@ class MainActivity : AppCompatActivity() {
         tvRefresh.setOnFocusChangeListener { _, hasFocus ->
             tvRefresh.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
         }
+
+        rvCategories.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        categoryAdapter = CategoryAdapter(categoryList, currentCategory) { selectedCat ->
+            currentCategory = selectedCat
+            filterAndDisplayEvents(silent = false)
+        }
+        rvCategories.adapter = categoryAdapter
 
         adapter = EventAdapter { item ->
             handleEventClick(item)
@@ -120,6 +149,7 @@ class MainActivity : AppCompatActivity() {
 
                 val dailyResponse = ApiClient.fetchDailyEvents()
                 val featuredList = ApiClient.fetchFeaturedEvents()
+                val liveChannels = ApiClient.fetchTeveplayChannels()
 
                 tvDate.text = dailyResponse.date
 
@@ -127,22 +157,14 @@ class MainActivity : AppCompatActivity() {
                 allEvents.addAll(dailyResponse.events)
                 allEvents.addAll(featuredList)
 
+                cachedDailyEvents = allEvents
+                cachedLiveChannels = liveChannels
+
                 if (!silent) {
                     progressBar.visibility = View.GONE
                 }
 
-                if (allEvents.isEmpty()) {
-                    if (!silent) {
-                        tvEmpty.visibility = View.VISIBLE
-                        tvEmpty.text = getString(R.string.no_events)
-                    }
-                } else {
-                    tvEmpty.visibility = View.GONE
-                    adapter.submitList(allEvents)
-                    if (!silent) {
-                        rvEvents.requestFocus()
-                    }
-                }
+                filterAndDisplayEvents(silent)
 
                 // Verificación en segundo plano sin molestar si no hay actualización
                 checkAndPromptUpdate(userInitiated = false)
@@ -152,6 +174,30 @@ class MainActivity : AppCompatActivity() {
                     tvEmpty.visibility = View.VISIBLE
                     tvEmpty.text = "Error al cargar eventos: ${e.message}"
                 }
+            }
+        }
+    }
+
+    private fun filterAndDisplayEvents(silent: Boolean = false) {
+        val displayList = when (currentCategory) {
+            "⚽ Partidos del Día" -> cachedDailyEvents
+            "🌐 Todos los Canales" -> cachedLiveChannels
+            else -> cachedLiveChannels.filter { it.category == currentCategory }
+        }
+
+        if (displayList.isEmpty()) {
+            tvEmpty.visibility = View.VISIBLE
+            tvEmpty.text = if (currentCategory == "⚽ Partidos del Día") {
+                getString(R.string.no_events)
+            } else {
+                "No hay señales disponibles actualmente para esta categoría."
+            }
+            adapter.submitList(emptyList())
+        } else {
+            tvEmpty.visibility = View.GONE
+            adapter.submitList(displayList)
+            if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()) {
+                rvEvents.requestFocus()
             }
         }
     }

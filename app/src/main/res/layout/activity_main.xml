@@ -117,6 +117,17 @@
             android:background="@drawable/button_focus_selector" />
     </LinearLayout>
 
+    <!-- Category / Country Tabs for TV -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCategories"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:clipToPadding="false"
+        android:descendantFocusability="afterDescendants"
+        android:layout_marginBottom="16dp"
+        android:focusable="false" />
+
     <!-- Main Content Frame -->
     <FrameLayout
         android:layout_width="match_parent"

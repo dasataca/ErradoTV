@@ -38,6 +38,7 @@ La aplicación consume archivos JSON cifrados alojados en el CDN global **Cloudf
 | :--- | :--- | :--- |
 | `https://errado-app.pages.dev/data/event.json` | Partidos del día, horarios y opciones de streaming | Se actualiza varias veces al día según agenda deportiva |
 | `https://errado-app.pages.dev/data/destacado.json` | Canales 24/7 y eventos principales con HLS directo | Actualización continua |
+| `https://teveplay.net/api/channels` | Catálogo de más de 470 señales y canales deportivos en vivo | Actualización continua |
 | `https://errado-app.pages.dev/data/golazoapp.json` | Configuración general de la app móvil original | Estático / ocasional |
 | `https://errado-app.pages.dev/data/channel.json` | Canales de televisión secundarios | Estático / semanal |
 | `https://errado-app.pages.dev/data/home.json` | Banners del carrusel de portada | Diario |

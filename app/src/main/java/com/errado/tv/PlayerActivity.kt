@@ -13,6 +13,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
@@ -62,8 +64,38 @@ class PlayerActivity : AppCompatActivity() {
             )
         }
 
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            .setAllowCrossProtocolRedirects(true)
+
+        if (url.contains("teveplay.net")) {
+            val channelId = url.substringAfter("/api/stream/").substringBefore("/index.m3u8")
+            val referer = if (channelId.isNotEmpty() && channelId != url) {
+                "https://teveplay.net/watch/$channelId"
+            } else {
+                "https://teveplay.net/"
+            }
+            httpDataSourceFactory.setDefaultRequestProperties(
+                mapOf(
+                    "Referer" to referer,
+                    "Origin" to "https://teveplay.net"
+                )
+            )
+        } else if (url.contains("fawanews") || url.contains("193.47.62")) {
+            httpDataSourceFactory.setDefaultRequestProperties(
+                mapOf(
+                    "Referer" to "http://www.fawanews.sc/",
+                    "Origin" to "http://www.fawanews.sc"
+                )
+            )
+        }
+
+        val mediaSourceFactory = DefaultMediaSourceFactory(this)
+            .setDataSourceFactory(httpDataSourceFactory)
+
         val exoPlayer = ExoPlayer.Builder(this)
             .setTrackSelector(trackSelector)
+            .setMediaSourceFactory(mediaSourceFactory)
             .build()
 
         player = exoPlayer
@@ -109,7 +141,7 @@ class PlayerActivity : AppCompatActivity() {
             override fun onPlayerError(error: PlaybackException) {
                 playerBuffering.visibility = View.GONE
                 playerError.visibility = View.VISIBLE
-                playerError.text = "Error al reproducir el enlace:\n${error.message}"
+                playerError.text = "⚠️ Señal temporalmente fuera del aire o finalizada.\nPresiona la tecla ATRÁS en tu control remoto para elegir otro canal."
                 SupabaseLogger.error(
                     "player_error",
                     "Error de reproducción en ExoPlayer: ${error.message}",

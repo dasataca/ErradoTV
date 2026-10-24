@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
@@ -198,5 +199,85 @@ object ApiClient {
             }
         }
         stream
+    }
+
+    private const val TEVEPLAY_CHANNELS_URL = "https://teveplay.net/api/channels"
+
+    suspend fun fetchTeveplayChannels(): List<EventItem> = withContext(Dispatchers.IO) {
+        val list = mutableListOf<EventItem>()
+        try {
+            val req = Request.Builder()
+                .url(TEVEPLAY_CHANNELS_URL)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .build()
+
+            val response = httpClient.newCall(req).execute()
+            val raw = response.body?.string().orEmpty()
+
+            if (raw.isNotEmpty() && raw.startsWith("[")) {
+                val array = JSONArray(raw)
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    val id = obj.optString("id", "").trim()
+                    val name = obj.optString("name", "Canal").trim()
+                    val group = obj.optString("group", "Deportes").trim()
+                    val logo = obj.optString("logo", "").trim()
+
+                    if (id.isNotEmpty()) {
+                        val streamUrl = "https://teveplay.net/api/stream/$id/index.m3u8"
+                        val cat = mapGroupToCategory(group, name)
+                        val validLogo = if (logo.isNotEmpty() && !logo.contains("placehold.co")) logo else null
+
+                        list.add(
+                            EventItem(
+                                title = name,
+                                time = null,
+                                subtitle = "$group • Señal Directa (ExoPlayer)",
+                                imageUrl = validLogo,
+                                streams = listOf(
+                                    StreamOption(
+                                        title = "🟢 [HD DIRECTO] $name",
+                                        url = streamUrl,
+                                        type = "exo"
+                                    )
+                                ),
+                                status = EventStatus.LIVE,
+                                category = cat
+                            )
+                        )
+                    }
+                }
+                SupabaseLogger.info(
+                    "channels_loaded",
+                    "Canales de TevePlay cargados: ${list.size} señales activas",
+                    mapOf("count" to list.size)
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            SupabaseLogger.warn("channels_load_error", "Error cargando canales de TevePlay: ${e.message}")
+        }
+        list
+    }
+
+    fun mapGroupToCategory(group: String, name: String): String {
+        val g = group.lowercase()
+        val n = name.lowercase()
+        return when {
+            "argentina" in g || "liga profesional" in g || "tyc" in n || "tnt sports" in n -> "🇦🇷 Argentina"
+            "deportes" in g -> "🏆 Deportes"
+            "espana" in g || "laliga" in g -> "🇪🇸 España"
+            "mexico" in g || "liga mx" in g -> "🇲🇽 México"
+            "colombia" in g || "liga colombia" in g || "win sports" in n -> "🇨🇴 Colombia"
+            "peru" in g || "liga 1" in g -> "🇵🇪 Perú"
+            "chile" in g -> "🇨🇱 Chile"
+            "uruguay" in g -> "🇺🇾 Uruguay"
+            "brasil" in g || "brasileirao" in g -> "🇧🇷 Brasil"
+            "premier league" in g || "inglaterra" in g -> "🇬🇧 Premier League"
+            "f1" in g || "moto" in g || "formula 1" in g -> "🏎️ F1 / Motor"
+            "nba" in g || "basketball" in g -> "🏀 NBA"
+            "ufc" in g || "mma" in g || "box" in g -> "🥊 Boxeo / UFC"
+            else -> "📺 Otros Canales"
+        }
     }
 }

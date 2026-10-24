@@ -23,6 +23,7 @@ La aplicación no utiliza un backend con base de datos dinámico, sino que consu
 
 * `https://errado-app.pages.dev/data/event.json` → Partidos de la fecha, horarios y lista de enlaces de streaming (`event_url_1` a `event_url_16`).
 * `https://errado-app.pages.dev/data/destacado.json` → Canales de TV 24/7 y eventos destacados con streams HLS directos (`.m3u8`).
+* `https://teveplay.net/api/channels` → Catálogo de más de 470 señales y canales en vivo clasificados por países y ligas.
 * `https://errado-app.pages.dev/data/golazoapp.json` → Configuración general de la app e identificadores de anuncios.
 * `https://errado-app.pages.dev/data/channel.json` → Canales secundarios.
 * `https://errado-app.pages.dev/data/home.json` → Carrusel principal.

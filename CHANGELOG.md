@@ -4,6 +4,16 @@ Todas las modificaciones, análisis y versiones del proyecto quedan documentadas
 
 ---
 
+## [1.2.0] - 2026-10-23
+### Añadido y Optimizado
+- **Pestañas por País y Categorías (Estilo TevePlay / Leanback TV)**: Incorporación de una barra horizontal de categorías navegable con el control remoto (`D-Pad`). Permite alternar instantáneamente entre **⚽ Partidos del Día**, **🇦🇷 Argentina**, **🏆 Deportes (ESPN/Fox)**, **🇪🇸 España (LaLiga)**, **🇲🇽 México (Liga MX)**, **🇨🇴 Colombia (Win Sports)**, **🇵🇪 Perú (Liga 1)**, **🇧🇷 Brasil (Brasileirão)**, **🇬🇧 Premier League**, **🏎️ F1 / Motor**, **🏀 NBA**, **🥊 Boxeo / UFC** y **🌐 Todos los Canales**.
+- **Integración de Más de 470 Señales Deportivas en Directo**: Conexión nativa con la API de canales en vivo de TevePlay (`teveplay.net/api/channels`), brindando acceso directo a señales lineales y eventos deportivos con logos oficiales.
+- **Inyección de Cabeceras HTTP Nativas en ExoPlayer (`DefaultHttpDataSource`)**: Se configuró ExoPlayer para enviar dinámicamente `Referer` y `Origin` en transmisiones de CDN, evitando bloqueos 403 y 404.
+- **Mensaje Inteligente de Señal Fuera del Aire**: Cuando una señal temporal de un partido finaliza o está fuera de transmisión, la pantalla muestra una alerta amigable para regresar con el control remoto y elegir otro canal u opción alternativa.
+- **Actualización Automática y Silenciosa**: El catálogo de señales y partidos se sincroniza periódicamente en segundo plano para reflejar los eventos que están transmitiendo en tiempo real.
+
+---
+
 ## [1.1.7] - 2026-10-23
 ### Añadido y Optimizado
 - **Visualización de la Versión Instalada**: Se incorporó el indicador directo de la versión instalada en la pantalla principal sobre el botón de actualización (**`Actualizar (v1.1.7)`**) y dentro del diálogo de comprobación (**`ErradoTV vX.X (Instalada: v1.1.7)`**).
