@@ -97,6 +97,52 @@ object AuthManager {
             return@withContext AuthResult.Error("Por favor completa todos los campos")
         }
 
+        val deviceId = getDeviceId(context)
+        val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
+        val deviceBrand = Build.BRAND.orEmpty()
+        val androidVer = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
+
+        // 1. Intentar autenticar mediante la función RPC segura con pgcrypto bcrypt
+        try {
+            val rpcJson = JSONObject().apply {
+                put("p_email", cleanEmail)
+                put("p_password", cleanPass)
+                put("p_device_id", deviceId)
+                put("p_device_model", deviceModel)
+                put("p_device_brand", deviceBrand)
+                put("p_android_version", androidVer)
+            }
+
+            val rpcReq = Request.Builder()
+                .url("$SUPABASE_REST_URL/rpc/fn_gareca_login_credentials")
+                .header("apikey", SERVICE_KEY)
+                .header("Authorization", "Bearer $SERVICE_KEY")
+                .header("Content-Type", "application/json")
+                .post(rpcJson.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val rpcResp = ApiClient.httpClient.newCall(rpcReq).execute()
+            val rpcBody = rpcResp.body?.string().orEmpty()
+
+            if (rpcResp.isSuccessful && rpcBody.isNotEmpty()) {
+                val resObj = JSONObject(rpcBody)
+                val status = resObj.optString("status", "")
+                if (status == "success") {
+                    saveSession(context, cleanEmail, null)
+                    SupabaseLogger.info("auth_login_success", "Ingreso exitoso bcrypt: $cleanEmail en $deviceModel")
+                    return@withContext AuthResult.Success(cleanEmail)
+                } else if (status == "disabled") {
+                    return@withContext AuthResult.AccountDisabled
+                } else {
+                    val msg = resObj.optString("message", "Usuario o contraseña incorrectos")
+                    return@withContext AuthResult.Error(msg)
+                }
+            }
+        } catch (_: Exception) {
+            // Continuar al método de respaldo
+        }
+
+        // 2. Método de respaldo (Supabase Auth GoTrue)
         try {
             val bodyJson = JSONObject().apply {
                 put("email", cleanEmail)
@@ -128,7 +174,6 @@ object AuthManager {
                 ""
             }
 
-            // Validar en la tabla gareca_users
             return@withContext processUserAccess(context, cleanEmail, token, "email_password")
         } catch (e: Exception) {
             SupabaseLogger.error("auth_login_error", "Error en login email: ${e.message}")
@@ -141,6 +186,48 @@ object AuthManager {
         if (cleanEmail.isEmpty() || !cleanEmail.contains("@")) {
             return@withContext AuthResult.Error("Correo de Google no válido")
         }
+
+        val deviceId = getDeviceId(context)
+        val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
+        val deviceBrand = Build.BRAND.orEmpty()
+        val androidVer = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
+
+        // Intentar registrar/autenticar vía RPC
+        try {
+            val rpcJson = JSONObject().apply {
+                put("p_email", cleanEmail)
+                put("p_device_id", deviceId)
+                put("p_device_model", deviceModel)
+                put("p_device_brand", deviceBrand)
+                put("p_android_version", androidVer)
+            }
+
+            val rpcReq = Request.Builder()
+                .url("$SUPABASE_REST_URL/rpc/fn_gareca_login_google")
+                .header("apikey", SERVICE_KEY)
+                .header("Authorization", "Bearer $SERVICE_KEY")
+                .header("Content-Type", "application/json")
+                .post(rpcJson.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val rpcResp = ApiClient.httpClient.newCall(rpcReq).execute()
+            val rpcBody = rpcResp.body?.string().orEmpty()
+
+            if (rpcResp.isSuccessful && rpcBody.isNotEmpty()) {
+                val resObj = JSONObject(rpcBody)
+                val status = resObj.optString("status", "")
+                if (status == "success") {
+                    saveSession(context, cleanEmail, null)
+                    SupabaseLogger.info("auth_google_success", "Ingreso exitoso Google TV: $cleanEmail en $deviceModel")
+                    return@withContext AuthResult.Success(cleanEmail)
+                } else if (status == "disabled") {
+                    return@withContext AuthResult.AccountDisabled
+                }
+            }
+        } catch (_: Exception) {
+            // Fallback a proceso directo
+        }
+
         return@withContext processUserAccess(context, cleanEmail, null, "google_tv")
     }
 
