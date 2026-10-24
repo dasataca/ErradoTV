@@ -1,7 +1,7 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "latest_version_code": 6,
-  "latest_version_name": "1.1.4",
+  "latest_version_code": 7,
+  "latest_version_name": "1.1.5",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/ErradoTV.apk",
-  "changelog": "Correccion de contraste y legibilidad en botones enfocados"
+  "changelog": "Invalidador de cache en tiempo real y contraste maximo"
 }
