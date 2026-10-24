@@ -32,6 +32,8 @@ APK_LATEST="release/GarecaTV.apk"
 cp app/build/outputs/apk/debug/app-debug.apk "$APK_VERSIONED"
 cp app/build/outputs/apk/debug/app-debug.apk "$APK_LATEST"
 cp app/build/outputs/apk/debug/app-debug.apk GarecaTV.apk
+cp app/build/outputs/apk/debug/app-debug.apk release/ErradoTV.apk
+cp app/build/outputs/apk/debug/app-debug.apk ErradoTV.apk
 
 echo "✅ APK generado:"
 ls -lh "$APK_VERSIONED" "$APK_LATEST"

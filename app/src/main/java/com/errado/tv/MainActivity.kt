@@ -56,14 +56,14 @@ class MainActivity : AppCompatActivity() {
     // Controles de búsqueda y ordenación para TV (Repeticiones)
     private lateinit var searchContainer: LinearLayout
     private lateinit var etSearch: EditText
-    private lateinit var btnVoiceSearchReplay: Button
+    private lateinit var btnVoiceSearchReplay: View
     private lateinit var btnSortDate: Button
     private lateinit var btnSortName: Button
 
     // Controles de Búsqueda Global (Todo el catálogo)
     private lateinit var globalSearchContainer: LinearLayout
     private lateinit var etGlobalSearch: EditText
-    private lateinit var btnVoiceGlobalSearch: Button
+    private lateinit var btnVoiceGlobalSearch: View
     private lateinit var btnClearGlobalSearch: Button
     private var globalSearchQuery = ""
     private var isVoiceForGlobal = false
@@ -272,8 +272,12 @@ class MainActivity : AppCompatActivity() {
             false
         }
 
-        btnVoiceSearchReplay.setOnFocusChangeListener { _, hasFocus ->
-            btnVoiceSearchReplay.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        btnVoiceSearchReplay.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
+            } else {
+                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+            }
         }
         btnVoiceSearchReplay.setOnClickListener {
             startVoiceSearch(isGlobal = false)
@@ -459,8 +463,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        btnVoiceGlobalSearch.setOnFocusChangeListener { _, hasFocus ->
-            btnVoiceGlobalSearch.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        btnVoiceGlobalSearch.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
+            } else {
+                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+            }
         }
         btnVoiceGlobalSearch.setOnClickListener {
             startVoiceSearch(isGlobal = true)
@@ -531,8 +539,7 @@ class MainActivity : AppCompatActivity() {
             val offsetMins = Math.abs((offsetMillis / (1000 * 60)) % 60)
             val sign = if (offsetHours >= 0) "+" else ""
             val tzText = if (offsetMins == 0) "GMT$sign$offsetHours" else "GMT$sign$offsetHours:$offsetMins"
-            val city = tz.id.substringAfterLast('/').replace("_", " ")
-            tvTimeZone.text = "[$tzText • $city]"
+            tvTimeZone.text = "($tzText)"
         } catch (_: Exception) {
             tvTimeZone.visibility = View.GONE
         }
@@ -627,29 +634,25 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Si algún stream falló o fue marcado como no disponible mientras se reproducía, reflejarlo inmediatamente
+        // Sincronizar disponibilidad: si falló se marca NO DISPONIBLE, pero si volvió a estar activa
+        // se restaura automáticamente la etiqueta que tenía previamente (originalStatus).
         var updated = false
-        for (item in cachedDailyEvents) {
-            val streamUrl = item.streams.firstOrNull()?.url ?: ""
-            if (StreamCache.isUnavailable(streamUrl) && item.status != EventStatus.REPLAY_UNAVAILABLE) {
+        fun syncItemAvailability(item: EventItem) {
+            val allUnavailable = item.streams.isNotEmpty() && item.streams.all { StreamCache.isUnavailable(it.url) }
+            if (allUnavailable && item.status != EventStatus.REPLAY_UNAVAILABLE) {
+                item.originalStatus = item.status
                 item.status = EventStatus.REPLAY_UNAVAILABLE
+                updated = true
+            } else if (!allUnavailable && item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                item.status = item.originalStatus
                 updated = true
             }
         }
-        for (item in cachedReplayEvents) {
-            val streamUrl = item.streams.firstOrNull()?.url ?: ""
-            if (StreamCache.isUnavailable(streamUrl) && item.status != EventStatus.REPLAY_UNAVAILABLE) {
-                item.status = EventStatus.REPLAY_UNAVAILABLE
-                updated = true
-            }
-        }
-        for (item in cachedLiveChannels) {
-            val streamUrl = item.streams.firstOrNull()?.url ?: ""
-            if (StreamCache.isUnavailable(streamUrl) && item.status != EventStatus.REPLAY_UNAVAILABLE) {
-                item.status = EventStatus.REPLAY_UNAVAILABLE
-                updated = true
-            }
-        }
+
+        for (item in cachedDailyEvents) syncItemAvailability(item)
+        for (item in cachedReplayEvents) syncItemAvailability(item)
+        for (item in cachedLiveChannels) syncItemAvailability(item)
+
         if (updated) {
             cachedDailyEvents = cachedDailyEvents.sortedBy { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
             filterAndDisplayEvents(silent = true)
@@ -741,19 +744,22 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                // Aprendizaje comunitario y local: sólo las señales reportadas por fallo real se muestran como no disponibles
-                for (item in todayMatches) {
-                    val streamUrl = item.streams.firstOrNull()?.url ?: ""
-                    if (StreamCache.isUnavailable(streamUrl)) {
-                        item.status = EventStatus.REPLAY_UNAVAILABLE
+                // Aprendizaje comunitario y local: sólo las señales reportadas por fallo real se muestran como no disponibles.
+                // Si la señal vuelve a estar activa, restaura su etiqueta previa (originalStatus).
+                fun applyAvailability(item: EventItem) {
+                    val allUnavailable = item.streams.isNotEmpty() && item.streams.all { StreamCache.isUnavailable(it.url) }
+                    if (allUnavailable) {
+                        if (item.status != EventStatus.REPLAY_UNAVAILABLE) {
+                            item.originalStatus = item.status
+                            item.status = EventStatus.REPLAY_UNAVAILABLE
+                        }
+                    } else if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                        item.status = item.originalStatus
                     }
                 }
-                for (item in replayMatches) {
-                    val streamUrl = item.streams.firstOrNull()?.url ?: ""
-                    if (StreamCache.isUnavailable(streamUrl)) {
-                        item.status = EventStatus.REPLAY_UNAVAILABLE
-                    }
-                }
+                for (item in todayMatches) applyAvailability(item)
+                for (item in replayMatches) applyAvailability(item)
+                for (item in liveChannels) applyAvailability(item)
 
                 // Colocar los partidos 'NO DISPONIBLE' al final de la lista de partidos del día
                 val sortedTodayMatches = todayMatches.sortedBy { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
@@ -801,8 +807,11 @@ class MainActivity : AppCompatActivity() {
                 if (matched != null) {
                     channel.time = matched.time
                     channel.localTime = matched.localTime
-                    channel.status = matched.status
                     channel.countdownText = matched.countdownText
+                    channel.originalStatus = matched.status
+                    if (channel.status != EventStatus.REPLAY_UNAVAILABLE) {
+                        channel.status = matched.status
+                    }
                     val displayTime = channel.localTime ?: channel.time
                     channel.subtitle = "🟢 TevePlay • ${if (displayTime != null) "Hora local: $displayTime • " else ""}${matched.countdownText ?: "En agenda"}"
                 }
@@ -1106,6 +1115,11 @@ class MainActivity : AppCompatActivity() {
                         if (health.isOnline) {
                             btn.text = "🟢 ${stream.title}$resLabel  [EN LÍNEA]"
                             btn.alpha = 1.0f
+                            StreamCache.markAvailable(this@MainActivity, stream.url)
+                            if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                                item.status = item.originalStatus
+                                adapter.notifyDataSetChanged()
+                            }
                         } else {
                             btn.text = "⚪ ${stream.title}  [SIN SEÑAL / CAÍDO]"
                             btn.alpha = 0.5f

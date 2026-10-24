@@ -45,6 +45,20 @@ object StreamCache {
         }
     }
 
+    fun markAvailable(context: Context?, url: String) {
+        if (url.isEmpty()) return
+        unavailableUrls.remove(url)
+        context?.let {
+            try {
+                val prefs = it.getSharedPreferences("stream_cache_prefs", Context.MODE_PRIVATE)
+                val set = prefs.getStringSet("dead_urls", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+                if (set.remove(url)) {
+                    prefs.edit().putStringSet("dead_urls", set).apply()
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
     fun isUnavailable(url: String): Boolean {
         return unavailableUrls.contains(url)
     }

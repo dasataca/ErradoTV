@@ -33,7 +33,8 @@ data class EventItem(
     val rawDate: String? = null,
     var localTime: String? = null,
     var startEpochMillis: Long = 0L,
-    var countdownText: String? = null
+    var countdownText: String? = null,
+    var originalStatus: EventStatus = status
 ) {
     companion object {
         private val SERVER_TZ: TimeZone = TimeZone.getTimeZone("America/Argentina/Buenos_Aires")

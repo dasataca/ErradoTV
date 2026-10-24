@@ -2,7 +2,16 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
-## [1.3.8] - 2026-10-24
+## [1.3.9] - 2026-10-24
+### Añadido y Optimizado
+- **Reactivación Dinámica de Señales "NO DISPONIBLE"**: Si una señal fue etiquetada como no disponible debido a caídas temporales, el usuario ahora puede volver a pulsarla con su control remoto para comprobar si el canal o evento ya se reactivó. Si la señal vuelve a estar activa (verificado por el motor de pretesteo en segundo plano o por ExoPlayer), la app cambia automáticamente el estado restaurando la etiqueta previa (`● EN VIVO`, `PROGRAMADO`, `REPETICIÓN`, `CANAL 24/7`), la remueve de la lista de señales caídas y la reordena en la cartelera.
+- **Icono Clásico Multicolor de Google Mic**: Se integró el vector oficial del micrófono de Google (con sus cuatro colores distintivos: azul, rojo, amarillo y verde) en los botones de búsqueda por voz tanto en la pestaña **Buscar Todo** como en **Repeticiones**. El botón ahora es significativamente más compacto y llamativo, luciendo un borde iluminado en azul Google (`#4285F4`) con respuesta visual de foco y escala de alta visibilidad para Smart TV.
+- **Cabecera Compacta con Fecha, Hora y Meridiano en Paréntesis**: La fecha y la hora se rediseñaron en una disposición vertical compacta debajo del título. La hora local se acompaña de su meridiano en formato `hh:mm (a)` (ej: `12:06 (PM)`) y su zona horaria compacta entre paréntesis `(GMT-X)` justo debajo de la fecha.
+- **Limpieza de Etiquetas en Canales de TevePlay**: Se eliminó la duplicación donde aparecía dos veces el texto "PROGRAMADO" en las tarjetas de partidos de TevePlay. Ahora sólo se exhibe la etiqueta azul limpia; y únicamente cuando se dispone de la información horaria confirmada, se pinta el horario local y la cuenta regresiva respectiva.
+
+---
+
+
 ### Añadido y Optimizado
 - **Eliminación Total de "Errado" en Instaladores y Sistema**: Se reemplazó cualquier vestigio del antiguo nombre. Los instaladores se generan de manera limpia como `GarecaTV.apk` y `GarecaTV-v1.3.8.apk`. El tema visual del sistema se renombró a `Theme.GarecaTV`, las preferencias pasaron a `gareca_tv_prefs` (con migración transparente), y los User-Agents de OTA se actualizaron a `GarecaTV-OTA` y `GarecaTV-Updater`.
 - **Huso Horario Local Automático del Televisor**: Detección nativa del huso horario del dispositivo Android TV (`TimeZone.getDefault()`). Todos los horarios de partidos publicados en el servidor (fijados en GMT-3) se convierten y formatean en tiempo real a la hora local correspondiente a la ubicación del usuario (ej: Colombia, México, Perú, Chile, España, etc.).

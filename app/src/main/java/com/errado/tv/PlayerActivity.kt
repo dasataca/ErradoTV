@@ -135,6 +135,7 @@ class PlayerActivity : AppCompatActivity() {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 if (videoSize.width > 0 && videoSize.height > 0) {
                     videoFrameReceived = true
+                    StreamCache.markAvailable(this@PlayerActivity, url)
                     val label = "${videoSize.width}x${videoSize.height} (${getQualityLabel(videoSize.height)}) [MÁX]"
                     currentResolutionText = label
                     showResolutionBadge(label)
@@ -157,6 +158,7 @@ class PlayerActivity : AppCompatActivity() {
                     Player.STATE_READY -> {
                         playerBuffering.visibility = View.GONE
                         playerError.visibility = View.GONE
+                        StreamCache.markAvailable(this@PlayerActivity, url)
                         SupabaseLogger.info("player_ready", "Stream reproduciendo exitosamente", mapOf("url" to url))
                     }
                     Player.STATE_ENDED -> {

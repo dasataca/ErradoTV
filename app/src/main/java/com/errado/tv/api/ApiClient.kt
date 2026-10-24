@@ -415,7 +415,7 @@ object ApiClient {
 
                         var itemStatus = if (isMatch) EventStatus.SCHEDULED else EventStatus.CHANNEL_24_7
                         var localTime: String? = null
-                        var countdownText: String? = if (isMatch) "⏳ PROGRAMADO" else null
+                        var countdownText: String? = null
 
                         if (extractedTime != null) {
                             val (cStatus, lTime, cText) = EventItem.calculateTimesAndStatus(extractedTime)

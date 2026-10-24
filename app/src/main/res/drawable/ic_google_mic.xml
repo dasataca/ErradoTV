@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Blue: Mic body / capsule -->
+    <path
+        android:fillColor="#4285F4"
+        android:pathData="M12,14c1.66,0 3,-1.34 3,-3V5c0,-1.66 -1.34,-3 -3,-3S9,3.34 9,5v6C9,12.66 10.34,14 12,14z" />
+    <!-- Red: Right arc -->
+    <path
+        android:fillColor="#EA4335"
+        android:pathData="M17.3,11c0,3 -2.54,5.1 -5.3,5.1v1.9c4.2,0 7.2,-3.1 7.2,-7H17.3z" />
+    <!-- Yellow: Left arc -->
+    <path
+        android:fillColor="#FBBC05"
+        android:pathData="M6.7,11H4.8c0,3.9 3,7 7.2,7v-1.9C9.24,16.1 6.7,14 6.7,11z" />
+    <!-- Green: Base stem -->
+    <path
+        android:fillColor="#34A853"
+        android:pathData="M11,18.05h2V22h-2z" />
+</vector>

@@ -70,7 +70,10 @@ class EventAdapter(
                 tvTime.visibility = View.GONE
             }
 
-            if (!item.countdownText.isNullOrEmpty() &&
+            val hasTimeInfo = displayTime != null
+            if (hasTimeInfo && !item.countdownText.isNullOrEmpty() &&
+                item.countdownText != item.status.label &&
+                item.countdownText != "PROGRAMADO" &&
                 item.status != EventStatus.CHANNEL_24_7 &&
                 item.status != EventStatus.REPLAY &&
                 item.status != EventStatus.REPLAY_UNAVAILABLE) {
