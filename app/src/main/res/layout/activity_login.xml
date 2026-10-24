@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:padding="32dp">
+
+    <!-- Panel Izquierdo: Branding GarecaTV -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingEnd="32dp">
+
+        <ImageView
+            android:id="@+id/ivLoginLogo"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:src="@drawable/app_icon"
+            android:contentDescription="@string/app_name" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="GarecaTV"
+            android:textColor="@color/white"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fútbol, Repeticiones y Señales en Vivo"
+            android:textColor="#A0A0A0"
+            android:textSize="14sp"
+            android:layout_marginTop="6dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Control de acceso y dispositivos seguros"
+            android:textColor="#666666"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+    <!-- Divisor vertical -->
+    <View
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="#222228"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Panel Derecho: Formulario de Login -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.2"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingStart="40dp"
+        android:paddingEnd="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Iniciar Sesión"
+            android:textColor="@color/white"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Campo Usuario / Email -->
+        <EditText
+            android:id="@+id/etEmail"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/search_box_selector"
+            android:hint="Correo o usuario"
+            android:textColorHint="#707070"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:inputType="textEmailAddress"
+            android:imeOptions="actionNext"
+            android:focusable="true"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Campo Contraseña -->
+        <EditText
+            android:id="@+id/etPassword"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/search_box_selector"
+            android:hint="Contraseña"
+            android:textColorHint="#707070"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:inputType="textPassword"
+            android:imeOptions="actionDone"
+            android:focusable="true"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Botón Iniciar Sesión -->
+        <Button
+            android:id="@+id/btnLogin"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/button_focus_selector"
+            android:text="Ingresar con Credenciales"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:focusable="true"
+            android:stateListAnimator="@null" />
+
+        <!-- Separador O -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#33333D" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="O accede directamente con"
+                android:textColor="#888888"
+                android:textSize="12sp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#33333D" />
+        </LinearLayout>
+
+        <!-- Botón Acceder con Google -->
+        <LinearLayout
+            android:id="@+id/btnGoogleLogin"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@drawable/google_button_selector"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:focusable="true"
+            android:clickable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_google_logo"
+                android:contentDescription="Google" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Acceder con cuenta de Google del TV"
+                android:textColor="#1F1F1F"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginStart="12dp" />
+        </LinearLayout>
+
+        <!-- Barra de Progreso -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:indeterminateTint="@color/accent_red"
+            android:visibility="gone"
+            android:layout_marginTop="12dp" />
+
+        <!-- Mensaje de Error / Estado -->
+        <TextView
+            android:id="@+id/tvErrorStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FF4D4D"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:visibility="gone"
+            android:layout_marginTop="10dp"
+            tools:text="Tu cuenta ha sido deshabilitada por el administrador." />
+
+    </LinearLayout>
+
+</LinearLayout>

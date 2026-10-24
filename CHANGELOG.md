@@ -2,6 +2,20 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.5.0] - 2026-10-24
+### Añadido y Optimizado
+- **Sistema de Autenticación para Android TV (Google + Credenciales)**:
+  - Nueva pantalla de acceso (`LoginActivity`) con diseño cinematográfico adaptado a control remoto D-Pad.
+  - Botón nativo **"Acceder con cuenta de Google del TV"**: permite seleccionar la cuenta de Google registrada en el televisor para ingresar de forma rápida y segura.
+  - Formulario de acceso por credenciales (Usuario / Contraseña) con cuenta maestra `admin@garecatv.com`.
+- **Control Remoto de Cuentas y Dispositivos Múltiples en Supabase (`gareca_users`)**:
+  - Tabla para gestión de usuarios con estado `status` (`enabled` / `disabled`) editable directamente por el administrador en Supabase para suspender o autorizar accesos en tiempo real.
+  - Control de dispositivos concurrentes (`max_devices`, por defecto 1) que detecta y restringe el uso simultáneo en múltiples televisores, permitiendo al administrador ampliar el cupo por cuenta.
+  - Verificación continua de sesión activa en segundo plano.
+- **Icono Oficial Estilo Escudo Deportivo (`GARECA` Arriba y `TV` Abajo)**:
+  - Distribución tipo emblema deportivo: rótulo `GARECA` sobre la cabeza del tigre rugiente y `TV` centrado en la parte inferior. Letras rojas vibrantes con bordes negros sólidos sobre fondo blanco limpio sin recuadros cuadrados.
+- **Respaldo de Seguridad**: Versión 1.4.5 preservada bajo el tag `v1.4.5-nologin` y la rama `backup-v1.4.5-nologin` para restauración inmediata sin autenticación.
+
 ## [1.4.5] - 2026-10-24
 ### Añadido y Optimizado
 - **Invalidación Forzada de Caché en Android TV Launcher (Cache-Busting)**: El lanzador del sistema Android TV almacena en caché persistente los banners de aplicaciones. Se migraron los identificadores de recursos en el manifiesto a `@drawable/tv_banner_v2` y `@mipmap/ic_launcher_v2` para forzar a Android TV a descartar el caché antiguo y mostrar de inmediato el nuevo diseño.

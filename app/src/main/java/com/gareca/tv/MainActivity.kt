@@ -31,6 +31,9 @@ import com.gareca.tv.model.StreamOption
 import com.gareca.tv.telemetry.SupabaseLogger
 import com.gareca.tv.updater.AppUpdater
 import com.gareca.tv.updater.UpdateInfo
+import com.gareca.tv.auth.AuthManager
+import com.gareca.tv.auth.SessionState
+import androidx.appcompat.app.AlertDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -135,7 +138,30 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Verificar si el usuario ha iniciado sesión
+        if (!AuthManager.isLoggedIn(this)) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_main)
+
+        findViewById<View>(R.id.ivLogo)?.setOnLongClickListener {
+            val user = AuthManager.getUserEmail(this)
+            AlertDialog.Builder(this)
+                .setTitle("Cuenta GarecaTV")
+                .setMessage("Usuario conectado:\n$user\n\n¿Deseas cerrar sesión?")
+                .setPositiveButton("Cerrar Sesión") { _, _ ->
+                    AuthManager.logout(this)
+                    startActivity(Intent(this, LoginActivity::class.java))
+                    finish()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+            true
+        }
 
         rvEvents = findViewById(R.id.rvEvents)
         rvCategories = findViewById(R.id.rvCategories)
@@ -634,6 +660,31 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        if (!AuthManager.isLoggedIn(this)) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
+        lifecycleScope.launch {
+            when (AuthManager.verifyActiveSession(this@MainActivity)) {
+                SessionState.DISABLED -> {
+                    Toast.makeText(this@MainActivity, "⛔ Tu cuenta ha sido deshabilitada por el administrador en la base de datos.", Toast.LENGTH_LONG).show()
+                    AuthManager.logout(this@MainActivity)
+                    startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                    finish()
+                }
+                SessionState.DEVICE_CONFLICT -> {
+                    Toast.makeText(this@MainActivity, "⚠️ Sesión activa en otro dispositivo.", Toast.LENGTH_LONG).show()
+                    AuthManager.logout(this@MainActivity)
+                    startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                    finish()
+                }
+                else -> {}
+            }
+        }
+
         // Sincronizar disponibilidad: si falló se marca NO DISPONIBLE, pero si volvió a estar activa
         // se restaura automáticamente la etiqueta que tenía previamente (originalStatus).
         var updated = false
