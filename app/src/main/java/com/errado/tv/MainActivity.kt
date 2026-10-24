@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -46,6 +47,21 @@ class MainActivity : AppCompatActivity() {
         tvDate = findViewById(R.id.tvDate)
         btnRefresh = findViewById(R.id.btnRefresh)
         btnUpdate = findViewById(R.id.btnUpdate)
+
+        val tvUpdateLabel = findViewById<TextView>(R.id.tvUpdateLabel)
+        val ivUpdateIcon = findViewById<ImageView>(R.id.ivUpdateIcon)
+        val tvRefresh = findViewById<TextView>(R.id.btnRefresh)
+        val currentVersion = AppUpdater.getCurrentVersionName(this)
+        tvUpdateLabel.text = "Actualizar (v$currentVersion)"
+
+        btnUpdate.setOnFocusChangeListener { _, hasFocus ->
+            tvUpdateLabel.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+            ivUpdateIcon.setColorFilter(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+
+        tvRefresh.setOnFocusChangeListener { _, hasFocus ->
+            tvRefresh.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
 
         adapter = EventAdapter { item ->
             handleEventClick(item)
@@ -168,7 +184,8 @@ class MainActivity : AppCompatActivity() {
         val btnCancel = dialog.findViewById<Button>(R.id.btnCancelUpdate)
         val btnConfirm = dialog.findViewById<Button>(R.id.btnConfirmUpdate)
 
-        tvTitle.text = "ErradoTV v${update.versionName}"
+        val currentVer = AppUpdater.getCurrentVersionName(this)
+        tvTitle.text = "ErradoTV v${update.versionName} (Instalada: v$currentVer)"
         tvChangelog.text = update.changelog
 
         btnCancel.setOnClickListener {

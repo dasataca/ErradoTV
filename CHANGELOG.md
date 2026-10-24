@@ -4,6 +4,13 @@ Todas las modificaciones, análisis y versiones del proyecto quedan documentadas
 
 ---
 
+## [1.1.7] - 2026-10-23
+### Añadido y Optimizado
+- **Visualización de la Versión Instalada**: Se incorporó el indicador directo de la versión instalada en la pantalla principal sobre el botón de actualización (**`Actualizar (v1.1.7)`**) y dentro del diálogo de comprobación (**`ErradoTV vX.X (Instalada: v1.1.7)`**).
+- **Legibilidad Dinámica en Botones Superiores**: Los botones *Actualizar* y *Recargar* aplican cambio dinámico a color negro intenso (`#000000`) al ser enfocados por el control remoto y blanco (`#FFFFFF`) al perder el foco, garantizando lectura nítida sobre el resplandor cian.
+
+---
+
 ## [1.1.6] - 2026-10-23
 ### Añadido y Optimizado
 - **Detección Automática de Repeticiones y Fechas**: En eventos destacados y partidos diferidos (como repeticiones de LaLiga), el sistema ahora detecta automáticamente la fecha histórica embebida en el origen multimedia (ej. `22/08`) y asigna la insignia morada `[ REPETICIÓN ]`. Esto elimina la confusión sobre partidos pasados que no mostraban horario ni día.
