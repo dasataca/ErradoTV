@@ -121,7 +121,7 @@ class MainActivity : AppCompatActivity() {
         CryptoUtils.init(this)
         StreamCache.init(this)
 
-        SupabaseLogger.info("app_start", "ErradoTV iniciado en Smart TV")
+        SupabaseLogger.info("app_start", "GarecaTV iniciado en Smart TV")
 
         btnRefresh.setOnClickListener {
             loadData(silent = false, force = true)
@@ -294,7 +294,7 @@ class MainActivity : AppCompatActivity() {
             } else if (userInitiated) {
                 Toast.makeText(
                     this@MainActivity,
-                    "ErradoTV ya está actualizado (v${AppUpdater.getCurrentVersionName(this@MainActivity)})",
+                    "GarecaTV ya está actualizado (v${AppUpdater.getCurrentVersionName(this@MainActivity)})",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -312,7 +312,7 @@ class MainActivity : AppCompatActivity() {
         val btnConfirm = dialog.findViewById<Button>(R.id.btnConfirmUpdate)
 
         val currentVer = AppUpdater.getCurrentVersionName(this)
-        tvTitle.text = "ErradoTV v${update.versionName} (Instalada: v$currentVer)"
+        tvTitle.text = "GarecaTV v${update.versionName} (Instalada: v$currentVer)"
         tvChangelog.text = update.changelog
 
         btnCancel.setOnClickListener {

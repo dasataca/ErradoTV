@@ -18,7 +18,7 @@
         android:id="@+id/tvVersionTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="ErradoTV v1.1.0"
+        android:text="GarecaTV"
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="@color/text_primary"

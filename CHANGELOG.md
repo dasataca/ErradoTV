@@ -2,6 +2,14 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.3.5] - 2026-10-24
+### Añadido y Optimizado
+- **Nueva Identidad Oficial — GarecaTV**: La aplicación pasa a llamarse oficialmente **GarecaTV**.
+- **Nuevo Icono y Banner Oficial del Tigre**: Se diseñó el icono oficial integrando la figura del Tigre de perfil en sus colores característicos (pelaje naranja dorado, rayas negras y mandíbula blanca rugiente con un solo ojo visible), acompañado de marcas de zarpazos/arañazos de garra de tigre en color rojo sobre fondo negro profundo y la tipografía deportiva de **GarecaTV**.
+- **Banner Leanback TV (16:9)**: Se actualizó `tv_banner.png` para el lanzador de Android TV con la misma estética de alto impacto.
+
+---
+
 ## [1.3.4] - 2026-10-24
 ### Añadido y Optimizado
 - **Reordenamiento Automático de Partidos No Disponibles al Final de la Lista**: En la pestaña *⚽ Partidos del Día*, los partidos identificados como `NO DISPONIBLE` se desplazan automáticamente al fondo de la lista tanto en la carga inicial como en tiempo real cuando el usuario regresa de intentar reproducir una señal sin respuesta.
