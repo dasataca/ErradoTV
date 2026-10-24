@@ -280,16 +280,68 @@ object ApiClient {
 
     suspend fun checkReplayUrl(url: String): Boolean = withContext(Dispatchers.IO) {
         if (!url.startsWith("http")) return@withContext false
+        if (com.errado.tv.StreamCache.isUnavailable(url)) return@withContext false
+
         try {
             val req = Request.Builder()
                 .url(url)
-                .head()
                 .header("User-Agent", "Mozilla/5.0")
                 .build()
             val res = httpClient.newCall(req).execute()
-            res.isSuccessful
+            if (!res.isSuccessful) {
+                com.errado.tv.StreamCache.markUnavailable(null, url)
+                return@withContext false
+            }
+
+            val body = res.body?.string().orEmpty()
+            val lines = body.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }
+            if (lines.isEmpty()) {
+                com.errado.tv.StreamCache.markUnavailable(null, url)
+                return@withContext false
+            }
+
+            var segUrl = lines.first()
+            if (!segUrl.startsWith("http")) {
+                val base = url.substringBeforeLast("/") + "/"
+                segUrl = base + segUrl
+            }
+
+            val segReq = Request.Builder()
+                .url(segUrl)
+                .header("User-Agent", "Mozilla/5.0")
+                .header("Range", "bytes=0-15")
+                .build()
+            val segRes = httpClient.newCall(segReq).execute()
+            if (!segRes.isSuccessful) {
+                com.errado.tv.StreamCache.markUnavailable(null, url)
+                return@withContext false
+            }
+
+            val stream = segRes.body?.byteStream() ?: return@withContext false
+            val buffer = ByteArray(16)
+            val bytesRead = stream.read(buffer, 0, 16)
+            if (bytesRead < 4) {
+                com.errado.tv.StreamCache.markUnavailable(null, url)
+                return@withContext false
+            }
+
+            val b0 = buffer[0].toInt() and 0xFF
+            val isMpegTs = b0 == 0x47
+            val isMp4 = bytesRead >= 8 && (
+                String(buffer, 4, 4, Charsets.US_ASCII) == "ftyp" ||
+                String(buffer, 4, 4, Charsets.US_ASCII) == "moof" ||
+                String(buffer, 4, 4, Charsets.US_ASCII) == "styp"
+            )
+            val isFakeImage = b0 == 0x89 || (bytesRead >= 3 && buffer[0].toInt().toChar() == 'G' && buffer[1].toInt().toChar() == 'I' && buffer[2].toInt().toChar() == 'F')
+
+            val isValidVideo = (isMpegTs || isMp4) && !isFakeImage
+            if (!isValidVideo) {
+                com.errado.tv.StreamCache.markUnavailable(null, url)
+            }
+            return@withContext isValidVideo
         } catch (e: Exception) {
-            false
+            com.errado.tv.StreamCache.markUnavailable(null, url)
+            return@withContext false
         }
     }
 

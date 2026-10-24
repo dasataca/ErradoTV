@@ -1,6 +1,7 @@
 package com.errado.tv
 
 import android.app.Dialog
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -118,23 +119,33 @@ class MainActivity : AppCompatActivity() {
         rvEvents.adapter = adapter
 
         CryptoUtils.init(this)
+        StreamCache.init(this)
 
         SupabaseLogger.info("app_start", "ErradoTV iniciado en Smart TV")
 
         btnRefresh.setOnClickListener {
-            loadData(silent = false)
+            loadData(silent = false, force = true)
         }
 
         btnUpdate.setOnClickListener {
             checkAndPromptUpdate(userInitiated = true)
         }
 
-        // Carga al abrir la aplicación (comportamiento idéntico a la APK original)
-        loadData(silent = false)
+        // Carga al abrir la app con punto de control de 15 minutos
+        loadData(silent = false, force = false)
     }
+
+    private val SYNC_INTERVAL_MS = 15 * 60 * 1000L // Intervalo de 15 minutos
 
     override fun onResume() {
         super.onResume()
+        val prefs = getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
+        val lastSync = prefs.getLong("last_sync_time", 0L)
+        val now = System.currentTimeMillis()
+        // Si regresamos de ver un partido y ya pasaron más de 15 minutos, actualizar en segundo plano
+        if (cachedDailyEvents.isNotEmpty() && (now - lastSync > SYNC_INTERVAL_MS)) {
+            loadData(silent = true, force = true)
+        }
         startAutoRefresh()
     }
 
@@ -148,13 +159,23 @@ class MainActivity : AppCompatActivity() {
         autoRefreshJob?.cancel()
         autoRefreshJob = lifecycleScope.launch {
             while (isActive) {
-                delay(5 * 60 * 1000L) // Refresco automático en segundo plano cada 5 minutos
-                loadData(silent = true)
+                delay(SYNC_INTERVAL_MS) // Refresco automático en segundo plano cada 15 minutos
+                loadData(silent = true, force = true)
             }
         }
     }
 
-    private fun loadData(silent: Boolean = false) {
+    private fun loadData(silent: Boolean = false, force: Boolean = false) {
+        val prefs = getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
+        val lastSync = prefs.getLong("last_sync_time", 0L)
+        val now = System.currentTimeMillis()
+
+        // Punto de control: si ya cargó hace menos de 15 minutos y no es manual, usar memoria directa (0 esperas)
+        if (!force && cachedDailyEvents.isNotEmpty() && (now - lastSync < SYNC_INTERVAL_MS)) {
+            filterAndDisplayEvents(silent = true)
+            return
+        }
+
         if (!silent) {
             progressBar.visibility = View.VISIBLE
             tvEmpty.visibility = View.GONE
@@ -175,8 +196,17 @@ class MainActivity : AppCompatActivity() {
                 allEvents.addAll(dailyResponse.events)
                 allEvents.addAll(featuredList)
 
+                // Aprendizaje automático: si el sistema ya aprendió que un enlace está caído, etiquetarlo como no disponible
+                for (item in allEvents) {
+                    val streamUrl = item.streams.firstOrNull()?.url ?: ""
+                    if (StreamCache.isUnavailable(streamUrl)) {
+                        item.status = EventStatus.REPLAY_UNAVAILABLE
+                    }
+                }
+
                 cachedDailyEvents = allEvents
                 cachedLiveChannels = liveChannels
+                prefs.edit().putLong("last_sync_time", System.currentTimeMillis()).apply()
 
                 if (!silent) {
                     progressBar.visibility = View.GONE

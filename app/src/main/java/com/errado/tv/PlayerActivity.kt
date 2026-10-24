@@ -128,9 +128,12 @@ class PlayerActivity : AppCompatActivity() {
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true
 
+        var videoFrameReceived = false
+
         exoPlayer.addListener(object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 if (videoSize.width > 0 && videoSize.height > 0) {
+                    videoFrameReceived = true
                     val label = "${videoSize.width}x${videoSize.height} (${getQualityLabel(videoSize.height)}) [MÁX]"
                     currentResolutionText = label
                     showResolutionBadge(label)
@@ -163,6 +166,7 @@ class PlayerActivity : AppCompatActivity() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                StreamCache.markUnavailable(this@PlayerActivity, url)
                 playerBuffering.visibility = View.GONE
                 playerError.visibility = View.VISIBLE
                 playerError.text = "⚠️ Señal temporalmente fuera del aire o finalizada.\nPresiona la tecla ATRÁS en tu control remoto para elegir otro canal."
@@ -173,6 +177,17 @@ class PlayerActivity : AppCompatActivity() {
                 )
             }
         })
+
+        // Watchdog de 10 segundos: si el stream no produce fotogramas válidos (como un PNG falso)
+        handler.postDelayed({
+            if (!videoFrameReceived && !isFinishing && !isDestroyed) {
+                StreamCache.markUnavailable(this@PlayerActivity, url)
+                playerBuffering.visibility = View.GONE
+                playerError.visibility = View.VISIBLE
+                playerError.text = "⚠️ Esta repetición no contiene video válido o los archivos han caducado.\nPresione ATRÁS en su control remoto para elegir otro partido."
+                SupabaseLogger.warn("video_playback_timeout", "Video no produjo fotogramas válidos: $url")
+            }
+        }, 10000)
         } catch (t: Throwable) {
             t.printStackTrace()
             playerBuffering.visibility = View.GONE

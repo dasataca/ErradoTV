@@ -2,6 +2,12 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.3.1] - 2026-10-24
+### Añadido y Optimizado
+- **Control de Frecuencia de Actualización (Ventana de 15 Minutos) y Apertura Ultrarrápida**: Se introdujo un punto de control temporal (`SYNC_INTERVAL_MS = 15 min`). Al abrir o regresar a la app, si los datos ya fueron sincronizados recientemente, se despliegan directamente de la memoria sin demoras de red. Si transcurrieron más de 15 minutos, la actualización se efectúa de manera silenciosa en segundo plano sin interrumpir la navegación.
+- **Validación Profunda de Repeticiones y Detección de Falsos PNGs**: Se descubrió que los servidores CDN de repeticiones entregan listas `.m3u8` válidas pero con segmentos apuntando a imágenes PNG estáticas caducadas. El pretesteo ahora examina la cabecera real de bytes (`bytes=0-15`) verificando la firma de transporte de video (MPEG-TS `0x47` o MP4 `ftyp`/`moof`) y descartando imágenes falsas, etiquetando inmediatamente como `NO DISPONIBLE`.
+- **Aprendizaje Continuo y Watchdog de 10 Segundos (`StreamCache`)**: Si un enlace logra pasar el pretesteo pero el reproductor no recibe fotogramas de video en 10 segundos (como ocurrió en India vs Panamá), el reproductor detiene el búfer, notifica amigablemente al usuario y guarda el enlace en `StreamCache` de forma permanente para que en la próxima apertura aparezca directamente como `NO DISPONIBLE`.
+
 ---
 
 ## [1.3.0] - 2026-10-24
