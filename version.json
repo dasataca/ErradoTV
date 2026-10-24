@@ -1,7 +1,7 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "latest_version_code": 30,
-  "latest_version_name": "1.5.1",
+  "latest_version_code": 31,
+  "latest_version_name": "1.5.2",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Soporte nativo para hashing bcrypt en Supabase con pgcrypto y tabla gareca_users"
+  "changelog": "GarecaTV: Estandarizacion de tabla a errado_users con hashing bcrypt y funciones RPC"
 }

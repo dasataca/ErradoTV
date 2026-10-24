@@ -1,7 +1,7 @@
 -- ==============================================================================
--- TABLA DE USUARIOS Y CONTROL MULTI-DISPOSITIVO CON BCRYPT SEGURO — GARECATV
+-- TABLA DE USUARIOS Y CONTROL MULTI-DISPOSITIVO CON BCRYPT SEGURO — ERRADO USERS
 -- Base de Datos: Supabase (pfhjrplnfuupftgzdnop)
--- Archivo: setup_gareca_users.sql
+-- Archivo: setup_errado_users.sql
 -- Instrucciones: Ejecuta todo este script en Supabase -> SQL Editor -> Run
 -- ==============================================================================
 
@@ -9,35 +9,35 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 2. Crear tabla principal visible en el Table Editor de Supabase
-CREATE TABLE IF NOT EXISTS public.gareca_users (
+CREATE TABLE IF NOT EXISTS public.errado_users (
     email TEXT PRIMARY KEY,
-    password_hash TEXT,                     -- Hash seguro bcrypt ($2a$10$...). NULL si accede con cuenta Google
+    password_hash TEXT,                             -- Hash seguro bcrypt ($2a$10$...). NULL si es cuenta Google
     auth_provider TEXT NOT NULL DEFAULT 'password', -- 'google' o 'password'
-    status TEXT NOT NULL DEFAULT 'enabled', -- 'enabled' (activo) o 'disabled' (suspendido)
-    max_devices INT NOT NULL DEFAULT 1,     -- Cantidad de pantallas simultáneas permitidas
-    active_device_id TEXT,                  -- ID único de la Smart TV activa
-    device_model TEXT,                      -- Ej. "SkyworthDigital FlowBox-F2", "Xiaomi MiBox"
-    device_brand TEXT,                      -- Ej. "FLOW", "Xiaomi"
-    android_version TEXT,                   -- Ej. "Android 14 (API 34)"
-    app_version TEXT DEFAULT '1.5.0',       -- Versión instalada
+    status TEXT NOT NULL DEFAULT 'enabled',         -- 'enabled' (activo) o 'disabled' (suspendido)
+    max_devices INT NOT NULL DEFAULT 1,             -- Pantallas simultáneas permitidas (configurable por admin)
+    active_device_id TEXT,                          -- ID único de la Smart TV activa
+    device_model TEXT,                              -- Modelo de TV (ej. "SkyworthDigital FlowBox-F2", "Xiaomi MiBox")
+    device_brand TEXT,                              -- Fabricante (ej. "FLOW", "Xiaomi", "Sony")
+    android_version TEXT,                           -- Versión de Android
+    app_version TEXT DEFAULT '1.5.2',               -- Versión de la app
     last_login_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Índices de alto rendimiento
-CREATE INDEX IF NOT EXISTS idx_gareca_users_status ON public.gareca_users(status);
-CREATE INDEX IF NOT EXISTS idx_gareca_users_last_login ON public.gareca_users(last_login_at DESC);
+CREATE INDEX IF NOT EXISTS idx_errado_users_status ON public.errado_users(status);
+CREATE INDEX IF NOT EXISTS idx_errado_users_last_login ON public.errado_users(last_login_at DESC);
 
 -- Habilitar Row Level Security (RLS)
-ALTER TABLE public.gareca_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.errado_users ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Permitir acceso publico a gareca_users" ON public.gareca_users;
-CREATE POLICY "Permitir acceso publico a gareca_users"
-ON public.gareca_users FOR ALL TO anon, authenticated
+DROP POLICY IF EXISTS "Permitir acceso publico a errado_users" ON public.errado_users;
+CREATE POLICY "Permitir acceso publico a errado_users"
+ON public.errado_users FOR ALL TO anon, authenticated
 USING (true) WITH CHECK (true);
 
--- 3. Función segura para inicio de sesión con Credenciales (Bcrypt)
-CREATE OR REPLACE FUNCTION public.fn_gareca_login_credentials(
+-- 3. Función segura para inicio de sesión con Credenciales (Bcrypt en base de datos)
+CREATE OR REPLACE FUNCTION public.fn_errado_login_credentials(
     p_email TEXT,
     p_password TEXT,
     p_device_id TEXT,
@@ -51,29 +51,28 @@ DECLARE
     v_clean_email TEXT;
 BEGIN
     v_clean_email := LOWER(TRIM(p_email));
-    SELECT * INTO v_user FROM public.gareca_users WHERE LOWER(email) = v_clean_email;
+    SELECT * INTO v_user FROM public.errado_users WHERE LOWER(email) = v_clean_email;
     
     IF NOT FOUND THEN
         RETURN jsonb_build_object('status', 'error', 'message', 'Usuario o correo no encontrado');
     END IF;
     
-    -- Si el usuario se registró con Google y no tiene contraseña
     IF v_user.password_hash IS NULL THEN
         RETURN jsonb_build_object('status', 'error', 'message', 'Esta cuenta está vinculada a Google. Usa el botón "Acceder con Google" abajo.');
     END IF;
     
-    -- Verificar contraseña con bcrypt seguro (pgcrypto)
+    -- Verificación criptográfica segura con bcrypt
     IF v_user.password_hash != crypt(p_password, v_user.password_hash) THEN
         RETURN jsonb_build_object('status', 'error', 'message', 'Contraseña incorrecta');
     END IF;
     
-    -- Verificar si está suspendido/deshabilitado
+    -- Si el administrador lo suspendió
     IF LOWER(v_user.status) = 'disabled' THEN
         RETURN jsonb_build_object('status', 'disabled', 'message', 'Tu cuenta ha sido deshabilitada por el administrador.');
     END IF;
     
-    -- Actualizar dispositivo activo y última conexión
-    UPDATE public.gareca_users
+    -- Actualizar dispositivo activo y fecha
+    UPDATE public.errado_users
     SET active_device_id = p_device_id,
         device_model = p_device_model,
         device_brand = p_device_brand,
@@ -90,8 +89,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4. Función para inicio de sesión con Cuenta Google del TV
-CREATE OR REPLACE FUNCTION public.fn_gareca_login_google(
+-- 4. Función segura para inicio de sesión con Cuenta Google del TV
+CREATE OR REPLACE FUNCTION public.fn_errado_login_google(
     p_email TEXT,
     p_device_id TEXT,
     p_device_model TEXT,
@@ -104,11 +103,11 @@ DECLARE
     v_clean_email TEXT;
 BEGIN
     v_clean_email := LOWER(TRIM(p_email));
-    SELECT * INTO v_user FROM public.gareca_users WHERE LOWER(email) = v_clean_email;
+    SELECT * INTO v_user FROM public.errado_users WHERE LOWER(email) = v_clean_email;
     
     IF NOT FOUND THEN
-        -- Auto-registro inicial de la cuenta Google
-        INSERT INTO public.gareca_users (
+        -- Auto-registro inicial de cuenta Google con 1 dispositivo
+        INSERT INTO public.errado_users (
             email, password_hash, auth_provider, status, max_devices,
             active_device_id, device_model, device_brand, android_version, last_login_at
         ) VALUES (
@@ -129,8 +128,8 @@ BEGIN
         RETURN jsonb_build_object('status', 'disabled', 'message', 'Tu cuenta ha sido deshabilitada por el administrador.');
     END IF;
     
-    -- Actualizar dispositivo activo y última conexión
-    UPDATE public.gareca_users
+    -- Actualizar dispositivo activo y fecha
+    UPDATE public.errado_users
     SET active_device_id = p_device_id,
         device_model = p_device_model,
         device_brand = p_device_brand,
@@ -147,8 +146,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. Insertar usuario administrador con contraseña cifrada bcrypt seguro (cost 10)
-INSERT INTO public.gareca_users (
+-- 5. Crear usuario administrador inicial con contraseña cifrada bcrypt
+INSERT INTO public.errado_users (
     email, password_hash, auth_provider, status, max_devices, device_model
 ) VALUES (
     'admin@garecatv.com',
@@ -162,4 +161,5 @@ ON CONFLICT (email) DO UPDATE
 SET password_hash = crypt('GarecaTV2024Secure!', gen_salt('bf', 10)),
     status = 'enabled';
 
+-- 6. Recargar esquema para PostgREST
 NOTIFY pgrst, 'reload schema';

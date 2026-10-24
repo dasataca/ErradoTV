@@ -114,7 +114,7 @@ object AuthManager {
             }
 
             val rpcReq = Request.Builder()
-                .url("$SUPABASE_REST_URL/rpc/fn_gareca_login_credentials")
+                .url("$SUPABASE_REST_URL/rpc/fn_errado_login_credentials")
                 .header("apikey", SERVICE_KEY)
                 .header("Authorization", "Bearer $SERVICE_KEY")
                 .header("Content-Type", "application/json")
@@ -203,7 +203,7 @@ object AuthManager {
             }
 
             val rpcReq = Request.Builder()
-                .url("$SUPABASE_REST_URL/rpc/fn_gareca_login_google")
+                .url("$SUPABASE_REST_URL/rpc/fn_errado_login_google")
                 .header("apikey", SERVICE_KEY)
                 .header("Authorization", "Bearer $SERVICE_KEY")
                 .header("Content-Type", "application/json")
@@ -243,9 +243,9 @@ object AuthManager {
         val androidVer = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
 
         try {
-            // 1. Consultar registro del usuario en gareca_users
+            // 1. Consultar registro del usuario en errado_users
             val queryReq = Request.Builder()
-                .url("$SUPABASE_REST_URL/gareca_users?email=eq.$email&select=*")
+                .url("$SUPABASE_REST_URL/errado_users?email=eq.$email&select=*")
                 .header("apikey", SERVICE_KEY)
                 .header("Authorization", "Bearer $SERVICE_KEY")
                 .build()
@@ -254,7 +254,7 @@ object AuthManager {
             val queryBody = queryResp.body?.string().orEmpty()
 
             if (queryResp.code == 404) {
-                // La tabla gareca_users aún no fue creada en Supabase (o está pendiente).
+                // La tabla errado_users aún no fue creada en Supabase (o está pendiente).
                 // Permitimos acceso en esta fase inicial y registramos telemetría
                 saveSession(context, email, token)
                 SupabaseLogger.info(
@@ -281,7 +281,7 @@ object AuthManager {
                 }
 
                 val insertReq = Request.Builder()
-                    .url("$SUPABASE_REST_URL/gareca_users")
+                    .url("$SUPABASE_REST_URL/errado_users")
                     .header("apikey", SERVICE_KEY)
                     .header("Authorization", "Bearer $SERVICE_KEY")
                     .header("Content-Type", "application/json")
@@ -334,7 +334,7 @@ object AuthManager {
                 }
 
                 val updateReq = Request.Builder()
-                    .url("$SUPABASE_REST_URL/gareca_users?email=eq.$email")
+                    .url("$SUPABASE_REST_URL/errado_users?email=eq.$email")
                     .header("apikey", SERVICE_KEY)
                     .header("Authorization", "Bearer $SERVICE_KEY")
                     .header("Content-Type", "application/json")
@@ -370,7 +370,7 @@ object AuthManager {
 
         try {
             val req = Request.Builder()
-                .url("$SUPABASE_REST_URL/gareca_users?email=eq.$email&select=status,active_device_id,max_devices")
+                .url("$SUPABASE_REST_URL/errado_users?email=eq.$email&select=status,active_device_id,max_devices")
                 .header("apikey", SERVICE_KEY)
                 .header("Authorization", "Bearer $SERVICE_KEY")
                 .build()
