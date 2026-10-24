@@ -20,9 +20,9 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher_v3"
-        android:roundIcon="@mipmap/ic_launcher_v3_round"
-        android:banner="@drawable/tv_banner_v3"
+        android:icon="@mipmap/ic_launcher_v4"
+        android:roundIcon="@mipmap/ic_launcher_v4_round"
+        android:banner="@drawable/tv_banner_v4"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.GarecaTV"
@@ -31,9 +31,9 @@
         <activity
             android:name=".LoginActivity"
             android:label="@string/app_name"
-            android:icon="@mipmap/ic_launcher_v3"
-            android:roundIcon="@mipmap/ic_launcher_v3_round"
-            android:banner="@drawable/tv_banner_v3"
+            android:icon="@mipmap/ic_launcher_v4"
+            android:roundIcon="@mipmap/ic_launcher_v4_round"
+            android:banner="@drawable/tv_banner_v4"
             android:exported="true"
             android:screenOrientation="landscape"
             android:launchMode="singleTop">
@@ -47,9 +47,9 @@
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:icon="@mipmap/ic_launcher_v3"
-            android:roundIcon="@mipmap/ic_launcher_v3_round"
-            android:banner="@drawable/tv_banner_v3"
+            android:icon="@mipmap/ic_launcher_v4"
+            android:roundIcon="@mipmap/ic_launcher_v4_round"
+            android:banner="@drawable/tv_banner_v4"
             android:exported="false"
             android:screenOrientation="landscape"
             android:launchMode="singleTop" />
@@ -57,9 +57,9 @@
         <activity
             android:name=".PlayerActivity"
             android:label="@string/app_name"
-            android:icon="@mipmap/ic_launcher_v3"
-            android:roundIcon="@mipmap/ic_launcher_v3_round"
-            android:banner="@drawable/tv_banner_v3"
+            android:icon="@mipmap/ic_launcher_v4"
+            android:roundIcon="@mipmap/ic_launcher_v4_round"
+            android:banner="@drawable/tv_banner_v4"
             android:exported="false"
             android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden" />
@@ -67,9 +67,9 @@
         <activity
             android:name=".WebStreamActivity"
             android:label="@string/app_name"
-            android:icon="@mipmap/ic_launcher_v3"
-            android:roundIcon="@mipmap/ic_launcher_v3_round"
-            android:banner="@drawable/tv_banner_v3"
+            android:icon="@mipmap/ic_launcher_v4"
+            android:roundIcon="@mipmap/ic_launcher_v4_round"
+            android:banner="@drawable/tv_banner_v4"
             android:exported="false"
             android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden" />
