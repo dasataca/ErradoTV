@@ -4,6 +4,14 @@ Todas las modificaciones, análisis y versiones del proyecto quedan documentadas
 
 ---
 
+## [1.3.0] - 2026-10-24
+### Añadido y Optimizado
+- **Pretesteo de Disponibilidad en Partidos en Repetición (`[ REPETICIÓN DISPONIBLE ]` / `[ NO DISPONIBLE ]`)**: Al cargar la cartelera, la app ejecuta una comprobación en segundo plano de los partidos históricos. Las señales que responden exitosamente se identifican con la insignia verde **`REPETICIÓN DISPONIBLE`**, mientras que las que han expirado se marcan en gris como **`NO DISPONIBLE`** y se atenúan visualmente.
+- **Pre-escaneo de Opciones en Tiempo Real con Indicador de Resolución**: Al seleccionar un partido con múltiples opciones de transmisión, la app pretestea en 1 segundo los enlaces en segundo plano. Las opciones activas muestran su resolución real o declarada (ej. `🟢 Opción 1 [1080p FHD] [EN LÍNEA]`), y los enlaces caídos se identifican en gris (`⚪ [SIN SEÑAL / CAÍDO]`).
+- **Memoria de Resolución Verificada (`StreamCache`)**: Cada vez que se reproduce una transmisión en la Smart TV, la resolución exacta confirmada por el decodificador se almacena en caché para mostrarse con la etiqueta `[VERIFICADO]` en futuras consultas.
+
+---
+
 ## [1.2.2] - 2026-10-23
 ### Corregido y Optimizado
 - **Soporte Nativo DASH (`.mpd`) y Cifrado ClearKey DRM**: Se integró el módulo `media3-exoplayer-dash` y el gestor de licencias ClearKey en ExoPlayer. Esto resuelve de raíz el cierre inesperado al reproducir opciones como la de *Necaxa vs Juárez* (que transmitía mediante un flujo DASH cifrado con DRM).

@@ -17,11 +17,15 @@ import android.widget.Toast
 import com.errado.tv.api.ApiClient
 import com.errado.tv.api.CryptoUtils
 import com.errado.tv.model.EventItem
+import com.errado.tv.model.EventStatus
 import com.errado.tv.model.StreamOption
 import com.errado.tv.telemetry.SupabaseLogger
 import com.errado.tv.updater.AppUpdater
 import com.errado.tv.updater.UpdateInfo
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -180,6 +184,9 @@ class MainActivity : AppCompatActivity() {
 
                 filterAndDisplayEvents(silent)
 
+                // Pretesteo en segundo plano de partidos en repetición
+                pretestReplaysAsync(allEvents)
+
                 // Verificación en segundo plano sin molestar si no hay actualización
                 checkAndPromptUpdate(userInitiated = false)
             } catch (e: Exception) {
@@ -187,6 +194,32 @@ class MainActivity : AppCompatActivity() {
                     progressBar.visibility = View.GONE
                     tvEmpty.visibility = View.VISIBLE
                     tvEmpty.text = "Error al cargar eventos: ${e.message}"
+                }
+            }
+        }
+    }
+
+    private fun pretestReplaysAsync(events: List<EventItem>) {
+        lifecycleScope.launch {
+            val replays = events.filter {
+                it.status == EventStatus.REPLAY ||
+                it.status == EventStatus.REPLAY_AVAILABLE ||
+                it.status == EventStatus.REPLAY_UNAVAILABLE
+            }
+            if (replays.isEmpty()) return@launch
+
+            val chunks = replays.chunked(15)
+            for (chunk in chunks) {
+                chunk.map { item ->
+                    async(Dispatchers.IO) {
+                        val streamUrl = item.streams.firstOrNull()?.url ?: ""
+                        val isAvailable = ApiClient.checkReplayUrl(streamUrl)
+                        item.status = if (isAvailable) EventStatus.REPLAY_AVAILABLE else EventStatus.REPLAY_UNAVAILABLE
+                    }
+                }.awaitAll()
+
+                if (currentCategory == "⚽ Partidos del Día") {
+                    adapter.notifyDataSetChanged()
                 }
             }
         }
@@ -318,15 +351,21 @@ class MainActivity : AppCompatActivity() {
         title.text = item.title
 
         val sortedStreams = item.streams.sortedBy { if (it.type.equals("config", ignoreCase = true)) 0 else 1 }
+        val buttonMap = mutableMapOf<StreamOption, Button>()
 
         for ((index, stream) in sortedStreams.withIndex()) {
             val isConfig = stream.type.equals("config", ignoreCase = true)
+            val cachedRes = StreamCache.getResolution(stream.url)
+            val initialText = if (cachedRes != null) {
+                "🟢 ${stream.title}  [$cachedRes - VERIFICADO]"
+            } else if (isConfig) {
+                "🟢 ${stream.title}  [HD DIRECTO - RECOMENDADO]"
+            } else {
+                "🌐 ${stream.title}  [WEB EXTERNO]"
+            }
+
             val btn = Button(this).apply {
-                text = if (isConfig) {
-                    "🟢 ${stream.title}  [HD DIRECTO - RECOMENDADO]"
-                } else {
-                    "🌐 ${stream.title}  [WEB EXTERNO - PUEDE FALLAR]"
-                }
+                text = initialText
                 textSize = 15f
                 isFocusable = true
                 isClickable = true
@@ -367,12 +406,33 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             container.addView(btn)
+            buttonMap[stream] = btn
             if (index == 0) {
                 btn.requestFocus()
             }
         }
 
         dialog.show()
+
+        // Pretesteo en segundo plano de las opciones (1 a 2 segundos)
+        lifecycleScope.launch {
+            sortedStreams.map { stream ->
+                async {
+                    val health = ApiClient.checkStreamHealth(stream)
+                    val btn = buttonMap[stream]
+                    if (btn != null && dialog.isShowing) {
+                        val resLabel = health.resolution?.let { " [$it]" } ?: ""
+                        if (health.isOnline) {
+                            btn.text = "🟢 ${stream.title}$resLabel  [EN LÍNEA]"
+                            btn.alpha = 1.0f
+                        } else {
+                            btn.text = "⚪ ${stream.title}  [SIN SEÑAL / CAÍDO]"
+                            btn.alpha = 0.5f
+                        }
+                    }
+                }
+            }.awaitAll()
+        }
     }
 
     private fun playStream(stream: StreamOption) {

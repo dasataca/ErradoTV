@@ -87,8 +87,8 @@ class EventAdapter(
             }
             tvStreamBadge.background = badgeDrawable
 
-            // Si el partido ya finalizó, atenuar ligeramente la tarjeta
-            itemView.alpha = if (item.status == EventStatus.FINISHED) 0.65f else 1.0f
+            // Si el partido ya finalizó o no está disponible, atenuar la tarjeta
+            itemView.alpha = if (item.status == EventStatus.FINISHED || item.status == EventStatus.REPLAY_UNAVAILABLE) 0.5f else 1.0f
 
             itemView.setOnClickListener {
                 onItemClick(item)

@@ -205,6 +205,94 @@ object ApiClient {
         stream
     }
 
+    data class StreamHealth(
+        val stream: StreamOption,
+        val isOnline: Boolean,
+        val resolution: String? = null
+    )
+
+    suspend fun checkStreamHealth(stream: StreamOption): StreamHealth = withContext(Dispatchers.IO) {
+        val resolved = resolveStreamUrl(stream)
+        val url = resolved.url
+        if (!url.startsWith("http")) {
+            return@withContext StreamHealth(resolved, isOnline = false)
+        }
+
+        val cachedRes = com.errado.tv.StreamCache.getResolution(url)
+        if (cachedRes != null) {
+            return@withContext StreamHealth(resolved, isOnline = true, resolution = cachedRes)
+        }
+
+        try {
+            val reqBuilder = Request.Builder()
+                .url(url)
+                .header("User-Agent", resolved.userAgent ?: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+            if (url.contains("teveplay.net")) {
+                val cid = url.substringAfter("/api/stream/").substringBefore("/index.m3u8")
+                val ref = if (cid.isNotEmpty() && cid != url) "https://teveplay.net/watch/$cid" else "https://teveplay.net/"
+                reqBuilder.header("Referer", ref)
+                reqBuilder.header("Origin", "https://teveplay.net")
+            } else if (url.contains("fawanews") || url.contains("193.47.62")) {
+                reqBuilder.header("Referer", "http://www.fawanews.sc/")
+                reqBuilder.header("Origin", "http://www.fawanews.sc")
+            }
+
+            val call = httpClient.newCall(reqBuilder.build())
+            val res = call.execute()
+            if (res.isSuccessful) {
+                var detectedRes: String? = null
+                val body = res.body?.string().orEmpty()
+                val resRegex = Regex("""RESOLUTION=(\d+x\d+)""")
+                val match = resRegex.find(body)
+                if (match != null) {
+                    val rawDims = match.groupValues[1]
+                    val h = rawDims.substringAfter("x").toIntOrNull() ?: 0
+                    detectedRes = when {
+                        h >= 1080 -> "1080p FHD"
+                        h >= 720 -> "720p HD"
+                        h >= 540 -> "${h}p"
+                        h >= 480 -> "480p"
+                        h > 0 -> "${h}p"
+                        else -> rawDims
+                    }
+                } else if (url.contains(".mpd")) {
+                    val hMatch = Regex("""height="(\d+)"""").find(body)
+                    if (hMatch != null) {
+                        val h = hMatch.groupValues[1].toIntOrNull() ?: 0
+                        detectedRes = when {
+                            h >= 1080 -> "1080p FHD"
+                            h >= 720 -> "720p HD"
+                            h >= 480 -> "480p"
+                            else -> "${h}p"
+                        }
+                    }
+                }
+                detectedRes?.let { com.errado.tv.StreamCache.setResolution(url, it) }
+                return@withContext StreamHealth(resolved, isOnline = true, resolution = detectedRes)
+            } else {
+                return@withContext StreamHealth(resolved, isOnline = false)
+            }
+        } catch (e: Exception) {
+            return@withContext StreamHealth(resolved, isOnline = false)
+        }
+    }
+
+    suspend fun checkReplayUrl(url: String): Boolean = withContext(Dispatchers.IO) {
+        if (!url.startsWith("http")) return@withContext false
+        try {
+            val req = Request.Builder()
+                .url(url)
+                .head()
+                .header("User-Agent", "Mozilla/5.0")
+                .build()
+            val res = httpClient.newCall(req).execute()
+            res.isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     private const val TEVEPLAY_CHANNELS_URL = "https://teveplay.net/api/channels"
 
     suspend fun fetchTeveplayChannels(): List<EventItem> = withContext(Dispatchers.IO) {
