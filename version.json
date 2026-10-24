@@ -1,7 +1,7 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "latest_version_code": 31,
-  "latest_version_name": "1.5.2",
+  "latest_version_code": 32,
+  "latest_version_name": "1.5.3",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Estandarizacion de tabla a errado_users con hashing bcrypt y funciones RPC"
+  "changelog": "GarecaTV: Icono oficial definitivo con Gareca arriba, tigre en el medio y TV abajo, en TV y dentro de la app"
 }

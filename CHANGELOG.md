@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.5.3] - 2026-10-24
+### Añadido y Optimizado
+- **Icono Oficial Definitivo (Gareca Arriba, Tigre en el Medio y TV Abajo)**:
+  - Distribución oficial en escudo deportivo: rótulo `GARECA` en la parte superior, cabeza de tigre con zarpazos en el centro, y rótulo `TV` centrado en la parte inferior. Letras rojas vibrantes con bordes negros sólidos sobre fondo blanco limpio.
+  - Sincronizado para todo el televisor y la app: visible en el lanzador de Android TV, en el banner panorámico (`tv_banner_v2.png`), y dentro de la aplicación en la cabecera principal (`ivLogo` ampliado a 68dp) y pantalla de login.
+- **Estandarización de Tabla a `errado_users`**: Operación directa sobre la tabla `public.errado_users` con funciones RPC y cifrado seguro bcrypt (`pgcrypto`).
+
 ## [1.5.0] - 2026-10-24
 ### Añadido y Optimizado
 - **Sistema de Autenticación para Android TV (Google + Credenciales)**:
