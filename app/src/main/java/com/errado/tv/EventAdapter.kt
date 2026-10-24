@@ -68,14 +68,14 @@ class EventAdapter(
                 tvTime.visibility = View.GONE
             }
 
-            if (item.imageUrl != null) {
+            if (!item.imageUrl.isNullOrEmpty()) {
                 ivThumbnail.visibility = View.VISIBLE
                 Glide.with(itemView.context)
                     .load(item.imageUrl)
                     .centerCrop()
                     .into(ivThumbnail)
             } else {
-                ivThumbnail.setImageResource(R.drawable.app_icon)
+                ivThumbnail.visibility = View.GONE
             }
 
             // Configurar insignia de estado dinámico (EN VIVO, POR EMPEZAR, PROGRAMADO, FINALIZADO)

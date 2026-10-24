@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.3.6] - 2026-10-24
+### Añadido y Optimizado
+- **Icono Exclusivo en la Cabecera de la Aplicación**: Se eliminó la repetición del icono del tigre en cada una de las filas individuales de la cartelera de *Partidos del Día*. El icono de GarecaTV ahora luce con exclusividad y protagonismo únicamente en la cabecera superior principal de la app.
+- **Suite Completa de Iconos Mipmap para Android**: Se generó e integró la suite completa de iconos del sistema Android (`mipmap-mdpi`, `mipmap-hdpi`, `mipmap-xhdpi`, `mipmap-xxhdpi`, `mipmap-xxxhdpi` y `mipmap-anydpi-v26` adaptativos) con `android:icon` y `android:roundIcon` en el `AndroidManifest.xml`, garantizando que el icono oficial de GarecaTV (cabeza de tigre, zarpazos y letras rojas sobre fondo negro) se visualice perfectamente en todos los lanzadores de Android TV, cajas TV Box, dispositivos móviles y menús de ajustes del sistema.
+
+---
+
 ## [1.3.5] - 2026-10-24
 ### Añadido y Optimizado
 - **Nueva Identidad Oficial — GarecaTV**: La aplicación pasa a llamarse oficialmente **GarecaTV**.
