@@ -4,6 +4,14 @@ Todas las modificaciones, análisis y versiones del proyecto quedan documentadas
 
 ---
 
+## [1.2.1] - 2026-10-23
+### Añadido y Optimizado
+- **Integración Completa de Canales Regionales (`📺 Regionales`)**: Acceso directo y dedicado a los 36 canales de televisión abierta y por cable más vistos de Latinoamérica: Latina, América TV, Telefe, El Trece, Caracol, RCN, Azteca 7, Canal 5, Las Estrellas, Space, Warner Bros TV, TNT, Star Channel, Cinemax, Cinecanal, Universal TV, Studio Universal, Discovery Channel, Cartoon Network, History, FX, Nat Geo, Disney Channel, Univision, Telemundo y más.
+- **Categorización Integral de Todas las Señales de TevePlay**: Se añadieron pestañas dedicadas para cada país y liga deportiva del catálogo (más de 470 señales): **🇨🇱 Chile**, **🇪🇨 Ecuador**, **🇵🇾 Paraguay**, **🇺🇾 Uruguay**, **🇺🇸 USA / MLS**, **🇮🇹 Serie A**, **🇩🇪 Bundesliga**, **🇫🇷 Ligue 1**, **🇵🇹 Portugal**, **🌎 Latinoamérica**, **⚾ Béisbol MLB**, **🌍 Mundo** y **⚽ Otras Copas**.
+- **Mapeo Inteligente por Título y Competición**: Partidos de copas internacionales (Leagues Cup, Copa Centroamericana CONCACAF, torneos Sub-20) se asignan automáticamente a su región y país de origen para que nunca queden ocultos o huérfanos.
+
+---
+
 ## [1.2.0] - 2026-10-23
 ### Añadido y Optimizado
 - **Pestañas por País y Categorías (Estilo TevePlay / Leanback TV)**: Incorporación de una barra horizontal de categorías navegable con el control remoto (`D-Pad`). Permite alternar instantáneamente entre **⚽ Partidos del Día**, **🇦🇷 Argentina**, **🏆 Deportes (ESPN/Fox)**, **🇪🇸 España (LaLiga)**, **🇲🇽 México (Liga MX)**, **🇨🇴 Colombia (Win Sports)**, **🇵🇪 Perú (Liga 1)**, **🇧🇷 Brasil (Brasileirão)**, **🇬🇧 Premier League**, **🏎️ F1 / Motor**, **🏀 NBA**, **🥊 Boxeo / UFC** y **🌐 Todos los Canales**.

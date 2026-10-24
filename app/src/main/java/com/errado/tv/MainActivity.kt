@@ -41,17 +41,31 @@ class MainActivity : AppCompatActivity() {
 
     private val categoryList = listOf(
         "⚽ Partidos del Día",
-        "🇦🇷 Argentina",
+        "📺 Regionales",
         "🏆 Deportes",
+        "🇦🇷 Argentina",
         "🇪🇸 España",
         "🇲🇽 México",
         "🇨🇴 Colombia",
         "🇵🇪 Perú",
+        "🇨🇱 Chile",
+        "🇪🇨 Ecuador",
+        "🇵🇾 Paraguay",
+        "🇺🇾 Uruguay",
         "🇧🇷 Brasil",
+        "🇺🇸 USA / MLS",
         "🇬🇧 Premier League",
+        "🇮🇹 Serie A",
+        "🇩🇪 Bundesliga",
+        "🇫🇷 Ligue 1",
+        "🇵🇹 Portugal",
+        "🌎 Latinoamérica",
         "🏎️ F1 / Motor",
         "🏀 NBA",
         "🥊 Boxeo / UFC",
+        "⚾ Béisbol MLB",
+        "🌍 Mundo",
+        "⚽ Otras Copas",
         "🌐 Todos los Canales"
     )
     private var currentCategory = "⚽ Partidos del Día"
