@@ -2,6 +2,16 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.3.7] - 2026-10-24
+### Añadido y Optimizado
+- **Pestaña Exclusiva de Repeticiones y Separación Estricta**: Se creó la nueva pestaña **`🔁 Repeticiones`** ubicada inmediatamente antes de `📺 Regionales`. La pestaña `⚽ Partidos del Día` ahora muestra única y exclusivamente los partidos en vivo, por empezar o programados del día de hoy. Todas las repeticiones históricas se concentran de manera limpia en su propia sección.
+- **Buscador y Ordenación para Smart TV (Leanback D-Pad)**:
+  - **Caja de búsqueda inteligente**: Filtra partidos en tiempo real por nombre de equipo, cruce o fecha (ej: "Madrid", "10/10").
+  - **Botones de ordenación**: Permite ordenar la lista tanto por **Fecha** (más recientes o más antiguos) como por **Nombre** (alfabético A-Z o Z-A), manteniendo siempre los partidos `NO DISPONIBLE` al final de la lista.
+  - **Navegación remota ergonómica**: Al navegar por la pestaña de Repeticiones y pulsar la flecha hacia abajo en el control remoto, el foco se posiciona sobre la caja de texto. Para escribir, el usuario pulsa OK/Center (mostrando el cursor y desplegando el teclado en pantalla); si en cambio pulsa flecha abajo sin presionar OK, el foco salta directamente al primer partido de la lista. Al pulsar ATRÁS mientras se escribe, el teclado se oculta sin cerrar la aplicación.
+
+---
+
 ## [1.3.6] - 2026-10-24
 ### Añadido y Optimizado
 - **Icono Exclusivo en la Cabecera de la Aplicación**: Se eliminó la repetición del icono del tigre en cada una de las filas individuales de la cartelera de *Partidos del Día*. El icono de GarecaTV ahora luce con exclusividad y protagonismo únicamente en la cabecera superior principal de la app.

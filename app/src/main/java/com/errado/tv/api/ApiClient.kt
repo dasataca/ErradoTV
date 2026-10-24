@@ -147,17 +147,23 @@ object ApiClient {
                                 "Repetición del $d/$m/$y (ExoPlayer)"
                             } ?: "Canal 24/7 (ExoPlayer directo)"
 
+                            var eventTimestamp = 0L
+                            var rawDateStr: String? = null
+
                             // Comprobar si el día es anterior al día actual
                             val isPreviousDay = match?.let {
                                 val (y, m, d) = it.destructured
+                                rawDateStr = "$y-$m-$d"
                                 val eventCal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("America/Argentina/Buenos_Aires")).apply {
                                     set(java.util.Calendar.YEAR, y.toInt())
                                     set(java.util.Calendar.MONTH, m.toInt() - 1)
                                     set(java.util.Calendar.DAY_OF_MONTH, d.toInt())
-                                    set(java.util.Calendar.HOUR_OF_DAY, 23)
-                                    set(java.util.Calendar.MINUTE, 59)
-                                    set(java.util.Calendar.SECOND, 59)
+                                    set(java.util.Calendar.HOUR_OF_DAY, 12)
+                                    set(java.util.Calendar.MINUTE, 0)
+                                    set(java.util.Calendar.SECOND, 0)
                                 }
+                                eventTimestamp = eventCal.timeInMillis
+
                                 val todayCal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("America/Argentina/Buenos_Aires")).apply {
                                     set(java.util.Calendar.HOUR_OF_DAY, 0)
                                     set(java.util.Calendar.MINUTE, 0)
@@ -182,7 +188,10 @@ object ApiClient {
                                             type = streamType
                                         )
                                     ),
-                                    status = itemStatus
+                                    status = itemStatus,
+                                    category = "Repeticiones",
+                                    timestamp = eventTimestamp,
+                                    rawDate = rawDateStr
                                 )
                             )
                         }

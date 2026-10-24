@@ -4,8 +4,14 @@ import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -44,8 +50,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var categoryAdapter: CategoryAdapter
     private var autoRefreshJob: Job? = null
 
+    // Controles de búsqueda y ordenación para TV
+    private lateinit var searchContainer: LinearLayout
+    private lateinit var etSearch: EditText
+    private lateinit var btnSortDate: Button
+    private lateinit var btnSortName: Button
+
+    private enum class ReplaySortMode {
+        DATE_DESC, DATE_ASC, NAME_ASC, NAME_DESC
+    }
+    private var currentSortMode = ReplaySortMode.DATE_DESC
+    private var searchQuery = ""
+
     private val categoryList = listOf(
         "⚽ Partidos del Día",
+        "🔁 Repeticiones",
         "📺 Regionales",
         "🏆 Deportes",
         "🇦🇷 Argentina",
@@ -75,6 +94,7 @@ class MainActivity : AppCompatActivity() {
     )
     private var currentCategory = "⚽ Partidos del Día"
     private var cachedDailyEvents = listOf<EventItem>()
+    private var cachedReplayEvents = listOf<EventItem>()
     private var cachedLiveChannels = listOf<EventItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,6 +108,13 @@ class MainActivity : AppCompatActivity() {
         tvDate = findViewById(R.id.tvDate)
         btnRefresh = findViewById(R.id.btnRefresh)
         btnUpdate = findViewById(R.id.btnUpdate)
+
+        searchContainer = findViewById(R.id.searchContainer)
+        etSearch = findViewById(R.id.etSearch)
+        btnSortDate = findViewById(R.id.btnSortDate)
+        btnSortName = findViewById(R.id.btnSortName)
+
+        setupSearchAndSortControls()
 
         val tvUpdateLabel = findViewById<TextView>(R.id.tvUpdateLabel)
         val ivUpdateIcon = findViewById<ImageView>(R.id.ivUpdateIcon)
@@ -105,10 +132,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         rvCategories.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        categoryAdapter = CategoryAdapter(categoryList, currentCategory) { selectedCat ->
-            currentCategory = selectedCat
-            filterAndDisplayEvents(silent = false)
-        }
+        categoryAdapter = CategoryAdapter(
+            categories = categoryList,
+            selectedCategory = currentCategory,
+            onCategoryClick = { selectedCat ->
+                currentCategory = selectedCat
+                filterAndDisplayEvents(silent = false)
+            },
+            onDownPressed = { category ->
+                if (category == "🔁 Repeticiones" && searchContainer.visibility == View.VISIBLE) {
+                    etSearch.requestFocus()
+                    true
+                } else {
+                    false
+                }
+            }
+        )
         rvCategories.adapter = categoryAdapter
 
         adapter = EventAdapter { item ->
@@ -135,6 +174,183 @@ class MainActivity : AppCompatActivity() {
         loadData(silent = false, force = false)
     }
 
+    private fun setupSearchAndSortControls() {
+        // En Leanback TV, la caja de búsqueda se enfoca al bajar con la cruceta (D-Pad DOWN)
+        // pero NO debe desplegar inmediatamente el teclado ni mostrar el cursor.
+        // El usuario debe pulsar una vez más (OK / Center / Enter) para activar la edición.
+        etSearch.isCursorVisible = false
+
+        etSearch.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                etSearch.isCursorVisible = false
+            }
+        }
+
+        // Al pulsar OK / Center / Click sobre la caja de búsqueda, se activa el cursor y teclado
+        etSearch.setOnClickListener {
+            activateSearchInput()
+        }
+
+        etSearch.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        // Si el cursor no está activo, el foco pasa inmediatamente al primer elemento de la lista
+                        if (!etSearch.isCursorVisible) {
+                            focusFirstEventItem()
+                            return@setOnKeyListener true
+                        }
+                    }
+                    KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                        if (!etSearch.isCursorVisible) {
+                            activateSearchInput()
+                            return@setOnKeyListener true
+                        }
+                    }
+                    KeyEvent.KEYCODE_DPAD_UP -> {
+                        if (!etSearch.isCursorVisible) {
+                            rvCategories.requestFocus()
+                            return@setOnKeyListener true
+                        }
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        if (!etSearch.isCursorVisible) {
+                            btnSortDate.requestFocus()
+                            return@setOnKeyListener true
+                        }
+                    }
+                }
+            }
+            false
+        }
+
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchQuery = s?.toString()?.trim().orEmpty()
+                if (currentCategory == "🔁 Repeticiones") {
+                    filterAndDisplayEvents(silent = true)
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        etSearch.setOnEditorActionListener { _, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                actionId == EditorInfo.IME_ACTION_DONE ||
+                event?.keyCode == KeyEvent.KEYCODE_ENTER
+            ) {
+                deactivateSearchInput()
+                focusFirstEventItem()
+                true
+            } else {
+                false
+            }
+        }
+
+        btnSortDate.setOnFocusChangeListener { _, hasFocus ->
+            btnSortDate.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+        btnSortName.setOnFocusChangeListener { _, hasFocus ->
+            btnSortName.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+
+        btnSortDate.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                focusFirstEventItem()
+                return@setOnKeyListener true
+            }
+            false
+        }
+
+        btnSortName.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                focusFirstEventItem()
+                return@setOnKeyListener true
+            }
+            false
+        }
+
+        btnSortDate.setOnClickListener {
+            currentSortMode = if (currentSortMode == ReplaySortMode.DATE_DESC) {
+                ReplaySortMode.DATE_ASC
+            } else {
+                ReplaySortMode.DATE_DESC
+            }
+            updateSortButtonsUi()
+            filterAndDisplayEvents(silent = true)
+            rvEvents.scrollToPosition(0)
+        }
+
+        btnSortName.setOnClickListener {
+            currentSortMode = if (currentSortMode == ReplaySortMode.NAME_ASC) {
+                ReplaySortMode.NAME_DESC
+            } else {
+                ReplaySortMode.NAME_ASC
+            }
+            updateSortButtonsUi()
+            filterAndDisplayEvents(silent = true)
+            rvEvents.scrollToPosition(0)
+        }
+
+        updateSortButtonsUi()
+    }
+
+    private fun focusFirstEventItem() {
+        val firstHolder = rvEvents.findViewHolderForAdapterPosition(0)
+        if (firstHolder != null) {
+            firstHolder.itemView.requestFocus()
+        } else {
+            val firstView = rvEvents.layoutManager?.findViewByPosition(0)
+            firstView?.requestFocus() ?: rvEvents.requestFocus()
+        }
+    }
+
+    private fun activateSearchInput() {
+        etSearch.isCursorVisible = true
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun deactivateSearchInput() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
+        etSearch.isCursorVisible = false
+    }
+
+    private fun updateSortButtonsUi() {
+        when (currentSortMode) {
+            ReplaySortMode.DATE_DESC -> {
+                btnSortDate.text = "📅 Fecha (Recientes ↓)"
+                btnSortName.text = "🔤 Nombre"
+            }
+            ReplaySortMode.DATE_ASC -> {
+                btnSortDate.text = "📅 Fecha (Antiguos ↑)"
+                btnSortName.text = "🔤 Nombre"
+            }
+            ReplaySortMode.NAME_ASC -> {
+                btnSortDate.text = "📅 Fecha"
+                btnSortName.text = "🔤 Nombre (A-Z ↓)"
+            }
+            ReplaySortMode.NAME_DESC -> {
+                btnSortDate.text = "📅 Fecha"
+                btnSortName.text = "🔤 Nombre (Z-A ↑)"
+            }
+        }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_BACK) {
+            if (::etSearch.isInitialized && (etSearch.isCursorVisible || etSearch.hasFocus())) {
+                deactivateSearchInput()
+                etSearch.clearFocus()
+                rvEvents.requestFocus()
+                return true
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
     private val SYNC_INTERVAL_MS = 15 * 60 * 1000L // Intervalo de 15 minutos
 
     override fun onResume() {
@@ -142,6 +358,13 @@ class MainActivity : AppCompatActivity() {
         // Si algún stream falló o fue marcado como no disponible mientras se reproducía, reflejarlo inmediatamente
         var updated = false
         for (item in cachedDailyEvents) {
+            val streamUrl = item.streams.firstOrNull()?.url ?: ""
+            if (StreamCache.isUnavailable(streamUrl) && item.status != EventStatus.REPLAY_UNAVAILABLE) {
+                item.status = EventStatus.REPLAY_UNAVAILABLE
+                updated = true
+            }
+        }
+        for (item in cachedReplayEvents) {
             val streamUrl = item.streams.firstOrNull()?.url ?: ""
             if (StreamCache.isUnavailable(streamUrl) && item.status != EventStatus.REPLAY_UNAVAILABLE) {
                 item.status = EventStatus.REPLAY_UNAVAILABLE
@@ -222,12 +445,34 @@ class MainActivity : AppCompatActivity() {
 
                 tvDate.text = dailyResponse.date
 
-                val allEvents = mutableListOf<EventItem>()
-                allEvents.addAll(dailyResponse.events)
-                allEvents.addAll(featuredList)
+                // Separación estricta: en Partidos del Día SOLO van partidos que NO sean repetición
+                val todayMatches = mutableListOf<EventItem>()
+                val replayMatches = mutableListOf<EventItem>()
+
+                for (item in dailyResponse.events) {
+                    if (item.status == EventStatus.REPLAY) {
+                        replayMatches.add(item)
+                    } else {
+                        todayMatches.add(item)
+                    }
+                }
+
+                for (item in featuredList) {
+                    if (item.status == EventStatus.REPLAY) {
+                        replayMatches.add(item)
+                    } else {
+                        todayMatches.add(item)
+                    }
+                }
 
                 // Aprendizaje comunitario y local: sólo las señales reportadas por fallo real se muestran como no disponibles
-                for (item in allEvents) {
+                for (item in todayMatches) {
+                    val streamUrl = item.streams.firstOrNull()?.url ?: ""
+                    if (StreamCache.isUnavailable(streamUrl)) {
+                        item.status = EventStatus.REPLAY_UNAVAILABLE
+                    }
+                }
+                for (item in replayMatches) {
                     val streamUrl = item.streams.firstOrNull()?.url ?: ""
                     if (StreamCache.isUnavailable(streamUrl)) {
                         item.status = EventStatus.REPLAY_UNAVAILABLE
@@ -235,9 +480,10 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 // Colocar los partidos 'NO DISPONIBLE' al final de la lista de partidos del día
-                val sortedEvents = allEvents.sortedBy { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+                val sortedTodayMatches = todayMatches.sortedBy { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
 
-                cachedDailyEvents = sortedEvents
+                cachedDailyEvents = sortedTodayMatches
+                cachedReplayEvents = replayMatches
                 cachedLiveChannels = liveChannels
                 prefs.edit().putLong("last_sync_time", System.currentTimeMillis()).apply()
 
@@ -260,26 +506,76 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun filterAndDisplayEvents(silent: Boolean = false) {
+        if (currentCategory == "🔁 Repeticiones") {
+            searchContainer.visibility = View.VISIBLE
+        } else {
+            searchContainer.visibility = View.GONE
+            if (::etSearch.isInitialized) {
+                deactivateSearchInput()
+            }
+        }
+
         val displayList = when (currentCategory) {
             "⚽ Partidos del Día" -> cachedDailyEvents
+            "🔁 Repeticiones" -> getFilteredAndSortedReplays()
             "🌐 Todos los Canales" -> cachedLiveChannels
             else -> cachedLiveChannels.filter { it.category == currentCategory }
         }
 
         if (displayList.isEmpty()) {
             tvEmpty.visibility = View.VISIBLE
-            tvEmpty.text = if (currentCategory == "⚽ Partidos del Día") {
-                getString(R.string.no_events)
-            } else {
-                "No hay señales disponibles actualmente para esta categoría."
+            tvEmpty.text = when (currentCategory) {
+                "⚽ Partidos del Día" -> getString(R.string.no_events)
+                "🔁 Repeticiones" -> if (searchQuery.isNotEmpty()) {
+                    "No se encontraron repeticiones para \"$searchQuery\"."
+                } else {
+                    "No hay repeticiones disponibles en este momento."
+                }
+                else -> "No hay señales disponibles actualmente para esta categoría."
             }
             adapter.submitList(emptyList())
         } else {
             tvEmpty.visibility = View.GONE
             adapter.submitList(displayList)
-            if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()) {
+            if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
+                && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus()))
+            ) {
                 rvEvents.requestFocus()
             }
+        }
+    }
+
+    private fun getFilteredAndSortedReplays(): List<EventItem> {
+        var list = cachedReplayEvents
+        if (searchQuery.isNotEmpty()) {
+            val q = searchQuery.lowercase().trim()
+            list = list.filter {
+                it.title.lowercase().contains(q) ||
+                it.subtitle.lowercase().contains(q) ||
+                (it.time != null && it.time.contains(q)) ||
+                (it.rawDate != null && it.rawDate.contains(q))
+            }
+        }
+
+        return when (currentSortMode) {
+            ReplaySortMode.DATE_DESC -> list.sortedWith(
+                compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+                    .thenByDescending { it.timestamp }
+                    .thenBy { it.title.lowercase() }
+            )
+            ReplaySortMode.DATE_ASC -> list.sortedWith(
+                compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+                    .thenBy { it.timestamp }
+                    .thenBy { it.title.lowercase() }
+            )
+            ReplaySortMode.NAME_ASC -> list.sortedWith(
+                compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+                    .thenBy { it.title.lowercase() }
+            )
+            ReplaySortMode.NAME_DESC -> list.sortedWith(
+                compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+                    .thenByDescending { it.title.lowercase() }
+            )
         }
     }
 

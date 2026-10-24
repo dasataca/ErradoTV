@@ -1,5 +1,6 @@
 package com.errado.tv
 
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,7 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 class CategoryAdapter(
     private val categories: List<String>,
     private var selectedCategory: String,
-    private val onCategoryClick: (String) -> Unit
+    private val onCategoryClick: (String) -> Unit,
+    private val onDownPressed: ((String) -> Boolean)? = null
 ) : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>() {
 
     fun setSelectedCategory(category: String) {
@@ -29,10 +31,15 @@ class CategoryAdapter(
 
     override fun onBindViewHolder(holder: CategoryViewHolder, position: Int) {
         val cat = categories[position]
-        holder.bind(cat, cat == selectedCategory) {
-            setSelectedCategory(cat)
-            onCategoryClick(cat)
-        }
+        holder.bind(
+            category = cat,
+            isSelected = cat == selectedCategory,
+            onClick = {
+                setSelectedCategory(cat)
+                onCategoryClick(cat)
+            },
+            onDown = onDownPressed
+        )
     }
 
     override fun getItemCount(): Int = categories.size
@@ -50,12 +57,26 @@ class CategoryAdapter(
             }
         }
 
-        fun bind(category: String, isSelected: Boolean, onClick: () -> Unit) {
+        fun bind(
+            category: String,
+            isSelected: Boolean,
+            onClick: () -> Unit,
+            onDown: ((String) -> Boolean)?
+        ) {
             tvTabTitle.text = category
             itemView.isSelected = isSelected
 
             itemView.setOnClickListener {
                 onClick()
+            }
+
+            itemView.setOnKeyListener { _, keyCode, event ->
+                if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    if (onDown != null && onDown(category)) {
+                        return@setOnKeyListener true
+                    }
+                }
+                false
             }
         }
     }

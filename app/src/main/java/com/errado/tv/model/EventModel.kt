@@ -28,7 +28,9 @@ data class EventItem(
     val imageUrl: String? = null,
     val streams: List<StreamOption>,
     var status: EventStatus = EventStatus.CHANNEL_24_7,
-    val category: String = "Partidos"
+    val category: String = "Partidos",
+    val timestamp: Long = 0L,
+    val rawDate: String? = null
 ) {
     companion object {
         fun calculateStatus(timeStr: String?): EventStatus {
