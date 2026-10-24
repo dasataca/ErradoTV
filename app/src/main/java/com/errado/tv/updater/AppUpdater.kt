@@ -47,36 +47,60 @@ object AppUpdater {
     }
 
     suspend fun checkForUpdates(context: Context): UpdateInfo? = withContext(Dispatchers.IO) {
-        val gistUrl = CryptoUtils.remoteConfigUrl
-        if (gistUrl.isEmpty()) return@withContext null
+        val currentCode = getCurrentVersionCode(context)
 
-        try {
-            val req = Request.Builder().url(gistUrl).build()
-            val resp = ApiClient.httpClient.newCall(req).execute()
-            if (!resp.isSuccessful) return@withContext null
+        for (url in CryptoUtils.remoteConfigUrls) {
+            try {
+                val nocacheUrl = if (url.contains("?")) "$url&_t=${System.currentTimeMillis()}" else "$url?_t=${System.currentTimeMillis()}"
+                val req = Request.Builder()
+                    .url(nocacheUrl)
+                    .header("User-Agent", "Mozilla/5.0 (Android TV; ErradoTV-OTA)")
+                    .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                    .header("Pragma", "no-cache")
+                    .build()
+                val resp = ApiClient.httpClient.newCall(req).execute()
+                if (!resp.isSuccessful) continue
 
-            val body = resp.body?.string().orEmpty()
-            if (body.isEmpty()) return@withContext null
+                val body = resp.body?.string().orEmpty()
+                if (body.isEmpty()) continue
 
-            val json = JSONObject(body)
-            val latestCode = json.optInt("latest_version_code", 0)
-            val latestName = json.optString("latest_version_name", "")
-            val apkUrl = json.optString("apk_url", "")
-            val changelog = json.optString("changelog", "Mejoras y correcciones generales.")
+                val json = JSONObject(body)
+                val latestCode = if (json.has("latest_version_code")) {
+                    json.optInt("latest_version_code", 0)
+                } else {
+                    json.optInt("versionCode", 0)
+                }
 
-            val currentCode = getCurrentVersionCode(context)
+                val latestName = if (json.has("latest_version_name")) {
+                    json.optString("latest_version_name", "")
+                } else {
+                    json.optString("versionName", "")
+                }
 
-            SupabaseLogger.info(
-                "update_check",
-                "Comprobación de actualización: actual=$currentCode, remota=$latestCode",
-                mapOf("current_code" to currentCode, "latest_code" to latestCode, "latest_name" to latestName)
-            )
+                val apkUrl = if (json.has("apk_url")) {
+                    json.optString("apk_url", "")
+                } else {
+                    json.optString("apkUrl", "")
+                }
 
-            if (latestCode > currentCode && apkUrl.isNotEmpty()) {
-                return@withContext UpdateInfo(latestCode, latestName, apkUrl, changelog)
+                val changelog = json.optString("changelog", "Mejoras y correcciones generales.")
+
+                SupabaseLogger.info(
+                    "update_check",
+                    "Comprobación de actualización desde $url: actual=$currentCode, remota=$latestCode",
+                    mapOf("current_code" to currentCode, "latest_code" to latestCode, "latest_name" to latestName, "url" to url)
+                )
+
+                if (latestCode > currentCode && apkUrl.isNotEmpty()) {
+                    return@withContext UpdateInfo(latestCode, latestName, apkUrl, changelog)
+                }
+                // Si la URL principal respondió válidamente y no hay actualización, terminamos
+                if (latestCode > 0) {
+                    return@withContext null
+                }
+            } catch (e: Exception) {
+                SupabaseLogger.warn("update_check_error", "Error verificando actualización en $url: ${e.message}")
             }
-        } catch (e: Exception) {
-            SupabaseLogger.warn("update_check_error", "Error verificando actualización: ${e.message}")
         }
 
         null
@@ -101,8 +125,14 @@ object AppUpdater {
                 "Descargando versión ${updateInfo.versionName} desde ${updateInfo.apkUrl}"
             )
 
+            val downloadUrl = if (updateInfo.apkUrl.contains("?")) {
+                "${updateInfo.apkUrl}&_t=${System.currentTimeMillis()}"
+            } else {
+                "${updateInfo.apkUrl}?_t=${System.currentTimeMillis()}"
+            }
+
             val req = Request.Builder()
-                .url(updateInfo.apkUrl)
+                .url(downloadUrl)
                 .header("User-Agent", "Mozilla/5.0 (Android TV; ErradoTV-Updater)")
                 .build()
             val resp = downloadClient.newCall(req).execute()

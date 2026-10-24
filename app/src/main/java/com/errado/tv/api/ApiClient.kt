@@ -134,10 +134,25 @@ object ApiClient {
                         val img = item.optString("event_image_url", "").trim()
 
                         if (streamUrl.isNotEmpty()) {
+                            // Detectar si contiene fecha en formato YYYY-MM-DD o YYYY_MM_DD
+                            val dateRegex = Regex("""(\d{4})[_-](\d{2})[_-](\d{2})""")
+                            val match = dateRegex.find(streamUrl) ?: dateRegex.find(img)
+                            val extractedDate = match?.let {
+                                val (_, m, d) = it.destructured
+                                "$d/$m"
+                            }
+                            val subText = match?.let {
+                                val (y, m, d) = it.destructured
+                                "Repetición del $d/$m/$y (ExoPlayer)"
+                            } ?: "Canal 24/7 (ExoPlayer directo)"
+
+                            val itemStatus = if (extractedDate != null) EventStatus.REPLAY else EventStatus.CHANNEL_24_7
+
                             list.add(
                                 EventItem(
                                     title = name,
-                                    subtitle = "Destacado (ExoPlayer directo)",
+                                    time = extractedDate,
+                                    subtitle = subText,
                                     imageUrl = if (img.isNotEmpty()) img else null,
                                     streams = listOf(
                                         StreamOption(
@@ -146,7 +161,7 @@ object ApiClient {
                                             type = streamType
                                         )
                                     ),
-                                    status = EventStatus.CHANNEL_24_7
+                                    status = itemStatus
                                 )
                             )
                         }

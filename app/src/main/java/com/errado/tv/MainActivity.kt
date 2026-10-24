@@ -20,6 +20,9 @@ import com.errado.tv.model.StreamOption
 import com.errado.tv.telemetry.SupabaseLogger
 import com.errado.tv.updater.AppUpdater
 import com.errado.tv.updater.UpdateInfo
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -31,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnRefresh: View
     private lateinit var btnUpdate: View
     private lateinit var adapter: EventAdapter
+    private var autoRefreshJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         SupabaseLogger.info("app_start", "ErradoTV iniciado en Smart TV")
 
         btnRefresh.setOnClickListener {
-            loadData()
+            loadData(silent = false)
         }
 
         btnUpdate.setOnClickListener {
@@ -63,12 +67,35 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Carga al abrir la aplicación (comportamiento idéntico a la APK original)
-        loadData()
+        loadData(silent = false)
     }
 
-    private fun loadData() {
-        progressBar.visibility = View.VISIBLE
-        tvEmpty.visibility = View.GONE
+    override fun onResume() {
+        super.onResume()
+        startAutoRefresh()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        autoRefreshJob?.cancel()
+        autoRefreshJob = null
+    }
+
+    private fun startAutoRefresh() {
+        autoRefreshJob?.cancel()
+        autoRefreshJob = lifecycleScope.launch {
+            while (isActive) {
+                delay(5 * 60 * 1000L) // Refresco automático en segundo plano cada 5 minutos
+                loadData(silent = true)
+            }
+        }
+    }
+
+    private fun loadData(silent: Boolean = false) {
+        if (!silent) {
+            progressBar.visibility = View.VISIBLE
+            tvEmpty.visibility = View.GONE
+        }
 
         lifecycleScope.launch {
             try {
@@ -84,22 +111,31 @@ class MainActivity : AppCompatActivity() {
                 allEvents.addAll(dailyResponse.events)
                 allEvents.addAll(featuredList)
 
-                progressBar.visibility = View.GONE
+                if (!silent) {
+                    progressBar.visibility = View.GONE
+                }
 
                 if (allEvents.isEmpty()) {
-                    tvEmpty.visibility = View.VISIBLE
-                    tvEmpty.text = getString(R.string.no_events)
+                    if (!silent) {
+                        tvEmpty.visibility = View.VISIBLE
+                        tvEmpty.text = getString(R.string.no_events)
+                    }
                 } else {
+                    tvEmpty.visibility = View.GONE
                     adapter.submitList(allEvents)
-                    rvEvents.requestFocus()
+                    if (!silent) {
+                        rvEvents.requestFocus()
+                    }
                 }
 
                 // Verificación en segundo plano sin molestar si no hay actualización
                 checkAndPromptUpdate(userInitiated = false)
             } catch (e: Exception) {
-                progressBar.visibility = View.GONE
-                tvEmpty.visibility = View.VISIBLE
-                tvEmpty.text = "Error al cargar eventos: ${e.message}"
+                if (!silent) {
+                    progressBar.visibility = View.GONE
+                    tvEmpty.visibility = View.VISIBLE
+                    tvEmpty.text = "Error al cargar eventos: ${e.message}"
+                }
             }
         }
     }
@@ -204,14 +240,43 @@ class MainActivity : AppCompatActivity() {
 
         title.text = item.title
 
-        for ((index, stream) in item.streams.withIndex()) {
+        val sortedStreams = item.streams.sortedBy { if (it.type.equals("config", ignoreCase = true)) 0 else 1 }
+
+        for ((index, stream) in sortedStreams.withIndex()) {
+            val isConfig = stream.type.equals("config", ignoreCase = true)
             val btn = Button(this).apply {
-                text = "${stream.title} (${stream.type.uppercase()})"
-                textSize = 16f
+                text = if (isConfig) {
+                    "🟢 ${stream.title}  [HD DIRECTO - RECOMENDADO]"
+                } else {
+                    "🌐 ${stream.title}  [WEB EXTERNO - PUEDE FALLAR]"
+                }
+                textSize = 15f
                 isFocusable = true
                 isClickable = true
                 setBackgroundResource(R.drawable.button_focus_selector)
-                setTextColor(resources.getColor(R.color.text_primary, null))
+
+                // Máximo contraste en Smart TV:
+                // Al enfocar: Fondo cyan -> Letras NEGRAS en negrita (100% legibles)
+                // Sin foco: Fondo oscuro -> Letras BLANCAS
+                setOnFocusChangeListener { _, hasFocus ->
+                    if (hasFocus) {
+                        setTextColor(android.graphics.Color.BLACK)
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                    } else {
+                        setTextColor(android.graphics.Color.WHITE)
+                        setTypeface(null, android.graphics.Typeface.NORMAL)
+                    }
+                }
+
+                // Estado inicial
+                if (index == 0) {
+                    setTextColor(android.graphics.Color.BLACK)
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                } else {
+                    setTextColor(android.graphics.Color.WHITE)
+                    setTypeface(null, android.graphics.Typeface.NORMAL)
+                }
+
                 val params = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT

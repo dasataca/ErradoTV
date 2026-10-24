@@ -8,6 +8,7 @@ enum class EventStatus(val label: String, val colorHex: String) {
     STARTING_SOON("POR EMPEZAR", "#F59E0B"),
     SCHEDULED("PROGRAMADO", "#3B82F6"),
     FINISHED("FINALIZADO", "#6B7280"),
+    REPLAY("REPETICIÓN", "#8B5CF6"),
     CHANNEL_24_7("CANAL 24/7", "#10B981")
 }
 

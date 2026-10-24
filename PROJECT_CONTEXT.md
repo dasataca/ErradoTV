@@ -40,15 +40,20 @@ Al descifrar `event.json`, cada partido contiene de 1 a 16 opciones de transmisi
    * **Función**: Páginas web de terceros que embeben reproductores web con publicidad y que frecuentemente sufren bloqueos judiciales por DNS de proveedores como Telecentro o errores `403 Forbidden`.
 
 ### Proceso de Recarga de Datos y Horarios
-Al presionar el botón **Recargar** (`btnRefresh`) en la TV o al abrir la app:
-1. Se consulta nuevamente `event.json` y `destacado.json` sin usar caché HTTP.
+1. **Actualización Automática**:
+   - **Al iniciar la app**: Se descargan y procesan de inmediato `event.json` y `destacado.json`.
+   - **En segundo plano cada 5 minutos**: Un temporizador periódico (`startAutoRefresh`) sincroniza silenciosamente la cartelera deportiva mientras la aplicación está en ejecución sin interrumpir al usuario.
+   - **Bajo demanda**: El botón **Recargar** (`btnRefresh`) permite forzar la sincronización manual inmediata.
 2. Se extrae la hora de cada encuentro (formato `HH:mm`) y se compara con la hora actual en **GMT-3 (Argentina)**.
-3. Se recalcula el estado dinámico del partido:
+3. Se detectan automáticamente partidos diferidos / históricos (`destacado.json`) extrayendo la fecha del flujo (`refooty.com/..._YYYY_MM_DD.m3u8`) para etiquetarlos como `REPETICIÓN` con su día correspondiente (`DD/MM`).
+4. Se recalcula el estado dinámico del partido:
    - `● EN VIVO` (0 a 135 minutos desde el inicio).
    - `POR EMPEZAR` (30 minutos o menos para el pitazo).
    - `PROGRAMADO` (más de 30 minutos).
    - `FINALIZADO` (más de 2 horas y 15 minutos).
-4. Se actualiza el RecyclerView y la fecha del servidor en pantalla.
+   - `REPETICIÓN` (partidos históricos con fecha detectada).
+   - `CANAL 24/7` (canales de TV continuos sin hora fija).
+5. Se actualiza el RecyclerView y la fecha del servidor en pantalla.
 
 ### Arquitectura Criptográfica
 1. **Sin autenticación HTTP**: Cloudflare Pages sirve los archivos con cabecera pública `Access-Control-Allow-Origin: *`. No se requieren tokens de sesión, cookies ni headers especiales.

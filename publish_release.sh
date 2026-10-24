@@ -36,15 +36,8 @@ cp app/build/outputs/apk/debug/app-debug.apk ErradoTV-v1.0.apk
 echo "✅ APK generado:"
 ls -lh "$APK_VERSIONED" "$APK_LATEST"
 
-# 4. Git commit y push si git está configurado
-git add release/ app/build.gradle.kts ErradoTV-v1.0.apk
-git commit -m "release: ErradoTV v$VERSION_NAME ($VERSION_CODE) - $CHANGELOG" || true
-
-echo "Pushing a GitHub..."
-git push origin main || echo "⚠️ Recuerda configurar tus credenciales de git para subirlo automáticamente."
-
-echo "🎉 Listo. Para que la TV actualice, edita tu Gist con:"
-cat <<EOF
+# 4. Generar version.json automático para la TV (Sin necesidad de tocar Gist nunca más)
+cat <<EOF > version.json
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
   "latest_version_code": $VERSION_CODE,
@@ -53,3 +46,17 @@ cat <<EOF
   "changelog": "$CHANGELOG"
 }
 EOF
+
+# 5. Git commit y push automático a GitHub
+git add -A
+git commit -m "release: ErradoTV v$VERSION_NAME ($VERSION_CODE) - $CHANGELOG" || true
+
+echo "Pushing a GitHub..."
+git push origin main
+
+echo "=========================================="
+echo "🎉 ¡PUBLICACIÓN 100% AUTOMATIZADA COMPLETADA!"
+echo "📡 La versión $VERSION_NAME ($VERSION_CODE) ya está viva en GitHub:"
+echo "👉 https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json"
+echo "📺 Tus Smart TVs la detectarán solas sin tocar ningún archivo ni Gist."
+echo "=========================================="

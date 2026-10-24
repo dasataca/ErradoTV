@@ -18,8 +18,13 @@ object CryptoUtils {
     // Clave local por defecto integrada en la app
     const val DEFAULT_KEY_B64 = "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ=="
 
-    // URL remota donde se puede alojar un JSON con la clave actualizada (GitHub Gist)
-    var remoteConfigUrl: String = "https://gist.githubusercontent.com/dasataca/b5f27059b9db7e878e6a0fab05a7a951/raw/config.json"
+    // URLs remotas (Repositiorio GitHub como fuente principal automatizada y Gist como respaldo)
+    val remoteConfigUrls = listOf(
+        "https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json",
+        "https://gist.githubusercontent.com/dasataca/b5f27059b9db7e878e6a0fab05a7a951/raw/config.json"
+    )
+
+    var remoteConfigUrl: String = remoteConfigUrls.first()
 
     @Volatile
     var activeKeyB64: String = DEFAULT_KEY_B64
@@ -30,22 +35,25 @@ object CryptoUtils {
     }
 
     suspend fun syncRemoteKey(context: Context, httpClient: OkHttpClient) = withContext(Dispatchers.IO) {
-        if (remoteConfigUrl.isEmpty()) return@withContext
-        try {
-            val req = Request.Builder().url(remoteConfigUrl).build()
-            val resp = httpClient.newCall(req).execute()
-            if (resp.isSuccessful) {
-                val body = resp.body?.string().orEmpty()
-                val json = JSONObject(body)
-                val newKey = json.optString("active_key", "").trim()
-                if (newKey.isNotEmpty() && newKey != activeKeyB64) {
-                    activeKeyB64 = newKey
-                    val prefs = context.getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
-                    prefs.edit().putString("cached_key", newKey).apply()
+        for (url in remoteConfigUrls) {
+            try {
+                val req = Request.Builder().url(url).build()
+                val resp = httpClient.newCall(req).execute()
+                if (resp.isSuccessful) {
+                    val body = resp.body?.string().orEmpty()
+                    val json = JSONObject(body)
+                    val newKey = json.optString("active_key", "").trim()
+                    if (newKey.isNotEmpty() && newKey != activeKeyB64) {
+                        activeKeyB64 = newKey
+                        val prefs = context.getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
+                        prefs.edit().putString("cached_key", newKey).apply()
+                    }
+                    remoteConfigUrl = url
+                    break
                 }
+            } catch (_: Exception) {
+                // Si la URL falla, continúa a la siguiente
             }
-        } catch (_: Exception) {
-            // Si la URL remota no existe aún o no hay internet, continúa usando la clave local
         }
     }
 

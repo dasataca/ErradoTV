@@ -4,6 +4,34 @@ Todas las modificaciones, análisis y versiones del proyecto quedan documentadas
 
 ---
 
+## [1.1.6] - 2026-10-23
+### Añadido y Optimizado
+- **Detección Automática de Repeticiones y Fechas**: En eventos destacados y partidos diferidos (como repeticiones de LaLiga), el sistema ahora detecta automáticamente la fecha histórica embebida en el origen multimedia (ej. `22/08`) y asigna la insignia morada `[ REPETICIÓN ]`. Esto elimina la confusión sobre partidos pasados que no mostraban horario ni día.
+- **Autorrefresco Automático en Segundo Plano (Cada 5 Minutos)**: Cuando la app permanece abierta en la TV, el listado de partidos y canales se sincroniza silenciosamente cada 5 minutos sin pantallas de carga molestas ni pérdida de foco del control remoto.
+- **Refresco Inmediato al Iniciar**: Al abrir la aplicación, la cartelera deportiva se descarga y actualiza al instante con los datos más recientes del servidor.
+
+---
+
+## [1.1.5] - 2026-10-23
+### Añadido y Optimizado
+- **Invalidación de Caché en Tiempo Real**: Parámetros de control de caché (`_t=timestamp`, `Cache-Control: no-cache`) en la comprobación OTA para que las TVs detecten instantáneamente nuevas versiones sin esperar los 5 minutos de CDN de GitHub.
+
+---
+
+## [1.1.4] - 2026-10-23
+### Corregido y Optimizado
+- **Contraste y Legibilidad en Botones Enfocados**: Se corrigió el problema donde el botón enfocado de fondo cian/azul tenía letras del mismo color. Ahora, al seleccionar cualquier opción con el control remoto, el texto cambia automáticamente a **negro intenso en negrita (`#000000`)**, logrando un contraste perfecto y 100% legible sobre el fondo cian. En estado inactivo, el texto permanece en **blanco puro (`#FFFFFF`)**.
+
+---
+
+## [1.1.3] - 2026-10-23
+### Añadido y Optimizado
+- **Priorización Inteligente de Transmisiones**: En el diálogo de opciones, los streams directos CDN (`CONFIG`) se ordenan primero con la etiqueta `🟢 [HD DIRECTO - RECOMENDADO]` y foco automático del control remoto. Los enlaces web externos se desplazan al final con advertencia `🌐 [WEB EXTERNO - PUEDE FALLAR]`.
+- **Manejo Nativo de Enlaces Caídos en WebView**: Intercepción de errores (`403 Forbidden`, `ERR_NAME_NOT_RESOLVED`, etc.) con una pantalla amigable que avisa que el enlace externo está bloqueado por el proveedor o caído, junto a un botón enfocado *"Volver al Partido"*.
+- **Sniffer HTML5 Automático en WebView**: Detección en segundo plano de etiquetas `<video>` y flujos `.m3u8` en páginas web para redirigirlas automáticamente al reproductor nativo ExoPlayer.
+
+---
+
 ## [1.1.1] - 2026-10-23
 ### Añadido y Optimizado
 - **Forzado de Máxima Resolución en ExoPlayer (`DefaultTrackSelector`)**: Se configuró el selector de pistas para forzar siempre la calidad y bitrate más altos posibles (`setForceHighestSupportedBitrate(true)`, `setMaxVideoSize(3840, 2160)`, `setExceedVideoConstraintsIfNecessary(true)`).
