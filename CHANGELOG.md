@@ -2,6 +2,11 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.4.4] - 2026-10-24
+### Añadido y Optimizado
+- **Icono Oficial con Letras Rojas y Bordes Negros Únicas en la Parte Inferior**: Se restauró la tipografía deportiva itálica original ubicada exclusivamente en la parte inferior del icono, transformando los caracteres a cuerpo rojo vibrante (`#EB1919`) con contorno/borde negro sólido (`#000000`). Se eliminó cualquier texto duplicado en la parte superior del icono y en la cabecera.
+- **Fondo Blanco Limpio sin Contornos Cuadrados**: El icono oficial (`app_icon.png`), los iconos del launcher del sistema (`ic_launcher`, `ic_launcher_round`, `ic_launcher_foreground`) y el banner de Android TV (`tv_banner.png`) lucen el tigre y las letras sobre fondo blanco puro sin marcos cuadrados o squircle residuales.
+
 ## [1.4.3] - 2026-10-24
 ### Añadido y Optimizado
 - **Empaquetado Nativo 100% como `com.gareca.tv`**: Se migró completamente el namespace, el applicationId y toda la estructura de paquetes Kotlin a `com.gareca.tv`. Se eliminó cualquier generación de archivos con el antiguo nombre en los instaladores.
