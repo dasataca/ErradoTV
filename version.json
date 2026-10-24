@@ -1,7 +1,7 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "latest_version_code": 34,
-  "latest_version_name": "1.5.5",
+  "latest_version_code": 35,
+  "latest_version_name": "1.5.6",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Estructura oficial del icono con Gareca arriba, tigre en el medio y Tv abajo en TV y app"
+  "changelog": "GarecaTV: Cache-busting v3 para banner e iconos en pantalla de inicio de Android TV y Google TV"
 }
