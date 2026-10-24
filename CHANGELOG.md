@@ -2,6 +2,16 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.5.7] - 2026-10-24
+### Añadido y Optimizado
+- **Insignia y Escudo Oficial en Formato Circular con Fondo Transparente**:
+  - Se eliminó por completo el bloque cuadrado blanco de fondo.
+  - El diseño ahora es una **medalla o insignia circular**:
+    - Silueta circular con fondo blanco puro y fino contorno deportivo.
+    - Interior: **Gareca** arriba en letras rojas con borde negro, el **tigre rugiente** a color en el medio, y **Tv** en letras rojas abajo.
+    - Exterior: **100% transparente**, eliminando cualquier esquina o borde cuadrado en la pantalla del Smart TV.
+  - Se implementaron los nuevos identificadores con cache-busting v4 (`@drawable/tv_banner_v4` y `@mipmap/ic_launcher_v4`), con fondo transparente en `ic_launcher_background.xml` y soporte multi-densidad para televisores 1080p y 4K.
+
 ## [1.5.6] - 2026-10-24
 ### Corregido y Optimizado
 - **Invalidación Forzada de Caché en Android TV y Google TV (Cache-Busting v3)**:
