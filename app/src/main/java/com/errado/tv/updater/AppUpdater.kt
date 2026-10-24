@@ -54,7 +54,7 @@ object AppUpdater {
                 val nocacheUrl = if (url.contains("?")) "$url&_t=${System.currentTimeMillis()}" else "$url?_t=${System.currentTimeMillis()}"
                 val req = Request.Builder()
                     .url(nocacheUrl)
-                    .header("User-Agent", "Mozilla/5.0 (Android TV; ErradoTV-OTA)")
+                    .header("User-Agent", "Mozilla/5.0 (Android TV; GarecaTV-OTA)")
                     .header("Cache-Control", "no-cache, no-store, must-revalidate")
                     .header("Pragma", "no-cache")
                     .build()
@@ -133,7 +133,7 @@ object AppUpdater {
 
             val req = Request.Builder()
                 .url(downloadUrl)
-                .header("User-Agent", "Mozilla/5.0 (Android TV; ErradoTV-Updater)")
+                .header("User-Agent", "Mozilla/5.0 (Android TV; GarecaTV-Updater)")
                 .build()
             val resp = downloadClient.newCall(req).execute()
             if (!resp.isSuccessful) {
@@ -147,7 +147,7 @@ object AppUpdater {
             }
 
             val totalBytes = body.contentLength()
-            val apkFile = File(activity.cacheDir, "ErradoTV_update.apk")
+            val apkFile = File(activity.cacheDir, "GarecaTV_update.apk")
             if (apkFile.exists()) apkFile.delete()
 
             body.byteStream().use { input ->

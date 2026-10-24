@@ -23,19 +23,27 @@ data class StreamOption(
 
 data class EventItem(
     val title: String,
-    val time: String? = null,
-    val subtitle: String,
+    var time: String? = null,
+    var subtitle: String,
     val imageUrl: String? = null,
     val streams: List<StreamOption>,
     var status: EventStatus = EventStatus.CHANNEL_24_7,
     val category: String = "Partidos",
     val timestamp: Long = 0L,
-    val rawDate: String? = null
+    val rawDate: String? = null,
+    var localTime: String? = null,
+    var startEpochMillis: Long = 0L,
+    var countdownText: String? = null
 ) {
     companion object {
-        fun calculateStatus(timeStr: String?): EventStatus {
+        private val SERVER_TZ: TimeZone = TimeZone.getTimeZone("America/Argentina/Buenos_Aires")
+
+        fun calculateTimesAndStatus(
+            timeStr: String?,
+            dateStr: String? = null
+        ): Triple<EventStatus, String?, String?> {
             if (timeStr == null || !timeStr.contains(":")) {
-                return EventStatus.CHANNEL_24_7
+                return Triple(EventStatus.CHANNEL_24_7, null, null)
             }
 
             return try {
@@ -43,42 +51,73 @@ data class EventItem(
                 val matchH = parts[0].toInt()
                 val matchM = parts[1].toInt()
 
-                // Huso horario de los eventos del servidor: GMT-3 (Argentina / Sudamérica)
-                val cal = Calendar.getInstance(TimeZone.getTimeZone("America/Argentina/Buenos_Aires"))
-                val currH = cal.get(Calendar.HOUR_OF_DAY)
-                val currM = cal.get(Calendar.MINUTE)
+                val nowServerCal = Calendar.getInstance(SERVER_TZ)
+                val currH = nowServerCal.get(Calendar.HOUR_OF_DAY)
 
-                val currTotalMinutes = currH * 60 + currM
-                var matchTotalMinutes = matchH * 60 + matchM
-
-                // Ajuste para partidos tras la medianoche (ej: 00:00 o 01:00 listados en la cartelera nocturna)
-                if (matchTotalMinutes < 4 * 60 && currTotalMinutes > 18 * 60) {
-                    matchTotalMinutes += 24 * 60
+                val matchCal = Calendar.getInstance(SERVER_TZ)
+                if (dateStr != null && dateStr.contains("-")) {
+                    val dParts = dateStr.split("-")
+                    if (dParts.size == 3) {
+                        matchCal.set(Calendar.YEAR, dParts[0].toInt())
+                        matchCal.set(Calendar.MONTH, dParts[1].toInt() - 1)
+                        matchCal.set(Calendar.DAY_OF_MONTH, dParts[2].toInt())
+                    }
                 }
 
-                val diffMinutes = currTotalMinutes - matchTotalMinutes
+                matchCal.set(Calendar.HOUR_OF_DAY, matchH)
+                matchCal.set(Calendar.MINUTE, matchM)
+                matchCal.set(Calendar.SECOND, 0)
+                matchCal.set(Calendar.MILLISECOND, 0)
 
-                when {
-                    diffMinutes < 0 -> {
-                        // Aún no empezó
-                        if (-diffMinutes <= 30) {
-                            EventStatus.STARTING_SOON
-                        } else {
-                            EventStatus.SCHEDULED
-                        }
+                // Si no había fecha fija y es madrugada tras noche previa
+                if (dateStr == null && matchH < 4 && currH > 18) {
+                    matchCal.add(Calendar.DAY_OF_MONTH, 1)
+                }
+
+                val startMillis = matchCal.timeInMillis
+                val nowMillis = System.currentTimeMillis()
+
+                // Formatear en huso horario local del usuario
+                val localCal = Calendar.getInstance(TimeZone.getDefault()).apply {
+                    timeInMillis = startMillis
+                }
+                val localH = String.format("%02d", localCal.get(Calendar.HOUR_OF_DAY))
+                val localM = String.format("%02d", localCal.get(Calendar.MINUTE))
+                val localFormattedTime = "$localH:$localM"
+
+                val diffMillis = startMillis - nowMillis
+
+                val (calculatedStatus, countdown) = when {
+                    diffMillis > 24 * 3600 * 1000L -> {
+                        val days = diffMillis / (24 * 3600 * 1000L)
+                        val hours = (diffMillis % (24 * 3600 * 1000L)) / (3600 * 1000L)
+                        EventStatus.SCHEDULED to "⏳ En ${days}d ${hours}h"
                     }
-                    diffMinutes in 0..135 -> {
-                        // En juego (partido de fútbol: 90 min + entretiempo + descuentos)
-                        EventStatus.LIVE
+                    diffMillis in 30 * 60 * 1000L .. 24 * 3600 * 1000L -> {
+                        val hours = diffMillis / (3600 * 1000L)
+                        val mins = (diffMillis % (3600 * 1000L)) / (60 * 1000L)
+                        EventStatus.SCHEDULED to if (hours > 0) "⏳ En ${hours}h ${mins}m" else "⏳ En ${mins}m"
+                    }
+                    diffMillis in 0L until 30 * 60 * 1000L -> {
+                        val mins = Math.max(1L, diffMillis / (60 * 1000L))
+                        EventStatus.STARTING_SOON to "⏳ ¡En $mins min!"
+                    }
+                    diffMillis < 0 && -diffMillis <= 135 * 60 * 1000L -> {
+                        EventStatus.LIVE to "● EN JUEGO"
                     }
                     else -> {
-                        // Finalizado (más de 2 horas y 15 min desde el pitido inicial)
-                        EventStatus.FINISHED
+                        EventStatus.FINISHED to "FINALIZADO"
                     }
                 }
+
+                Triple(calculatedStatus, localFormattedTime, countdown)
             } catch (_: Exception) {
-                EventStatus.SCHEDULED
+                Triple(EventStatus.SCHEDULED, timeStr, null)
             }
+        }
+
+        fun calculateStatus(timeStr: String?): EventStatus {
+            return calculateTimesAndStatus(timeStr).first
         }
     }
 }

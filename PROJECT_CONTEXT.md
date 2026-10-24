@@ -16,10 +16,12 @@
    * Visualización limpia: El icono del tigre aparece exclusivamente en la cabecera superior principal de la app y no se repite en cada fila de partidos.
 3. **Experiencia Nativa de Televisión (Leanback D-Pad)**:
    * Diseñada 100% para pantallas horizontales (Landscape) con control remoto (D-Pad), tarjetas enfocables, animaciones de escala y selectores visuales de alto contraste.
-   * **Buscador Integrado para TV**: En la pestaña de Repeticiones, cuenta con una barra de búsqueda y opciones de ordenación (Fecha y Nombre) con manejo ergonómico del control remoto.
-4. **Reproducción Limpia y de Máxima Calidad**: Reproducción directa de streams HLS (`.m3u8`) a través de la librería oficial **AndroidX Media3 (ExoPlayer)** forzando 4K/UHD y máxima tasa de bits, junto a un visor web limpio con bloqueo de scripts para enlaces externos.
-5. **Resiliencia y Sincronización Remota**: Soporte para actualización de claves en la nube y actualización automática Over-The-Air (OTA) directa desde GitHub sin tocar la TV.
-6. **Inteligencia Comunitaria (Supabase)**: Enlaces caídos reportados por cualquier usuario se archivan en `errado_community_streams` y se comparten en tiempo real entre todos los televisores, reordenando automáticamente los partidos `NO DISPONIBLE` al final de la lista.
+3. **Buscador Global Inteligente y por Voz (`🔍 Buscar Todo`)**: Pestaña dedicada al inicio de la barra que busca simultáneamente en partidos de hoy, canales de TevePlay y repeticiones. Soporta búsqueda por voz mediante el micrófono del control remoto (`Speech-to-Text`).
+4. **Huso Horario Local y Cuenta Regresiva Automática**: Convierte en tiempo real los horarios de los partidos (GMT-3) a la zona horaria del país del televisor (`TimeZone.getDefault()`), mostrando cuenta regresiva en vivo (*"⏳ En 2h 15m"*, *"⏳ En 1d 4h"*, *"● EN JUEGO"*).
+5. **Cruce Inteligente de Datos para TevePlay**: Asocia los canales programados de TevePlay con los eventos de la agenda diaria oficial (`event.json`), heredando hora local y cuenta regresiva.
+6. **Reproducción Limpia y de Máxima Calidad**: Reproducción directa de streams HLS (`.m3u8`) a través de la librería oficial **AndroidX Media3 (ExoPlayer)** forzando 4K/UHD y máxima tasa de bits, junto a un visor web limpio con bloqueo de scripts para enlaces externos.
+7. **Resiliencia y Sincronización Remota**: Soporte para actualización de claves en la nube y actualización automática Over-The-Air (OTA) directa desde GitHub sin tocar la TV.
+8. **Inteligencia Comunitaria (Supabase)**: Enlaces caídos reportados por cualquier usuario se archivan en `errado_community_streams` y se comparten en tiempo real entre todos los televisores, reordenando automáticamente los partidos `NO DISPONIBLE` al final de la lista.
 
 ---
 

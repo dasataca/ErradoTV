@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -e
 
-# Script de automatización de compilación y publicación de versiones ErradoTV
+# Script de automatización de compilación y publicación de versiones GarecaTV
 # Uso: ./publish_release.sh [version_name] [version_code] [changelog]
-# Ejemplo: ./publish_release.sh 1.1.0 2 "Nuevos canales y estabilidad"
+# Ejemplo: ./publish_release.sh 1.3.8 21 "GarecaTV: Buscador global por voz, horarios locales y cuenta regresiva"
 
-VERSION_NAME=${1:-"1.0.0"}
-VERSION_CODE=${2:-1}
+VERSION_NAME=${1:-"1.3.8"}
+VERSION_CODE=${2:-21}
 CHANGELOG=${3:-"Correcciones y mejoras generales"}
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 
 echo "=========================================="
-echo "🚀 Publicando ErradoTV v$VERSION_NAME ($VERSION_CODE)"
+echo "🚀 Publicando GarecaTV v$VERSION_NAME ($VERSION_CODE)"
 echo "=========================================="
 
 # 1. Actualizar build.gradle.kts si los valores cambiaron
@@ -26,12 +26,12 @@ echo "📦 Compilando APK..."
 
 # 3. Organizar en carpeta release
 mkdir -p release
-APK_VERSIONED="release/ErradoTV-v${VERSION_NAME}.apk"
-APK_LATEST="release/ErradoTV.apk"
+APK_VERSIONED="release/GarecaTV-v${VERSION_NAME}.apk"
+APK_LATEST="release/GarecaTV.apk"
 
 cp app/build/outputs/apk/debug/app-debug.apk "$APK_VERSIONED"
 cp app/build/outputs/apk/debug/app-debug.apk "$APK_LATEST"
-cp app/build/outputs/apk/debug/app-debug.apk ErradoTV-v1.0.apk
+cp app/build/outputs/apk/debug/app-debug.apk GarecaTV.apk
 
 echo "✅ APK generado:"
 ls -lh "$APK_VERSIONED" "$APK_LATEST"
@@ -42,14 +42,14 @@ cat <<EOF > version.json
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
   "latest_version_code": $VERSION_CODE,
   "latest_version_name": "$VERSION_NAME",
-  "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/ErradoTV.apk",
+  "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
   "changelog": "$CHANGELOG"
 }
 EOF
 
 # 5. Git commit y push automático a GitHub
 git add -A
-git commit -m "release: ErradoTV v$VERSION_NAME ($VERSION_CODE) - $CHANGELOG" || true
+git commit -m "release: GarecaTV v$VERSION_NAME ($VERSION_CODE) - $CHANGELOG" || true
 
 echo "Pushing a GitHub..."
 git push origin main

@@ -1,6 +1,17 @@
-# 📜 Historial de Cambios y Avances — ErradoTV
+# 📜 Historial de Cambios y Avances — GarecaTV
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
+
+## [1.3.8] - 2026-10-24
+### Añadido y Optimizado
+- **Eliminación Total de "Errado" en Instaladores y Sistema**: Se reemplazó cualquier vestigio del antiguo nombre. Los instaladores se generan de manera limpia como `GarecaTV.apk` y `GarecaTV-v1.3.8.apk`. El tema visual del sistema se renombró a `Theme.GarecaTV`, las preferencias pasaron a `gareca_tv_prefs` (con migración transparente), y los User-Agents de OTA se actualizaron a `GarecaTV-OTA` y `GarecaTV-Updater`.
+- **Huso Horario Local Automático del Televisor**: Detección nativa del huso horario del dispositivo Android TV (`TimeZone.getDefault()`). Todos los horarios de partidos publicados en el servidor (fijados en GMT-3) se convierten y formatean en tiempo real a la hora local correspondiente a la ubicación del usuario (ej: Colombia, México, Perú, Chile, España, etc.).
+- **Cuenta Regresiva Dinámica para Amantes del Fútbol**: Cada tarjeta de partido muestra una insignia de cuenta regresiva en vivo (*"⏳ En 2h 15m"*, *"⏳ En 1d 4h"*, *"⏳ ¡En 15 min!"*, *"● EN JUEGO"*). La cabecera superior ahora incluye una etiqueta visual con el huso horario detectado y la ciudad.
+- **Enriquecimiento y Cruce de Datos para TevePlay**: Los canales de `teveplay.net` con partidos programados ahora se cruzan algorítmicamente (*Fuzzy Matching*) con la agenda deportiva diaria oficial (`event.json`), transfiriéndoles automáticamente su hora de juego, su horario local convertido y su cuenta regresiva.
+- **Buscador Global Inteligente (`🔍 Buscar Todo`)**: Nueva pestaña fija en la primera posición de la barra de categorías. Permite escribir el nombre de cualquier equipo, competición o canal y buscar simultáneamente en los tres catálogos: Partidos del Día, señales de TevePlay y Repeticiones históricas.
+- **Búsqueda por Voz en TV Box y Smart TV**: Integración completa del reconocimiento de voz nativo de Android (`RecognizerIntent.ACTION_RECOGNIZE_SPEECH`) tanto en el **Buscador Global** como en la sección de **Repeticiones**. El usuario puede pulsar el botón de micrófono en pantalla o la tecla de búsqueda física del control remoto (`KEYCODE_SEARCH`), hablar al control y ver los resultados filtrados al instante.
+
+---
 
 ## [1.3.7] - 2026-10-24
 ### Añadido y Optimizado

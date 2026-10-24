@@ -60,7 +60,7 @@ object SupabaseLogger {
                 if (!res.isSuccessful) {
                     // Fallback a karaoke_system_logs si la tabla aún no fue creada con el script SQL
                     val fallbackJson = JSONObject().apply {
-                        put("room_code", "ERRADO_TV")
+                        put("room_code", "GARECA_TV")
                         put("node_type", "tv")
                         put("level", level)
                         put("event", event)

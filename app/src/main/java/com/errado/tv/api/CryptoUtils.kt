@@ -30,7 +30,12 @@ object CryptoUtils {
     var activeKeyB64: String = DEFAULT_KEY_B64
 
     fun init(context: Context) {
-        val prefs = context.getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
+        val oldPrefs = context.getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
+        val oldCachedKey = oldPrefs.getString("cached_key", null)
+        if (oldCachedKey != null && !prefs.contains("cached_key")) {
+            prefs.edit().putString("cached_key", oldCachedKey).apply()
+        }
         activeKeyB64 = prefs.getString("cached_key", DEFAULT_KEY_B64) ?: DEFAULT_KEY_B64
     }
 
@@ -45,7 +50,7 @@ object CryptoUtils {
                     val newKey = json.optString("active_key", "").trim()
                     if (newKey.isNotEmpty() && newKey != activeKeyB64) {
                         activeKeyB64 = newKey
-                        val prefs = context.getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
+                        val prefs = context.getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
                         prefs.edit().putString("cached_key", newKey).apply()
                     }
                     remoteConfigUrl = url

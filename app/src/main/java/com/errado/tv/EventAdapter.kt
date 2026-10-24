@@ -45,6 +45,7 @@ class EventAdapter(
         private val tvSubtitle: TextView = itemView.findViewById(R.id.tvSubtitle)
         private val ivThumbnail: ImageView = itemView.findViewById(R.id.ivThumbnail)
         private val tvStreamBadge: TextView = itemView.findViewById(R.id.tvStreamBadge)
+        private val tvCountdown: TextView = itemView.findViewById(R.id.tvCountdown)
 
         init {
             // TV focus animation
@@ -61,11 +62,22 @@ class EventAdapter(
             tvTitle.text = item.title
             tvSubtitle.text = item.subtitle
 
-            if (item.time != null) {
+            val displayTime = item.localTime ?: item.time
+            if (displayTime != null) {
                 tvTime.visibility = View.VISIBLE
-                tvTime.text = item.time
+                tvTime.text = displayTime
             } else {
                 tvTime.visibility = View.GONE
+            }
+
+            if (!item.countdownText.isNullOrEmpty() &&
+                item.status != EventStatus.CHANNEL_24_7 &&
+                item.status != EventStatus.REPLAY &&
+                item.status != EventStatus.REPLAY_UNAVAILABLE) {
+                tvCountdown.visibility = View.VISIBLE
+                tvCountdown.text = item.countdownText
+            } else {
+                tvCountdown.visibility = View.GONE
             }
 
             if (!item.imageUrl.isNullOrEmpty()) {

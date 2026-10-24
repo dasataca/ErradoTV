@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Visor de Logs en Tiempo Real para ErradoTV desde Supabase.
+Visor de Logs en Tiempo Real para GarecaTV desde Supabase.
 Uso:
     python3 view_logs.py [--limit 50] [--watch]
 """
@@ -27,8 +27,8 @@ def fetch_community_streams(limit=50):
         return []
 
 def fetch_logs(limit=50):
-    # Probar primero en errado_tv_logs, si no en karaoke_system_logs
-    for table in ["errado_tv_logs", "karaoke_system_logs?room_code=eq.ERRADO_TV"]:
+    # Probar primero en errado_tv_logs, si no en karaoke_system_logs (soporta tanto GARECA_TV como ERRADO_TV)
+    for table in ["errado_tv_logs", "karaoke_system_logs?room_code=eq.GARECA_TV", "karaoke_system_logs?room_code=eq.ERRADO_TV"]:
         url = f"{SUPABASE_URL}/{table}&order=created_at.desc&limit={limit}" if "?" in table else f"{SUPABASE_URL}/{table}?order=created_at.desc&limit={limit}"
         req = urllib.request.Request(url, headers={
             "apikey": SERVICE_KEY,
@@ -74,14 +74,14 @@ def print_community_stream(row):
     print(f"       └── URL:   {url}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Visor de Telemetría ErradoTV")
+    parser = argparse.ArgumentParser(description="Visor de Telemetría GarecaTV")
     parser.add_argument("--limit", "-n", type=int, default=20, help="Número de logs a mostrar")
     parser.add_argument("--watch", "-w", action="store_true", help="Seguir logs en tiempo real")
     parser.add_argument("--community", "-c", action="store_true", help="Ver señales caídas reportadas por la comunidad")
     args = parser.parse_args()
 
     print("==================================================")
-    print("      TELEMETRÍA EN VIVO — ERRADO TV (SUPABASE)   ")
+    print("      TELEMETRÍA EN VIVO — GARECA TV (SUPABASE)   ")
     print("==================================================")
 
     if args.community:

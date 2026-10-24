@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.speech.RecognizerIntent
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.KeyEvent
@@ -16,11 +17,12 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import android.widget.Toast
 import com.errado.tv.api.ApiClient
 import com.errado.tv.api.CryptoUtils
 import com.errado.tv.model.EventItem
@@ -44,17 +46,50 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmpty: TextView
     private lateinit var tvDate: TextView
+    private lateinit var tvTimeZone: TextView
     private lateinit var btnRefresh: View
     private lateinit var btnUpdate: View
     private lateinit var adapter: EventAdapter
     private lateinit var categoryAdapter: CategoryAdapter
     private var autoRefreshJob: Job? = null
 
-    // Controles de búsqueda y ordenación para TV
+    // Controles de búsqueda y ordenación para TV (Repeticiones)
     private lateinit var searchContainer: LinearLayout
     private lateinit var etSearch: EditText
+    private lateinit var btnVoiceSearchReplay: Button
     private lateinit var btnSortDate: Button
     private lateinit var btnSortName: Button
+
+    // Controles de Búsqueda Global (Todo el catálogo)
+    private lateinit var globalSearchContainer: LinearLayout
+    private lateinit var etGlobalSearch: EditText
+    private lateinit var btnVoiceGlobalSearch: Button
+    private lateinit var btnClearGlobalSearch: Button
+    private var globalSearchQuery = ""
+    private var isVoiceForGlobal = false
+
+    private val voiceSearchLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val spokenText: String? = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+            if (!spokenText.isNullOrEmpty()) {
+                if (isVoiceForGlobal) {
+                    etGlobalSearch.setText(spokenText)
+                    globalSearchQuery = spokenText.trim()
+                    filterAndDisplayEvents(silent = false)
+                    focusFirstEventItem()
+                } else {
+                    etSearch.setText(spokenText)
+                    searchQuery = spokenText.trim()
+                    filterAndDisplayEvents(silent = false)
+                    focusFirstEventItem()
+                }
+            }
+        }
+    }
 
     private enum class ReplaySortMode {
         DATE_DESC, DATE_ASC, NAME_ASC, NAME_DESC
@@ -63,6 +98,7 @@ class MainActivity : AppCompatActivity() {
     private var searchQuery = ""
 
     private val categoryList = listOf(
+        "🔍 Buscar Todo",
         "⚽ Partidos del Día",
         "🔁 Repeticiones",
         "📺 Regionales",
@@ -106,15 +142,24 @@ class MainActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         tvEmpty = findViewById(R.id.tvEmpty)
         tvDate = findViewById(R.id.tvDate)
+        tvTimeZone = findViewById(R.id.tvTimeZone)
         btnRefresh = findViewById(R.id.btnRefresh)
         btnUpdate = findViewById(R.id.btnUpdate)
 
         searchContainer = findViewById(R.id.searchContainer)
         etSearch = findViewById(R.id.etSearch)
+        btnVoiceSearchReplay = findViewById(R.id.btnVoiceSearchReplay)
         btnSortDate = findViewById(R.id.btnSortDate)
         btnSortName = findViewById(R.id.btnSortName)
 
+        globalSearchContainer = findViewById(R.id.globalSearchContainer)
+        etGlobalSearch = findViewById(R.id.etGlobalSearch)
+        btnVoiceGlobalSearch = findViewById(R.id.btnVoiceGlobalSearch)
+        btnClearGlobalSearch = findViewById(R.id.btnClearGlobalSearch)
+
+        updateTimeZoneHeader()
         setupSearchAndSortControls()
+        setupGlobalSearchControls()
 
         val tvUpdateLabel = findViewById<TextView>(R.id.tvUpdateLabel)
         val ivUpdateIcon = findViewById<ImageView>(R.id.ivUpdateIcon)
@@ -140,7 +185,10 @@ class MainActivity : AppCompatActivity() {
                 filterAndDisplayEvents(silent = false)
             },
             onDownPressed = { category ->
-                if (category == "🔁 Repeticiones" && searchContainer.visibility == View.VISIBLE) {
+                if (category == "🔍 Buscar Todo" && globalSearchContainer.visibility == View.VISIBLE) {
+                    etGlobalSearch.requestFocus()
+                    true
+                } else if (category == "🔁 Repeticiones" && searchContainer.visibility == View.VISIBLE) {
                     etSearch.requestFocus()
                     true
                 } else {
@@ -215,9 +263,35 @@ class MainActivity : AppCompatActivity() {
                     }
                     KeyEvent.KEYCODE_DPAD_RIGHT -> {
                         if (!etSearch.isCursorVisible) {
-                            btnSortDate.requestFocus()
+                            btnVoiceSearchReplay.requestFocus()
                             return@setOnKeyListener true
                         }
+                    }
+                }
+            }
+            false
+        }
+
+        btnVoiceSearchReplay.setOnFocusChangeListener { _, hasFocus ->
+            btnVoiceSearchReplay.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+        btnVoiceSearchReplay.setOnClickListener {
+            startVoiceSearch(isGlobal = false)
+        }
+        btnVoiceSearchReplay.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        focusFirstEventItem()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        etSearch.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        btnSortDate.requestFocus()
+                        return@setOnKeyListener true
                     }
                 }
             }
@@ -256,17 +330,37 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnSortDate.setOnKeyListener { _, keyCode, event ->
-            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                focusFirstEventItem()
-                return@setOnKeyListener true
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        focusFirstEventItem()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        btnVoiceSearchReplay.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        btnSortName.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                }
             }
             false
         }
 
         btnSortName.setOnKeyListener { _, keyCode, event ->
-            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                focusFirstEventItem()
-                return@setOnKeyListener true
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        focusFirstEventItem()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        btnSortDate.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                }
             }
             false
         }
@@ -294,6 +388,178 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateSortButtonsUi()
+    }
+
+    private fun setupGlobalSearchControls() {
+        etGlobalSearch.isCursorVisible = false
+
+        etGlobalSearch.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                etGlobalSearch.isCursorVisible = false
+            }
+        }
+
+        etGlobalSearch.setOnClickListener {
+            activateGlobalSearchInput()
+        }
+
+        etGlobalSearch.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        if (!etGlobalSearch.isCursorVisible) {
+                            focusFirstEventItem()
+                            return@setOnKeyListener true
+                        }
+                    }
+                    KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                        if (!etGlobalSearch.isCursorVisible) {
+                            activateGlobalSearchInput()
+                            return@setOnKeyListener true
+                        }
+                    }
+                    KeyEvent.KEYCODE_DPAD_UP -> {
+                        if (!etGlobalSearch.isCursorVisible) {
+                            rvCategories.requestFocus()
+                            return@setOnKeyListener true
+                        }
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        if (!etGlobalSearch.isCursorVisible) {
+                            btnVoiceGlobalSearch.requestFocus()
+                            return@setOnKeyListener true
+                        }
+                    }
+                }
+            }
+            false
+        }
+
+        etGlobalSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                globalSearchQuery = s?.toString()?.trim().orEmpty()
+                if (currentCategory == "🔍 Buscar Todo") {
+                    filterAndDisplayEvents(silent = true)
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        etGlobalSearch.setOnEditorActionListener { _, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                actionId == EditorInfo.IME_ACTION_DONE ||
+                event?.keyCode == KeyEvent.KEYCODE_ENTER
+            ) {
+                deactivateGlobalSearchInput()
+                focusFirstEventItem()
+                true
+            } else {
+                false
+            }
+        }
+
+        btnVoiceGlobalSearch.setOnFocusChangeListener { _, hasFocus ->
+            btnVoiceGlobalSearch.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+        btnVoiceGlobalSearch.setOnClickListener {
+            startVoiceSearch(isGlobal = true)
+        }
+        btnVoiceGlobalSearch.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        focusFirstEventItem()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        etGlobalSearch.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        btnClearGlobalSearch.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                }
+            }
+            false
+        }
+
+        btnClearGlobalSearch.setOnFocusChangeListener { _, hasFocus ->
+            btnClearGlobalSearch.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+        btnClearGlobalSearch.setOnClickListener {
+            etGlobalSearch.setText("")
+            globalSearchQuery = ""
+            filterAndDisplayEvents(silent = true)
+            etGlobalSearch.requestFocus()
+        }
+        btnClearGlobalSearch.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        focusFirstEventItem()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        btnVoiceGlobalSearch.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                }
+            }
+            false
+        }
+    }
+
+    private fun activateGlobalSearchInput() {
+        etGlobalSearch.isCursorVisible = true
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(etGlobalSearch, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun deactivateGlobalSearchInput() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(etGlobalSearch.windowToken, 0)
+        etGlobalSearch.isCursorVisible = false
+    }
+
+    private fun updateTimeZoneHeader() {
+        try {
+            val tz = java.util.TimeZone.getDefault()
+            val offsetMillis = tz.getOffset(System.currentTimeMillis())
+            val offsetHours = offsetMillis / (1000 * 60 * 60)
+            val offsetMins = Math.abs((offsetMillis / (1000 * 60)) % 60)
+            val sign = if (offsetHours >= 0) "+" else ""
+            val tzText = if (offsetMins == 0) "GMT$sign$offsetHours" else "GMT$sign$offsetHours:$offsetMins"
+            val city = tz.id.substringAfterLast('/').replace("_", " ")
+            tvTimeZone.text = "[$tzText • $city]"
+        } catch (_: Exception) {
+            tvTimeZone.visibility = View.GONE
+        }
+    }
+
+    private fun startVoiceSearch(isGlobal: Boolean) {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(
+                RecognizerIntent.EXTRA_PROMPT,
+                if (isGlobal) "Di el nombre del equipo o canal a buscar..." else "Di el partido a buscar en repeticiones..."
+            )
+        }
+        try {
+            isVoiceForGlobal = isGlobal
+            voiceSearchLauncher.launch(intent)
+        } catch (_: Exception) {
+            Toast.makeText(this, "Reconocimiento de voz no disponible en este televisor", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_SEARCH) {
+            startVoiceSearch(isGlobal = (currentCategory != "🔁 Repeticiones"))
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     private fun focusFirstEventItem() {
@@ -341,6 +607,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_BACK) {
+            if (::etGlobalSearch.isInitialized && (etGlobalSearch.isCursorVisible || etGlobalSearch.hasFocus())) {
+                deactivateGlobalSearchInput()
+                etGlobalSearch.clearFocus()
+                rvEvents.requestFocus()
+                return true
+            }
             if (::etSearch.isInitialized && (etSearch.isCursorVisible || etSearch.hasFocus())) {
                 deactivateSearchInput()
                 etSearch.clearFocus()
@@ -383,7 +655,7 @@ class MainActivity : AppCompatActivity() {
             filterAndDisplayEvents(silent = true)
         }
 
-        val prefs = getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
         val lastSync = prefs.getLong("last_sync_time", 0L)
         val now = System.currentTimeMillis()
         // Si regresamos de ver un partido y ya pasaron más de 15 minutos, actualizar en segundo plano
@@ -410,7 +682,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadData(silent: Boolean = false, force: Boolean = false) {
-        val prefs = getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
         val lastSync = prefs.getLong("last_sync_time", 0L)
         val now = System.currentTimeMillis()
 
@@ -443,7 +715,11 @@ class MainActivity : AppCompatActivity() {
                 val featuredList = featuredJob.await()
                 val liveChannels = liveChannelsJob.await()
 
+                // Enriquecer canales de TevePlay que sean partidos cruzándolos con la agenda deportiva diaria
+                enrichTeveplayMatches(liveChannels, dailyResponse.events)
+
                 tvDate.text = dailyResponse.date
+                updateTimeZoneHeader()
 
                 // Separación estricta: en Partidos del Día SOLO van partidos que NO sean repetición
                 val todayMatches = mutableListOf<EventItem>()
@@ -505,17 +781,82 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun enrichTeveplayMatches(liveChannels: List<EventItem>, dailyEvents: List<EventItem>) {
+        fun cleanWords(s: String): List<String> {
+            return s.lowercase()
+                .replace(Regex("""\b(liga|copa|colombia|chile|brasil|sub-20|sub20|campeonato|de|fc|cf|club|conmebol|concacaf|league|cup)\b"""), " ")
+                .replace(Regex("""[^a-z0-9\s]"""), " ")
+                .split(Regex("""\s+"""))
+                .filter { it.length >= 4 }
+        }
+
+        for (channel in liveChannels) {
+            if ("vs" in channel.title.lowercase() || " v " in channel.title.lowercase()) {
+                val chWords = cleanWords(channel.title)
+                val matched = dailyEvents.firstOrNull { daily ->
+                    val dWords = cleanWords(daily.title)
+                    dWords.isNotEmpty() && dWords.any { chWords.contains(it) }
+                }
+
+                if (matched != null) {
+                    channel.time = matched.time
+                    channel.localTime = matched.localTime
+                    channel.status = matched.status
+                    channel.countdownText = matched.countdownText
+                    val displayTime = channel.localTime ?: channel.time
+                    channel.subtitle = "🟢 TevePlay • ${if (displayTime != null) "Hora local: $displayTime • " else ""}${matched.countdownText ?: "En agenda"}"
+                }
+            }
+        }
+    }
+
+    private fun getFilteredGlobalEvents(): List<EventItem> {
+        val q = globalSearchQuery.trim().lowercase()
+        if (q.isEmpty()) {
+            return cachedDailyEvents
+        }
+        val results = mutableListOf<EventItem>()
+
+        for (item in cachedDailyEvents) {
+            if (item.title.lowercase().contains(q) || item.subtitle.lowercase().contains(q)) {
+                results.add(item)
+            }
+        }
+        for (item in cachedLiveChannels) {
+            if (item.title.lowercase().contains(q) || item.category.lowercase().contains(q) || item.subtitle.lowercase().contains(q)) {
+                results.add(item)
+            }
+        }
+        for (item in cachedReplayEvents) {
+            if (item.title.lowercase().contains(q) || item.subtitle.lowercase().contains(q)) {
+                results.add(item)
+            }
+        }
+        return results
+    }
+
     private fun filterAndDisplayEvents(silent: Boolean = false) {
-        if (currentCategory == "🔁 Repeticiones") {
-            searchContainer.visibility = View.VISIBLE
-        } else {
-            searchContainer.visibility = View.GONE
-            if (::etSearch.isInitialized) {
-                deactivateSearchInput()
+        when (currentCategory) {
+            "🔍 Buscar Todo" -> {
+                globalSearchContainer.visibility = View.VISIBLE
+                searchContainer.visibility = View.GONE
+                if (::etSearch.isInitialized) deactivateSearchInput()
+            }
+            "🔁 Repeticiones" -> {
+                globalSearchContainer.visibility = View.GONE
+                searchContainer.visibility = View.VISIBLE
+                if (::etGlobalSearch.isInitialized) deactivateGlobalSearchInput()
+            }
+            else -> {
+                globalSearchContainer.visibility = View.GONE
+                searchContainer.visibility = View.GONE
+                if (::etSearch.isInitialized) deactivateSearchInput()
+                if (::etGlobalSearch.isInitialized) deactivateGlobalSearchInput()
             }
         }
 
         val displayList = when (currentCategory) {
+            "🔍 Buscar Todo" -> getFilteredGlobalEvents()
             "⚽ Partidos del Día" -> cachedDailyEvents
             "🔁 Repeticiones" -> getFilteredAndSortedReplays()
             "🌐 Todos los Canales" -> cachedLiveChannels
@@ -525,6 +866,11 @@ class MainActivity : AppCompatActivity() {
         if (displayList.isEmpty()) {
             tvEmpty.visibility = View.VISIBLE
             tvEmpty.text = when (currentCategory) {
+                "🔍 Buscar Todo" -> if (globalSearchQuery.isNotEmpty()) {
+                    "No se encontraron partidos ni canales para \"$globalSearchQuery\"."
+                } else {
+                    "Escribe un equipo o pulsa 🎙️ para buscar en partidos de hoy, TevePlay y repeticiones."
+                }
                 "⚽ Partidos del Día" -> getString(R.string.no_events)
                 "🔁 Repeticiones" -> if (searchQuery.isNotEmpty()) {
                     "No se encontraron repeticiones para \"$searchQuery\"."
@@ -538,7 +884,8 @@ class MainActivity : AppCompatActivity() {
             tvEmpty.visibility = View.GONE
             adapter.submitList(displayList)
             if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
-                && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus()))
+                && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus() && !btnVoiceSearchReplay.hasFocus()))
+                && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnClearGlobalSearch.hasFocus()))
             ) {
                 rvEvents.requestFocus()
             }
@@ -552,7 +899,7 @@ class MainActivity : AppCompatActivity() {
             list = list.filter {
                 it.title.lowercase().contains(q) ||
                 it.subtitle.lowercase().contains(q) ||
-                (it.time != null && it.time.contains(q)) ||
+                (it.time?.contains(q) == true) ||
                 (it.rawDate != null && it.rawDate.contains(q))
             }
         }

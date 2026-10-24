@@ -79,15 +79,22 @@ object ApiClient {
                         }
 
                         if (streams.isNotEmpty()) {
-                            val eventStatus = EventItem.calculateStatus(extractedTime)
+                            val (eventStatus, localTime, countdown) = EventItem.calculateTimesAndStatus(extractedTime, eventDate)
+                            val subtitleText = if (localTime != null && localTime != extractedTime) {
+                                "${streams.size} opciones • Tu hora: $localTime (Arg: $extractedTime)"
+                            } else {
+                                "${streams.size} opciones disponibles"
+                            }
                             list.add(
                                 EventItem(
                                     title = cleanTitle,
                                     time = extractedTime,
-                                    subtitle = "${streams.size} opciones disponibles",
+                                    subtitle = subtitleText,
                                     imageUrl = null,
                                     streams = streams,
-                                    status = eventStatus
+                                    status = eventStatus,
+                                    localTime = localTime,
+                                    countdownText = countdown
                                 )
                             )
                         }
@@ -401,17 +408,33 @@ object ApiClient {
                         val cat = mapGroupToCategory(group, name)
                         val validLogo = if (logo.isNotEmpty() && !logo.contains("placehold.co")) logo else null
 
-                        val itemStatus = if ("vs" in name.lowercase() || " v " in name.lowercase()) {
-                            EventStatus.SCHEDULED
+                        val isMatch = "vs" in name.lowercase() || " v " in name.lowercase()
+                        val timeRegex = Regex("""\b([01]?[0-9]|2[0-3]):([0-5][0-9])\b""")
+                        val timeMatch = timeRegex.find(name)
+                        val extractedTime = timeMatch?.value
+
+                        var itemStatus = if (isMatch) EventStatus.SCHEDULED else EventStatus.CHANNEL_24_7
+                        var localTime: String? = null
+                        var countdownText: String? = if (isMatch) "⏳ PROGRAMADO" else null
+
+                        if (extractedTime != null) {
+                            val (cStatus, lTime, cText) = EventItem.calculateTimesAndStatus(extractedTime)
+                            itemStatus = cStatus
+                            localTime = lTime
+                            countdownText = cText
+                        }
+
+                        val subText = if (localTime != null) {
+                            "$group • Hora: $localTime • Señal Directa"
                         } else {
-                            EventStatus.CHANNEL_24_7
+                            "$group • Señal Directa (ExoPlayer)"
                         }
 
                         list.add(
                             EventItem(
                                 title = name,
-                                time = null,
-                                subtitle = "$group • Señal Directa (ExoPlayer)",
+                                time = extractedTime,
+                                subtitle = subText,
                                 imageUrl = validLogo,
                                 streams = listOf(
                                     StreamOption(
@@ -421,7 +444,9 @@ object ApiClient {
                                     )
                                 ),
                                 status = itemStatus,
-                                category = cat
+                                category = cat,
+                                localTime = localTime,
+                                countdownText = countdownText
                             )
                         )
                     }

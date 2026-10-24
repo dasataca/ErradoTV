@@ -61,6 +61,21 @@
             android:textStyle="bold"
             android:textColor="@color/text_primary" />
 
+        <TextView
+            android:id="@+id/tvTimeZone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/accent"
+            android:background="#2000E5FF"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:layout_marginStart="8dp" />
+
         <View
             android:layout_width="0dp"
             android:layout_height="1dp"
@@ -158,13 +173,32 @@
             android:cursorVisible="false"
             android:nextFocusUp="@id/rvCategories"
             android:nextFocusDown="@id/rvEvents"
+            android:nextFocusRight="@id/btnVoiceSearchReplay" />
+
+        <Button
+            android:id="@+id/btnVoiceSearchReplay"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginStart="8dp"
+            android:text="🎙️ Voz"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/button_text_selector"
+            android:background="@drawable/button_focus_selector"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:nextFocusUp="@id/rvCategories"
+            android:nextFocusDown="@id/rvEvents"
+            android:nextFocusLeft="@id/etSearch"
             android:nextFocusRight="@id/btnSortDate" />
 
         <Button
             android:id="@+id/btnSortDate"
             android:layout_width="wrap_content"
             android:layout_height="44dp"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="8dp"
             android:text="📅 Fecha (Recientes)"
             android:textSize="14sp"
             android:textStyle="bold"
@@ -176,7 +210,7 @@
             android:clickable="true"
             android:nextFocusUp="@id/rvCategories"
             android:nextFocusDown="@id/rvEvents"
-            android:nextFocusLeft="@id/etSearch"
+            android:nextFocusLeft="@id/btnVoiceSearchReplay"
             android:nextFocusRight="@id/btnSortName" />
 
         <Button
@@ -196,6 +230,76 @@
             android:nextFocusUp="@id/rvCategories"
             android:nextFocusDown="@id/rvEvents"
             android:nextFocusLeft="@id/btnSortDate" />
+    </LinearLayout>
+
+    <!-- Global Search Bar (para pestaña Buscar Todo) -->
+    <LinearLayout
+        android:id="@+id/globalSearchContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp">
+
+        <EditText
+            android:id="@+id/etGlobalSearch"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:hint="🔍 Buscar equipo o canal en TODO GarecaTV (ej: Real Madrid, Boca, Colapinto, ESPN)..."
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary"
+            android:background="@drawable/search_box_selector"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textSize="15sp"
+            android:singleLine="true"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:cursorVisible="false"
+            android:nextFocusUp="@id/rvCategories"
+            android:nextFocusDown="@id/rvEvents"
+            android:nextFocusRight="@id/btnVoiceGlobalSearch" />
+
+        <Button
+            android:id="@+id/btnVoiceGlobalSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginStart="12dp"
+            android:text="🎙️ Hablar al Control"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/button_text_selector"
+            android:background="@drawable/button_focus_selector"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:nextFocusUp="@id/rvCategories"
+            android:nextFocusDown="@id/rvEvents"
+            android:nextFocusLeft="@id/etGlobalSearch"
+            android:nextFocusRight="@id/btnClearGlobalSearch" />
+
+        <Button
+            android:id="@+id/btnClearGlobalSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginStart="8dp"
+            android:text="✕ Limpiar"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/button_text_selector"
+            android:background="@drawable/button_focus_selector"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:nextFocusUp="@id/rvCategories"
+            android:nextFocusDown="@id/rvEvents"
+            android:nextFocusLeft="@id/btnVoiceGlobalSearch" />
     </LinearLayout>
 
     <!-- Main Content Frame -->
