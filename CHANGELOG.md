@@ -2,7 +2,15 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
-## [1.4.1] - 2026-10-24
+## [1.4.2] - 2026-10-24
+### Añadido y Optimizado
+- **Icono Oficial con Letras Rojas y Bordes Negros "Gareca Tv"**: Se rediseñó el icono oficial integrando el rótulo destacado "Gareca Tv" en letras rojas con contorno/borde negro deportivo, manteniendo la figura del tigre rugiente y las garras sobre fondo blanco limpio.
+- **Eliminación Total de Contornos Cuadrados en TV Android**: Se limpiaron todos los marcos y bordes cuadrados residuales tanto en los iconos adaptativos (`ic_launcher`, `ic_launcher_round`, `ic_launcher_foreground`) como en el banner principal de Android TV (`tv_banner.png`), permitiendo que el tigre y las letras floten con total armonía sobre el fondo blanco sin marcos artificiales.
+- **Activación de Categorías Exclusiva por Click Adicional**: En el menú superior de categorías (Repeticiones, Partidos del Día, etc.), al mover el foco con la cruceta del control remoto el botón se enfoca y anima con escala, pero las listas sólo se activan cuando el usuario da un click adicional (OK / Center), evitando cambios no deseados al navegar.
+
+---
+
+
 ### Añadido y Optimizado
 - **Nombre de Marca Oficial "GarecaTV" en Notificación del Instalador de Android TV**: Se configuró explícitamente `android:label="@string/app_name"` ("GarecaTV"), `android:icon` y `android:banner` en la actividad principal `MainActivity` y actividades secundarias en `AndroidManifest.xml`, y se añadió `EXTRA_TITLE` en el intent del instalador. Esto garantiza que el PackageInstaller del sistema operativo Android TV muestre siempre **"GarecaTV se actualizó"** en la pantalla del televisor en lugar del identificador interno de paquete.
 - **Normalización de Cadenas**: Se estandarizó `app_name` como "GarecaTV" en `strings.xml`.
