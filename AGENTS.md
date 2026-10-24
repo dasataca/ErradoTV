@@ -70,13 +70,14 @@ La aplicación consume archivos JSON cifrados alojados en el CDN global **Cloudf
 
 ---
 
-## 5. Telemetría Remota (Supabase)
+## 5. Telemetría y Base Comunitaria (Supabase)
 
 * **Proyecto**: `pfhjrplnfuupftgzdnop` (`https://pfhjrplnfuupftgzdnop.supabase.co`).
-* **Tabla**: `errado_tv_logs`.
-* **Buffer Circular**: Trigger PostgreSQL que purga automáticamente filas antiguas superados los 1,000 registros.
-* **Eventos Registrados**: `app_start`, `event_click`, `play_stream`, `player_ready`, `stream_resolution`, `player_error`, `update_check`.
-* **Visor de Consola**: `python3 view_logs.py --watch`.
+* **Tabla de Telemetría**: `public.errado_tv_logs` (Buffer circular de 1,000 filas para eventos: `app_start`, `event_click`, `play_stream`, `player_error`, `update_check`).
+* **Tabla Comunitaria Exclusiva**: `public.errado_community_streams` (Almacena permanentemente enlaces caídos con deduplicación por clave primaria `stream_url` y conteo de reportes).
+* **Visor de Consola**: 
+  * `python3 view_logs.py --watch` (Logs en tiempo real).
+  * `python3 view_logs.py --community` (Señales caídas reportadas por la comunidad).
 
 ---
 

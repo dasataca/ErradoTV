@@ -2,6 +2,14 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.3.4] - 2026-10-24
+### Añadido y Optimizado
+- **Reordenamiento Automático de Partidos No Disponibles al Final de la Lista**: En la pestaña *⚽ Partidos del Día*, los partidos identificados como `NO DISPONIBLE` se desplazan automáticamente al fondo de la lista tanto en la carga inicial como en tiempo real cuando el usuario regresa de intentar reproducir una señal sin respuesta.
+- **Verificación y Activación en Vivo de `errado_community_streams`**: Confirmada la conectividad con la tabla comunitaria exclusiva en Supabase con clave primaria `stream_url`.
+- **Actualización de Herramientas de Telemetría**: El script `view_logs.py` incorpora el parámetro `--community` para auditar las señales caídas registradas en la nube.
+
+---
+
 ## [1.3.3] - 2026-10-24
 ### Añadido y Optimizado
 - **Tabla Exclusiva Comunitaria (`errado_community_streams`)**: La app ahora consulta y registra directamente en la tabla exclusiva dedicada `public.errado_community_streams` en la base de datos de Supabase, con clave primaria por URL para deduplicación instantánea y fallback de compatibilidad a `errado_tv_logs`.

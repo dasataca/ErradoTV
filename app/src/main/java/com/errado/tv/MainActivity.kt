@@ -156,7 +156,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
         if (updated) {
-            adapter.notifyDataSetChanged()
+            cachedDailyEvents = cachedDailyEvents.sortedBy { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+            filterAndDisplayEvents(silent = true)
         }
 
         val prefs = getSharedPreferences("errado_tv_prefs", Context.MODE_PRIVATE)
@@ -233,7 +234,10 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                cachedDailyEvents = allEvents
+                // Colocar los partidos 'NO DISPONIBLE' al final de la lista de partidos del día
+                val sortedEvents = allEvents.sortedBy { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+
+                cachedDailyEvents = sortedEvents
                 cachedLiveChannels = liveChannels
                 prefs.edit().putLong("last_sync_time", System.currentTimeMillis()).apply()
 
