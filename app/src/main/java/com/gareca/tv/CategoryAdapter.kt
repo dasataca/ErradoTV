@@ -1,4 +1,4 @@
-package com.errado.tv
+package com.gareca.tv
 
 import android.view.KeyEvent
 import android.view.LayoutInflater

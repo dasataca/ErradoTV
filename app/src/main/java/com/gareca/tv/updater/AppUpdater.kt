@@ -1,13 +1,13 @@
-package com.errado.tv.updater
+package com.gareca.tv.updater
 
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.content.FileProvider
-import com.errado.tv.api.ApiClient
-import com.errado.tv.api.CryptoUtils
-import com.errado.tv.telemetry.SupabaseLogger
+import com.gareca.tv.api.ApiClient
+import com.gareca.tv.api.CryptoUtils
+import com.gareca.tv.telemetry.SupabaseLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request

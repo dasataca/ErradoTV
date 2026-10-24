@@ -1,4 +1,4 @@
-package com.errado.tv.model
+package com.gareca.tv.model
 
 import java.util.Calendar
 import java.util.TimeZone

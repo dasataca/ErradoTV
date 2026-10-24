@@ -1,9 +1,9 @@
-package com.errado.tv.api
+package com.gareca.tv.api
 
-import com.errado.tv.model.EventItem
-import com.errado.tv.model.EventStatus
-import com.errado.tv.model.StreamOption
-import com.errado.tv.telemetry.SupabaseLogger
+import com.gareca.tv.model.EventItem
+import com.gareca.tv.model.EventStatus
+import com.gareca.tv.model.StreamOption
+import com.gareca.tv.telemetry.SupabaseLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -254,7 +254,7 @@ object ApiClient {
             return@withContext StreamHealth(resolved, isOnline = false)
         }
 
-        val cachedRes = com.errado.tv.StreamCache.getResolution(url)
+        val cachedRes = com.gareca.tv.StreamCache.getResolution(url)
         if (cachedRes != null) {
             return@withContext StreamHealth(resolved, isOnline = true, resolution = cachedRes)
         }
@@ -304,7 +304,7 @@ object ApiClient {
                         }
                     }
                 }
-                detectedRes?.let { com.errado.tv.StreamCache.setResolution(url, it) }
+                detectedRes?.let { com.gareca.tv.StreamCache.setResolution(url, it) }
                 return@withContext StreamHealth(resolved, isOnline = true, resolution = detectedRes)
             } else {
                 return@withContext StreamHealth(resolved, isOnline = false)
@@ -316,7 +316,7 @@ object ApiClient {
 
     suspend fun checkReplayUrl(url: String): Boolean = withContext(Dispatchers.IO) {
         if (!url.startsWith("http")) return@withContext false
-        if (com.errado.tv.StreamCache.isUnavailable(url)) return@withContext false
+        if (com.gareca.tv.StreamCache.isUnavailable(url)) return@withContext false
 
         try {
             val req = Request.Builder()
@@ -325,14 +325,14 @@ object ApiClient {
                 .build()
             val res = httpClient.newCall(req).execute()
             if (!res.isSuccessful) {
-                com.errado.tv.StreamCache.markUnavailable(null, url)
+                com.gareca.tv.StreamCache.markUnavailable(null, url)
                 return@withContext false
             }
 
             val body = res.body?.string().orEmpty()
             val lines = body.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }
             if (lines.isEmpty()) {
-                com.errado.tv.StreamCache.markUnavailable(null, url)
+                com.gareca.tv.StreamCache.markUnavailable(null, url)
                 return@withContext false
             }
 
@@ -349,7 +349,7 @@ object ApiClient {
                 .build()
             val segRes = httpClient.newCall(segReq).execute()
             if (!segRes.isSuccessful) {
-                com.errado.tv.StreamCache.markUnavailable(null, url)
+                com.gareca.tv.StreamCache.markUnavailable(null, url)
                 return@withContext false
             }
 
@@ -357,7 +357,7 @@ object ApiClient {
             val buffer = ByteArray(16)
             val bytesRead = stream.read(buffer, 0, 16)
             if (bytesRead < 4) {
-                com.errado.tv.StreamCache.markUnavailable(null, url)
+                com.gareca.tv.StreamCache.markUnavailable(null, url)
                 return@withContext false
             }
 
@@ -372,11 +372,11 @@ object ApiClient {
 
             val isValidVideo = (isMpegTs || isMp4) && !isFakeImage
             if (!isValidVideo) {
-                com.errado.tv.StreamCache.markUnavailable(null, url)
+                com.gareca.tv.StreamCache.markUnavailable(null, url)
             }
             return@withContext isValidVideo
         } catch (e: Exception) {
-            com.errado.tv.StreamCache.markUnavailable(null, url)
+            com.gareca.tv.StreamCache.markUnavailable(null, url)
             return@withContext false
         }
     }

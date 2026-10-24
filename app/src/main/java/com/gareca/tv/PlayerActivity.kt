@@ -1,4 +1,4 @@
-package com.errado.tv
+package com.gareca.tv
 
 import android.net.Uri
 import android.os.Bundle
@@ -20,7 +20,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
-import com.errado.tv.telemetry.SupabaseLogger
+import com.gareca.tv.telemetry.SupabaseLogger
 
 class PlayerActivity : AppCompatActivity() {
 

@@ -1,4 +1,4 @@
-package com.errado.tv
+package com.gareca.tv
 
 import android.app.Dialog
 import android.content.Context
@@ -23,14 +23,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.errado.tv.api.ApiClient
-import com.errado.tv.api.CryptoUtils
-import com.errado.tv.model.EventItem
-import com.errado.tv.model.EventStatus
-import com.errado.tv.model.StreamOption
-import com.errado.tv.telemetry.SupabaseLogger
-import com.errado.tv.updater.AppUpdater
-import com.errado.tv.updater.UpdateInfo
+import com.gareca.tv.api.ApiClient
+import com.gareca.tv.api.CryptoUtils
+import com.gareca.tv.model.EventItem
+import com.gareca.tv.model.EventStatus
+import com.gareca.tv.model.StreamOption
+import com.gareca.tv.telemetry.SupabaseLogger
+import com.gareca.tv.updater.AppUpdater
+import com.gareca.tv.updater.UpdateInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async

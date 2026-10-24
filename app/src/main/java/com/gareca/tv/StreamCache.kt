@@ -1,4 +1,4 @@
-package com.errado.tv
+package com.gareca.tv
 
 import android.content.Context
 import java.util.concurrent.ConcurrentHashMap

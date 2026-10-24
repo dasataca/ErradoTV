@@ -1,4 +1,4 @@
-package com.errado.tv.api
+package com.gareca.tv.api
 
 import android.content.Context
 import android.util.Base64

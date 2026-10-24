@@ -1,4 +1,4 @@
-package com.errado.tv
+package com.gareca.tv
 
 import android.view.LayoutInflater
 import android.view.View
@@ -9,8 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import com.bumptech.glide.Glide
-import com.errado.tv.model.EventItem
-import com.errado.tv.model.EventStatus
+import com.gareca.tv.model.EventItem
+import com.gareca.tv.model.EventStatus
 
 class EventAdapter(
     private val onItemClick: (EventItem) -> Unit

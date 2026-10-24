@@ -1,4 +1,4 @@
-package com.errado.tv
+package com.gareca.tv
 
 import android.annotation.SuppressLint
 import android.os.Bundle

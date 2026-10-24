@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace = "com.errado.tv"
+    namespace = "com.gareca.tv"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.errado.tv"
+        applicationId = "com.gareca.tv"
         minSdk = 24
         targetSdk = 34
-        versionCode = 25
-        versionName = "1.4.2"
+        versionCode = 26
+        versionName = "1.4.3"
     }
 
     buildTypes {

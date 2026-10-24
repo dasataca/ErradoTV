@@ -1,4 +1,4 @@
-package com.errado.tv.telemetry
+package com.gareca.tv.telemetry
 
 import android.os.Build
 import kotlinx.coroutines.CoroutineScope

@@ -2,7 +2,15 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
-## [1.4.2] - 2026-10-24
+## [1.4.3] - 2026-10-24
+### Añadido y Optimizado
+- **Empaquetado Nativo 100% como `com.gareca.tv`**: Se migró completamente el namespace, el applicationId y toda la estructura de paquetes Kotlin a `com.gareca.tv`. Se eliminó cualquier generación de archivos con el antiguo nombre en los instaladores.
+- **Limpieza de Cabecera en la Página Principal**: Se removió el texto blanco redundante que decía "GarecaTV" en la cabecera superior, dándole exclusividad al icono oficial que ya integra el tigre y las letras rojas con bordes negros "Gareca Tv".
+- **Banner de Android TV con Mayor Magnitud y Legibilidad**: Se optimizó la escala del tigre y las letras en el banner panorámico (`tv_banner.png`) sobre fondo blanco puro para una visibilidad destacada en la pantalla de inicio de Android TV.
+
+---
+
+
 ### Añadido y Optimizado
 - **Icono Oficial con Letras Rojas y Bordes Negros "Gareca Tv"**: Se rediseñó el icono oficial integrando el rótulo destacado "Gareca Tv" en letras rojas con contorno/borde negro deportivo, manteniendo la figura del tigre rugiente y las garras sobre fondo blanco limpio.
 - **Eliminación Total de Contornos Cuadrados en TV Android**: Se limpiaron todos los marcos y bordes cuadrados residuales tanto en los iconos adaptativos (`ic_launcher`, `ic_launcher_round`, `ic_launcher_foreground`) como en el banner principal de Android TV (`tv_banner.png`), permitiendo que el tigre y las letras floten con total armonía sobre el fondo blanco sin marcos artificiales.
