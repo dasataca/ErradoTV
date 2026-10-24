@@ -2,6 +2,11 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.4.5] - 2026-10-24
+### Añadido y Optimizado
+- **Invalidación Forzada de Caché en Android TV Launcher (Cache-Busting)**: El lanzador del sistema Android TV almacena en caché persistente los banners de aplicaciones. Se migraron los identificadores de recursos en el manifiesto a `@drawable/tv_banner_v2` y `@mipmap/ic_launcher_v2` para forzar a Android TV a descartar el caché antiguo y mostrar de inmediato el nuevo diseño.
+- **Banner Panorámico de Alta Definición y Letras Ampliadas**: Se optimizó la disposición del banner panorámico (`tv_banner_v2.png`), ampliando el tigre y las letras rojas con bordes negros a 240px de ancho y 35px de alto para máxima legibilidad desde la distancia del sillón.
+
 ## [1.4.4] - 2026-10-24
 ### Añadido y Optimizado
 - **Icono Oficial con Letras Rojas y Bordes Negros Únicas en la Parte Inferior**: Se restauró la tipografía deportiva itálica original ubicada exclusivamente en la parte inferior del icono, transformando los caracteres a cuerpo rojo vibrante (`#EB1919`) con contorno/borde negro sólido (`#000000`). Se eliminó cualquier texto duplicado en la parte superior del icono y en la cabecera.

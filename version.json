@@ -1,7 +1,7 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "latest_version_code": 27,
-  "latest_version_name": "1.4.4",
+  "latest_version_code": 28,
+  "latest_version_name": "1.4.5",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Letras rojas con bordes negros unicas en inferior de icono, fondo blanco limpio"
+  "changelog": "GarecaTV: Cache-busting en launcher de Android TV y banner con letras ampliadas"
 }
