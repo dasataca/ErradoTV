@@ -188,10 +188,14 @@ object ApiClient {
                     val json = JSONObject(body)
                     val realUrl = json.optString("url", stream.url)
                     val realType = json.optString("type", "exo")
+                    val drmLic = json.optString("drmlicenceurl", json.optString("license", "")).trim().ifEmpty { null }
+                    val ua = json.optString("user_agent", "").trim().ifEmpty { null }
                     return@withContext StreamOption(
                         title = stream.title,
                         url = realUrl,
-                        type = realType
+                        type = realType,
+                        drmLicenseUrl = drmLic,
+                        userAgent = ua
                     )
                 }
             } catch (e: Exception) {
@@ -228,6 +232,12 @@ object ApiClient {
                         val cat = mapGroupToCategory(group, name)
                         val validLogo = if (logo.isNotEmpty() && !logo.contains("placehold.co")) logo else null
 
+                        val itemStatus = if ("vs" in name.lowercase() || " v " in name.lowercase()) {
+                            EventStatus.SCHEDULED
+                        } else {
+                            EventStatus.CHANNEL_24_7
+                        }
+
                         list.add(
                             EventItem(
                                 title = name,
@@ -241,7 +251,7 @@ object ApiClient {
                                         type = "exo"
                                     )
                                 ),
-                                status = EventStatus.LIVE,
+                                status = itemStatus,
                                 category = cat
                             )
                         )

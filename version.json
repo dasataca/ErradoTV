@@ -1,7 +1,7 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "latest_version_code": 11,
-  "latest_version_name": "1.2.1",
+  "latest_version_code": 12,
+  "latest_version_name": "1.2.2",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/ErradoTV.apk",
-  "changelog": "Integracion completa de canales regionales y todas las categorias de TevePlay"
+  "changelog": "Soporte nativo DASH y ClearKey DRM mas proteccion anticaidas"
 }

@@ -4,6 +4,14 @@ Todas las modificaciones, análisis y versiones del proyecto quedan documentadas
 
 ---
 
+## [1.2.2] - 2026-10-23
+### Corregido y Optimizado
+- **Soporte Nativo DASH (`.mpd`) y Cifrado ClearKey DRM**: Se integró el módulo `media3-exoplayer-dash` y el gestor de licencias ClearKey en ExoPlayer. Esto resuelve de raíz el cierre inesperado al reproducir opciones como la de *Necaxa vs Juárez* (que transmitía mediante un flujo DASH cifrado con DRM).
+- **Protección Anticaídas Integral en el Reproductor**: Se blindó la inicialización de ExoPlayer y la apertura de transmisiones con captura de excepciones. Si un enlace está dañado o sin respuesta, la app muestra un aviso elegante en pantalla y nunca se cierra.
+- **Saneamiento de Insignias en Canales de TevePlay**: Los canales continuos se identifican como `CANAL 24/7` (verde) y los eventos programados como `PROGRAMADO` (azul), eliminando la falsa etiqueta roja de "En Vivo" en transmisiones que aún no empiezan o ya terminaron.
+
+---
+
 ## [1.2.1] - 2026-10-23
 ### Añadido y Optimizado
 - **Integración Completa de Canales Regionales (`📺 Regionales`)**: Acceso directo y dedicado a los 36 canales de televisión abierta y por cable más vistos de Latinoamérica: Latina, América TV, Telefe, El Trece, Caracol, RCN, Azteca 7, Canal 5, Las Estrellas, Space, Warner Bros TV, TNT, Star Channel, Cinemax, Cinecanal, Universal TV, Studio Universal, Discovery Channel, Cartoon Network, History, FX, Nat Geo, Disney Channel, Univision, Telemundo y más.

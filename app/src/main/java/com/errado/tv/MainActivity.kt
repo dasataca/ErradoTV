@@ -379,25 +379,34 @@ class MainActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
 
         lifecycleScope.launch {
-            val resolved = ApiClient.resolveStreamUrl(stream)
-            progressBar.visibility = View.GONE
+            try {
+                val resolved = ApiClient.resolveStreamUrl(stream)
+                progressBar.visibility = View.GONE
 
-            SupabaseLogger.info(
-                "play_stream",
-                "Abriendo reproducción: ${stream.title}",
-                mapOf("resolved_url" to resolved.url, "type" to resolved.type, "original_type" to stream.type)
-            )
+                SupabaseLogger.info(
+                    "play_stream",
+                    "Abriendo reproducción: ${stream.title}",
+                    mapOf("resolved_url" to resolved.url, "type" to resolved.type, "original_type" to stream.type)
+                )
 
-            if (resolved.type.equals("exo", ignoreCase = true) || resolved.url.contains(".m3u8")) {
-                val intent = Intent(this@MainActivity, PlayerActivity::class.java).apply {
-                    putExtra("EXTRA_URL", resolved.url)
+                if (resolved.type.equals("exo", ignoreCase = true) || resolved.url.contains(".m3u8") || resolved.url.contains(".mpd")) {
+                    val intent = Intent(this@MainActivity, PlayerActivity::class.java).apply {
+                        putExtra("EXTRA_URL", resolved.url)
+                        putExtra("EXTRA_DRM_LICENSE", resolved.drmLicenseUrl)
+                        putExtra("EXTRA_USER_AGENT", resolved.userAgent)
+                    }
+                    startActivity(intent)
+                } else {
+                    val intent = Intent(this@MainActivity, WebStreamActivity::class.java).apply {
+                        putExtra("EXTRA_URL", resolved.url)
+                    }
+                    startActivity(intent)
                 }
-                startActivity(intent)
-            } else {
-                val intent = Intent(this@MainActivity, WebStreamActivity::class.java).apply {
-                    putExtra("EXTRA_URL", resolved.url)
-                }
-                startActivity(intent)
+            } catch (e: Exception) {
+                progressBar.visibility = View.GONE
+                e.printStackTrace()
+                Toast.makeText(this@MainActivity, "No se pudo conectar a esta opción. Pruebe otra alternativa.", Toast.LENGTH_SHORT).show()
+                SupabaseLogger.warn("play_stream_error", "Error al abrir stream: ${e.message}", mapOf("title" to stream.title, "url" to stream.url))
             }
         }
     }

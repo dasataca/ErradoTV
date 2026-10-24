@@ -11,8 +11,8 @@ android {
         applicationId = "com.errado.tv"
         minSdk = 24
         targetSdk = 34
-        versionCode = 11
-        versionName = "1.2.1"
+        versionCode = 12
+        versionName = "1.2.2"
     }
 
     buildTypes {
@@ -44,9 +44,10 @@ dependencies {
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("com.google.android.material:material:1.11.0")
 
-    // Video Player (ExoPlayer Media3)
+    // Video Player (ExoPlayer Media3: HLS + DASH + DRM)
     implementation("androidx.media3:media3-exoplayer:1.3.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.3.1")
     implementation("androidx.media3:media3-ui:1.3.1")
 
     // HTTP & Coroutines

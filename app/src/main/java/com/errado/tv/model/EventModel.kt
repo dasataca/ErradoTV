@@ -15,7 +15,9 @@ enum class EventStatus(val label: String, val colorHex: String) {
 data class StreamOption(
     val title: String,
     val url: String,
-    val type: String
+    val type: String,
+    val drmLicenseUrl: String? = null,
+    val userAgent: String? = null
 )
 
 data class EventItem(

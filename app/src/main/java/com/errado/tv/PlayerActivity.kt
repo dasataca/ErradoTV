@@ -9,7 +9,9 @@ import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
@@ -41,69 +43,90 @@ class PlayerActivity : AppCompatActivity() {
         tvResolutionBadge = findViewById(R.id.tvResolutionBadge)
 
         val streamUrl = intent.getStringExtra("EXTRA_URL") ?: ""
+        val drmLicenseUrl = intent.getStringExtra("EXTRA_DRM_LICENSE")
+        val customUserAgent = intent.getStringExtra("EXTRA_USER_AGENT")
+
         if (streamUrl.isEmpty()) {
             finish()
             return
         }
 
-        initializePlayer(streamUrl)
+        initializePlayer(streamUrl, drmLicenseUrl, customUserAgent)
     }
 
-    private fun initializePlayer(url: String) {
-        // Configuramos el selector de pistas para forzar SIEMPRE la máxima calidad y bitrate disponible
-        val trackSelector = DefaultTrackSelector(this).apply {
-            setParameters(
-                buildUponParameters()
-                    .setForceHighestSupportedBitrate(true)
-                    .clearVideoSizeConstraints()
-                    .setMaxVideoSize(3840, 2160) // Apunta a la mayor resolución
-                    .setAllowVideoMixedMimeTypeAdaptiveness(true)
-                    .setAllowVideoNonSeamlessAdaptiveness(true)
-                    .setExceedVideoConstraintsIfNecessary(true)
-                    .setExceedRendererCapabilitiesIfNecessary(true)
-            )
-        }
-
-        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            .setAllowCrossProtocolRedirects(true)
-
-        if (url.contains("teveplay.net")) {
-            val channelId = url.substringAfter("/api/stream/").substringBefore("/index.m3u8")
-            val referer = if (channelId.isNotEmpty() && channelId != url) {
-                "https://teveplay.net/watch/$channelId"
-            } else {
-                "https://teveplay.net/"
+    private fun initializePlayer(url: String, drmLicenseUrl: String? = null, customUserAgent: String? = null) {
+        try {
+            // Configuramos el selector de pistas para forzar SIEMPRE la máxima calidad y bitrate disponible
+            val trackSelector = DefaultTrackSelector(this).apply {
+                setParameters(
+                    buildUponParameters()
+                        .setForceHighestSupportedBitrate(true)
+                        .clearVideoSizeConstraints()
+                        .setMaxVideoSize(3840, 2160) // Apunta a la mayor resolución
+                        .setAllowVideoMixedMimeTypeAdaptiveness(true)
+                        .setAllowVideoNonSeamlessAdaptiveness(true)
+                        .setExceedVideoConstraintsIfNecessary(true)
+                        .setExceedRendererCapabilitiesIfNecessary(true)
+                )
             }
-            httpDataSourceFactory.setDefaultRequestProperties(
-                mapOf(
-                    "Referer" to referer,
-                    "Origin" to "https://teveplay.net"
+
+            val defaultUa = customUserAgent ?: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+                .setUserAgent(defaultUa)
+                .setAllowCrossProtocolRedirects(true)
+
+            if (url.contains("teveplay.net")) {
+                val channelId = url.substringAfter("/api/stream/").substringBefore("/index.m3u8")
+                val referer = if (channelId.isNotEmpty() && channelId != url) {
+                    "https://teveplay.net/watch/$channelId"
+                } else {
+                    "https://teveplay.net/"
+                }
+                httpDataSourceFactory.setDefaultRequestProperties(
+                    mapOf(
+                        "Referer" to referer,
+                        "Origin" to "https://teveplay.net"
+                    )
                 )
-            )
-        } else if (url.contains("fawanews") || url.contains("193.47.62")) {
-            httpDataSourceFactory.setDefaultRequestProperties(
-                mapOf(
-                    "Referer" to "http://www.fawanews.sc/",
-                    "Origin" to "http://www.fawanews.sc"
+            } else if (url.contains("fawanews") || url.contains("193.47.62")) {
+                httpDataSourceFactory.setDefaultRequestProperties(
+                    mapOf(
+                        "Referer" to "http://www.fawanews.sc/",
+                        "Origin" to "http://www.fawanews.sc"
+                    )
                 )
-            )
-        }
+            }
 
-        val mediaSourceFactory = DefaultMediaSourceFactory(this)
-            .setDataSourceFactory(httpDataSourceFactory)
+            val mediaSourceFactory = DefaultMediaSourceFactory(this)
+                .setDataSourceFactory(httpDataSourceFactory)
 
-        val exoPlayer = ExoPlayer.Builder(this)
-            .setTrackSelector(trackSelector)
-            .setMediaSourceFactory(mediaSourceFactory)
-            .build()
+            val exoPlayer = ExoPlayer.Builder(this)
+                .setTrackSelector(trackSelector)
+                .setMediaSourceFactory(mediaSourceFactory)
+                .build()
 
-        player = exoPlayer
-        playerView.player = exoPlayer
+            player = exoPlayer
+            playerView.player = exoPlayer
 
-        val mediaItem = MediaItem.fromUri(Uri.parse(url))
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.playWhenReady = true
+            val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(url))
+            if (url.contains(".mpd")) {
+                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MPD)
+            } else if (url.contains(".m3u8")) {
+                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+            }
+
+            if (!drmLicenseUrl.isNullOrEmpty()) {
+                mediaItemBuilder.setDrmConfiguration(
+                    MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID)
+                        .setLicenseUri(Uri.parse(drmLicenseUrl))
+                        .build()
+                )
+            }
+
+            val mediaItem = mediaItemBuilder.build()
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            exoPlayer.playWhenReady = true
 
         exoPlayer.addListener(object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -149,8 +172,17 @@ class PlayerActivity : AppCompatActivity() {
                 )
             }
         })
-
-        exoPlayer.prepare()
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            playerBuffering.visibility = View.GONE
+            playerError.visibility = View.VISIBLE
+            playerError.text = "⚠️ Error al iniciar la reproducción.\nEsta señal no está disponible en este momento.\nPresione VOLVER en su control para elegir otra opción."
+            SupabaseLogger.warn(
+                "player_init_error",
+                "Error inicializando reproductor: ${t.message}",
+                mapOf("url" to url, "error" to (t.message ?: ""))
+            )
+        }
     }
 
     private fun getQualityLabel(height: Int): String {
