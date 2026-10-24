@@ -2,7 +2,14 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
-## [1.4.0] - 2026-10-24
+## [1.4.1] - 2026-10-24
+### Añadido y Optimizado
+- **Nombre de Marca Oficial "GarecaTV" en Notificación del Instalador de Android TV**: Se configuró explícitamente `android:label="@string/app_name"` ("GarecaTV"), `android:icon` y `android:banner` en la actividad principal `MainActivity` y actividades secundarias en `AndroidManifest.xml`, y se añadió `EXTRA_TITLE` en el intent del instalador. Esto garantiza que el PackageInstaller del sistema operativo Android TV muestre siempre **"GarecaTV se actualizó"** en la pantalla del televisor en lugar del identificador interno de paquete.
+- **Normalización de Cadenas**: Se estandarizó `app_name` como "GarecaTV" en `strings.xml`.
+
+---
+
+
 ### Añadido y Optimizado
 - **Cambio de Categoría Dinámico con Solo Foco D-Pad**: En el menú superior de categorías y países, con solo posicionar el foco sobre cualquiera de las pestañas (navegando izquierda o derecha), la app actualiza y filtra de inmediato los listados de partidos y canales según la pestaña enfocada, eliminando la necesidad de presionar OK o Center.
 - **Hora Arriba y Fecha Abajo con Magnitud Invertida**: En la cabecera, la hora local se reubicó en la fila superior con magnitud principal destacada (`17sp`), acompañada de su meridiano `(a)` y su indicador de huso horario `(GMT-X)`. La fecha pasó a la fila inferior con magnitud secundaria compacta (`13sp`).

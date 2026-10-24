@@ -189,6 +189,9 @@ object AppUpdater {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(apkUri, "application/vnd.android.package-archive")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, activity.packageName)
+                putExtra(Intent.EXTRA_TITLE, "GarecaTV")
             }
 
             SupabaseLogger.info("update_install_intent", "Lanzando instalador del sistema Android TV")
