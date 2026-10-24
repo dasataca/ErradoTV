@@ -2,6 +2,15 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.5.5] - 2026-10-24
+### Corregido y Optimizado
+- **Estructura Oficial Estricta del Icono (Gareca Arriba, Tigre en el Medio y Tv Abajo)**:
+  - Se corrigió la separación exacta de los rótulos tipográficos deportivos:
+    - **Arriba**: La palabra `Gareca` en rojo vibrante con borde negro inclinado.
+    - **En el medio (debajo de Gareca)**: El tigre rugiente a color con sus garras y zarpazos.
+    - **En la inferior**: La palabra `Tv` centrada en rojo vibrante con borde negro.
+  - Sincronizado en el banner de Android TV (`tv_banner_v2.png`), suites de lanzador (`ic_launcher_v2`), icono adaptativo seguro (`ic_launcher_foreground_v2.png`) y el icono dentro de la app (`app_icon.png`).
+
 ## [1.5.4] - 2026-10-24
 ### Añadido y Optimizado
 - **Botones de Micrófono de Voz Exclusivamente con Icono**:
