@@ -194,6 +194,12 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     false
                 }
+            },
+            onCategoryFocus = { focusedCat ->
+                if (currentCategory != focusedCat) {
+                    currentCategory = focusedCat
+                    filterAndDisplayEvents(silent = true)
+                }
             }
         )
         rvCategories.adapter = categoryAdapter

@@ -40,21 +40,12 @@
             android:layout_marginStart="20dp"
             android:gravity="start|center_vertical">
 
-            <TextView
-                android:id="@+id/tvDate"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=""
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="@color/accent" />
-
+            <!-- Fila superior: Hora y meridiano (mayor magnitud) -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="2dp">
+                android:gravity="center_vertical">
 
                 <TextClock
                     android:id="@+id/textClock"
@@ -62,7 +53,7 @@
                     android:layout_height="wrap_content"
                     android:format12Hour="hh:mm"
                     android:format24Hour="HH:mm"
-                    android:textSize="13sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary" />
 
@@ -72,20 +63,30 @@
                     android:layout_height="wrap_content"
                     android:format12Hour=" (a)"
                     android:format24Hour=""
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="@color/text_secondary" />
+                    android:textColor="@color/accent" />
 
                 <TextView
                     android:id="@+id/tvTimeZone"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text=""
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_secondary"
-                    android:layout_marginStart="4dp" />
+                    android:layout_marginStart="6dp" />
             </LinearLayout>
+
+            <!-- Fila inferior: Fecha (menor magnitud compacta) -->
+            <TextView
+                android:id="@+id/tvDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="2dp" />
         </LinearLayout>
 
         <View

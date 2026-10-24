@@ -2,7 +2,15 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
-## [1.3.9] - 2026-10-24
+## [1.4.0] - 2026-10-24
+### Añadido y Optimizado
+- **Cambio de Categoría Dinámico con Solo Foco D-Pad**: En el menú superior de categorías y países, con solo posicionar el foco sobre cualquiera de las pestañas (navegando izquierda o derecha), la app actualiza y filtra de inmediato los listados de partidos y canales según la pestaña enfocada, eliminando la necesidad de presionar OK o Center.
+- **Hora Arriba y Fecha Abajo con Magnitud Invertida**: En la cabecera, la hora local se reubicó en la fila superior con magnitud principal destacada (`17sp`), acompañada de su meridiano `(a)` y su indicador de huso horario `(GMT-X)`. La fecha pasó a la fila inferior con magnitud secundaria compacta (`13sp`).
+- **Icono Oficial para Android TV con Fondo Blanco**: Se actualizaron todos los iconos del sistema (`ic_launcher_background.xml`, `ic_launcher_foreground.png`, adaptativos y la suite completa de densidades `mipmap-mdpi` a `xxxhdpi`, además de `tv_banner.png`) para que el icono oficial de GarecaTV luzca sobre fondo blanco puro (`#FFFFFF`) en lugar de negro en todos los lanzadores de Android TV y Google TV.
+
+---
+
+
 ### Añadido y Optimizado
 - **Reactivación Dinámica de Señales "NO DISPONIBLE"**: Si una señal fue etiquetada como no disponible debido a caídas temporales, el usuario ahora puede volver a pulsarla con su control remoto para comprobar si el canal o evento ya se reactivó. Si la señal vuelve a estar activa (verificado por el motor de pretesteo en segundo plano o por ExoPlayer), la app cambia automáticamente el estado restaurando la etiqueta previa (`● EN VIVO`, `PROGRAMADO`, `REPETICIÓN`, `CANAL 24/7`), la remueve de la lista de señales caídas y la reordena en la cartelera.
 - **Icono Clásico Multicolor de Google Mic**: Se integró el vector oficial del micrófono de Google (con sus cuatro colores distintivos: azul, rojo, amarillo y verde) en los botones de búsqueda por voz tanto en la pestaña **Buscar Todo** como en **Repeticiones**. El botón ahora es significativamente más compacto y llamativo, luciendo un borde iluminado en azul Google (`#4285F4`) con respuesta visual de foco y escala de alta visibilidad para Smart TV.

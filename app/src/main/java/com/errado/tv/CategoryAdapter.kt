@@ -11,7 +11,8 @@ class CategoryAdapter(
     private val categories: List<String>,
     private var selectedCategory: String,
     private val onCategoryClick: (String) -> Unit,
-    private val onDownPressed: ((String) -> Boolean)? = null
+    private val onDownPressed: ((String) -> Boolean)? = null,
+    private val onCategoryFocus: ((String) -> Unit)? = null
 ) : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>() {
 
     fun setSelectedCategory(category: String) {
@@ -38,6 +39,10 @@ class CategoryAdapter(
                 setSelectedCategory(cat)
                 onCategoryClick(cat)
             },
+            onFocus = {
+                setSelectedCategory(cat)
+                (onCategoryFocus ?: onCategoryClick).invoke(cat)
+            },
             onDown = onDownPressed
         )
     }
@@ -47,24 +52,24 @@ class CategoryAdapter(
     class CategoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTabTitle: TextView = itemView.findViewById(R.id.tvTabTitle)
 
-        init {
-            itemView.setOnFocusChangeListener { view, hasFocus ->
-                if (hasFocus) {
-                    view.animate().scaleX(1.06f).scaleY(1.06f).setDuration(120).start()
-                } else {
-                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
-                }
-            }
-        }
-
         fun bind(
             category: String,
             isSelected: Boolean,
             onClick: () -> Unit,
+            onFocus: () -> Unit,
             onDown: ((String) -> Boolean)?
         ) {
             tvTabTitle.text = category
             itemView.isSelected = isSelected
+
+            itemView.setOnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    view.animate().scaleX(1.06f).scaleY(1.06f).setDuration(120).start()
+                    onFocus()
+                } else {
+                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+                }
+            }
 
             itemView.setOnClickListener {
                 onClick()
