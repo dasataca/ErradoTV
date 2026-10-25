@@ -2,6 +2,22 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.6.2] - 2026-10-25
+### Añadido y Optimizado
+- **Soporte de Cifrado de Sobre Remoto (`active_key_enc`) y Suite de Herramientas**:
+  - Implementación en `CryptoUtils.kt` del método `decryptEnvelope` con semilla matemática ofuscada con máscara XOR para desempaquetar la clave en RAM.
+  - Creación de la suite de herramientas en `herramientas/cifrador_clave/` con el script ejecutable `encrypt_key.py` y `MANUAL.md`.
+  - Automatización en `publish_release.sh` para generar `version.json` con `"active_key_enc"` (cero texto plano en el repositorio GitHub ni en el tráfico de red).
+  - Trazas de auditoría en vivo en `SecureDns.kt` para verificación de resolución DoH con Cloudflare (1.1.1.1).
+
+## [1.6.1] - 2026-10-25
+### Añadido y Optimizado
+- **Blindaje Criptográfico XOR en Memoria y DNS sobre HTTPS (DoH) Anti-Bloqueos**:
+  - Eliminación de la clave Base64 en texto plano del APK; sustitución por máscara XOR estática (`SHIELD_MASK = 0x5A`) en `CryptoUtils.kt`.
+  - Integración nativa de DNS sobre HTTPS (DoH) con Cloudflare (`1.1.1.1`) y Google (`8.8.8.8`) en `SecureDns.kt` para neutralizar el bloqueo DNS de los operadores locales de internet.
+  - Conexión de `OkHttpDataSource.Factory` en `PlayerActivity` y `ApiClient` al resolvedor DoH.
+  - Renombrado de categoría y mapeo a `🇮🇹 Italia - Serie A`.
+
 ## [1.6.0] - 2026-10-25
 ### Añadido y Optimizado
 - **Verificador Web de Versión con Periodo de Gracia y Bloqueo Obligatorio**:

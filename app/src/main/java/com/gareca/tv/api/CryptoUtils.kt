@@ -70,11 +70,19 @@ object CryptoUtils {
                 if (resp.isSuccessful) {
                     val body = resp.body?.string().orEmpty()
                     val json = JSONObject(body)
-                    val newKey = json.optString("active_key", "").trim()
+                    // Sincronización remota de clave: Soporta Sobre Cifrado ("active_key_enc") y fallback a texto plano ("active_key")
+                    val encKey = json.optString("active_key_enc", "").trim()
+                    val plainKey = json.optString("active_key", "").trim()
+                    val resolvedKey = if (encKey.isNotEmpty()) {
+                        decryptEnvelope(encKey)
+                    } else {
+                        plainKey
+                    }
+
                     val prefs = context.getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
-                    if (newKey.isNotEmpty() && newKey != activeKeyB64) {
-                        activeKeyB64 = newKey
-                        prefs.edit().putString("cached_key", newKey).apply()
+                    if (resolvedKey.isNotEmpty() && resolvedKey != activeKeyB64) {
+                        activeKeyB64 = resolvedKey
+                        prefs.edit().putString("cached_key", resolvedKey).apply()
                     }
 
                     // Sincronización remota del servidor DNS sobre HTTPS (DoH)
@@ -91,6 +99,48 @@ object CryptoUtils {
             } catch (_: Exception) {
                 // Si la URL falla, continúa a la siguiente
             }
+        }
+    }
+
+    // Semilla de derivación interna para descifrar el sobre remoto (Anti-Sniffer)
+    private const val ENVELOPE_SEED_MASK: Byte = 0x3C
+    private val ENVELOPE_SEED_BYTES = byteArrayOf(
+        (0x7B).toByte(), (0x5D).toByte(), (0x4E).toByte(), (0x59).toByte(), (0x5F).toByte(), (0x5D).toByte(), (0x68).toByte(), (0x6A).toByte(),
+        (0x63).toByte(), (0x79).toByte(), (0x52).toByte(), (0x4A).toByte(), (0x59).toByte(), (0x50).toByte(), (0x53).toByte(), (0x4C).toByte(),
+        (0x59).toByte(), (0x63).toByte(), (0x6F).toByte(), (0x59).toByte(), (0x5F).toByte(), (0x4E).toByte(), (0x59).toByte(), (0x48).toByte(),
+        (0x63).toByte(), (0x0E).toByte(), (0x0C).toByte(), (0x0E).toByte(), (0x0A).toByte(), (0x63).toByte(), (0x6C).toByte(), (0x4E).toByte(),
+        (0x53).toByte(), (0x48).toByte(), (0x59).toByte(), (0x5F).toByte(), (0x48).toByte(), (0x55).toByte(), (0x53).toByte(), (0x52).toByte()
+    )
+
+    fun decryptEnvelope(envelopeHex: String): String {
+        return try {
+            val trimmed = envelopeHex.trim()
+            if (trimmed.length < 64) return ""
+
+            val rawBytes = ByteArray(trimmed.length / 2) { i ->
+                trimmed.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+            }
+            if (rawBytes.size < 32) return ""
+
+            val iv = Arrays.copyOfRange(rawBytes, 0, 16)
+            val cipherText = Arrays.copyOfRange(rawBytes, 16, rawBytes.size)
+
+            val seedBytes = ByteArray(ENVELOPE_SEED_BYTES.size) { i ->
+                (ENVELOPE_SEED_BYTES[i].toInt() xor ENVELOPE_SEED_MASK.toInt()).toByte()
+            }
+            val digest = MessageDigest.getInstance("SHA-256")
+            val keyBytes = digest.digest(seedBytes)
+
+            val secretKey = SecretKeySpec(keyBytes, "AES")
+            val ivSpec = IvParameterSpec(iv)
+
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+
+            val decryptedBytes = cipher.doFinal(cipherText)
+            String(decryptedBytes, Charsets.UTF_8).trim()
+        } catch (_: Exception) {
+            ""
         }
     }
 

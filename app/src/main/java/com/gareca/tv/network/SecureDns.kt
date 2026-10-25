@@ -54,8 +54,11 @@ object SecureDns : Dns {
 
     override fun lookup(hostname: String): List<InetAddress> {
         return try {
-            dohInstance.lookup(hostname)
+            val addresses = dohInstance.lookup(hostname)
+            android.util.Log.i("SecureDns", "🔒 [Cloudflare DoH 1.1.1.1] '$hostname' resuelto con éxito -> ${addresses.map { it.hostAddress }}")
+            addresses
         } catch (e: Exception) {
+            android.util.Log.w("SecureDns", "⚠️ [DoH Fallback a Sistema] Falló DoH para '$hostname' (${e.message}), usando DNS del sistema...")
             // Resiliencia total: si el servidor DoH no responde, recurre de inmediato al DNS del sistema
             try {
                 Dns.SYSTEM.lookup(hostname)

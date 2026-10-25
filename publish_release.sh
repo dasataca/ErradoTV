@@ -36,12 +36,14 @@ cp app/build/outputs/apk/debug/app-debug.apk GarecaTV.apk
 echo "✅ APK generado:"
 ls -lh "$APK_VERSIONED" "$APK_LATEST"
 
-# 4. Generar version.json automático para la TV (Sin necesidad de tocar Gist nunca más)
+# 4. Generar version.json automático con Sobre Cifrado para la TV
 RELEASE_TIMESTAMP=$(date +%s%3N 2>/dev/null || echo "$(date +%s)000")
 RELEASE_DATE=$(date +%Y-%m-%d)
+ACTIVE_KEY_ENC=$(python3 herramientas/cifrador_clave/encrypt_key.py | grep '"active_key_enc":' | awk -F'"' '{print $4}')
+
 cat <<EOF > version.json
 {
-  "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
+  "active_key_enc": "$ACTIVE_KEY_ENC",
   "latest_version_code": $VERSION_CODE,
   "latest_version_name": "$VERSION_NAME",
   "release_timestamp": $RELEASE_TIMESTAMP,
