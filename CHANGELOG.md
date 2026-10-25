@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.5.9] - 2026-10-24
+### Modificado y Optimizado
+- **Canales 24/7 Excluidos de Etiqueta "NO DISPONIBLE"**:
+  - Los canales 24/7 (señales en vivo, canales de TV lineales y regionales) nunca se marcan ni se muestran con la etiqueta `NO DISPONIBLE`.
+  - Mantienen siempre su etiqueta verde original `CANAL 24/7` (o su estado de partido si transmiten un evento en directo), con opacidad completa (sin atenuar).
+  - La etiqueta y desplazamiento de `NO DISPONIBLE` queda reservada exclusivamente para eventos de agenda / repeticiones caídas.
+
 ## [1.5.8] - 2026-10-24
 ### Añadido y Optimizado
 - **Ordenación Jerárquica de Eventos y Canales**:
