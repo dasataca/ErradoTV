@@ -76,8 +76,12 @@ La aplicación consume archivos JSON cifrados alojados en el CDN global **Cloudf
 * **Estructura del Payload Cifrado**:
   * Bytes `0` a `15`: Vector de Inicialización (**IV**).
   * Bytes `16` al final: Carga útil cifrada (**Ciphertext**).
-* **Mecanismo de Resiliencia Remota**:
-  `CryptoUtils.kt` consulta primero [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en GitHub. Si la clave cambia en el servidor (`active_key`), se almacena en `SharedPreferences` y la app la utiliza de inmediato sin requerir reinstalación.
+* **Mecanismo de Resiliencia Remota y Cifrado de Sobre**:
+  * `CryptoUtils.kt` consulta primero [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en GitHub.
+  * Soporta `"active_key_enc"` (Sobre Cifrado con AES-256-CBC derivado de semilla matemática interna) y `"active_key"` (texto plano para versiones legadas).
+  * Para generar nuevos sobres cifrados sin exponer la clave en GitHub ni en sniffers, se utiliza el script ejecutable [`herramientas/cifrador_clave/encrypt_key.py`](file:///home/sataca/Descargas/APLICACIONES/errado/herramientas/cifrador_clave/encrypt_key.py).
+* **Validación Estricta de JSON en Descifrado**:
+  * `CryptoUtils.decrypt()` comprueba obligatoriamente que el payload comience con `{` o `[`. Si arroja bytes corruptos por desfase de clave o caché, conmuta de inmediato y de forma autónoma a la clave de fábrica en memoria RAM (`getFactoryKey()`).
 * **DNS sobre HTTPS (DoH) Remoto**:
   `SecureDns.kt` resuelve dominios con Cloudflare (`https://cloudflare-dns.com/dns-query`) y Google (`8.8.8.8`). Si se desea cambiar el proveedor DoH globalmente, se añade el campo `"doh_url"` en `version.json`.
 
@@ -100,6 +104,6 @@ Para generar y subir una nueva versión del software:
 ```bash
 ./publish_release.sh [versionName] [versionCode] "[changelog]"
 # Ejemplo:
-./publish_release.sh 1.3.7 20 "Pestaña Repeticiones antes de Regionales con buscador y ordenacion"
+./publish_release.sh 1.6.3 42 "GarecaTV: Validación estricta de JSON en descifrado y compatibilidad total de claves"
 ```
 El script compila el APK, actualiza `version.json`, organiza los archivos en `release/` y realiza el `git push` a `origin main` de manera completamente autónoma.

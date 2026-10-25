@@ -49,16 +49,17 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
 
 ## 3. Arquitectura del Código Fuente (Android TV)
 
-* **`com.errado.tv.api.CryptoUtils`**: Módulo criptográfico AES-256-CBC con clave local de fábrica, almacenamiento en `SharedPreferences` y sincronización con GitHub/Gist.
-* **`com.errado.tv.api.ApiClient`**: Cliente HTTP basado en `OkHttpClient` y corrutinas. Descarga, descifra y mapea `event.json`, `destacado.json` y los canales de `teveplay.net`. Extrae fechas y timestamps (`YYYY-MM-DD`) para ordenación.
-* **`com.errado.tv.model.EventModel`**: Modelos de datos (`EventItem`, `StreamOption`, `EventStatus`). Soporta cálculo dinámico de estados (`● EN VIVO`, `POR EMPEZAR`, `PROGRAMADO`, `FINALIZADO`, `REPETICIÓN`, `NO DISPONIBLE`, `CANAL 24/7`), marcas de fecha (`rawDate`) y milisegundos (`timestamp`).
-* **`com.errado.tv.MainActivity`**: Actividad principal Leanback. Gestiona el ciclo de vida, reloj en tiempo real (`TextClock`), control de frecuencia de refresco (ventana de 15 min), buscador dinámico, botones de ordenación y navegación D-Pad.
-* **`com.errado.tv.CategoryAdapter`**: Barra de pestañas horizontal (`rvCategories`) con animación de escala (`1.06f`) y captura de evento de flecha abajo para transferir el foco al buscador o lista.
-* **`com.errado.tv.EventAdapter`**: Adaptador para las tarjetas de partidos y canales con selector `card_selector.xml` y atenuación visual (`alpha = 0.5f`) para partidos finalizados o no disponibles.
-* **`com.errado.tv.CommunityStreamManager`**: Sincronizador con la base comunitaria de Supabase (`public.errado_community_streams`), permitiendo deduplicar enlaces caídos y compartirlos entre dispositivos.
-* **`com.errado.tv.telemetry.SupabaseLogger`**: Telemetría en segundo plano para auditoría de inicio, clics y errores de reproducción.
-* **`com.errado.tv.PlayerActivity`**: Reproductor nativo AndroidX Media3 ExoPlayer en pantalla completa con soporte de mandos a distancia.
-* **`com.errado.tv.WebStreamActivity`**: Visor WebView seguro con bloqueo de publicidad para señales externas web.
+* **`com.gareca.tv.api.CryptoUtils`**: Módulo criptográfico AES-256-CBC con clave blindada con máscara XOR (`getFactoryKey()`), soporte de Cifrado de Sobre (`decryptEnvelope`) para `"active_key_enc"`, almacenamiento en `SharedPreferences` y validación estricta de JSON en memoria RAM.
+* **`com.gareca.tv.network.SecureDns`**: Proveedor nativo de DNS sobre HTTPS (DoH) basado en `okhttp-dnsoverhttps` con servidores seguros de Cloudflare (`1.1.1.1`), Google (`8.8.8.8`) y conmutación automática de respaldo a DNS del sistema.
+* **`com.gareca.tv.api.ApiClient`**: Cliente HTTP basado en `OkHttpClient` y corrutinas, enrutado por `SecureDns`. Descarga, descifra y mapea `event.json`, `destacado.json` y los canales de `teveplay.net`. Extrae fechas y timestamps (`YYYY-MM-DD`) para ordenación.
+* **`com.gareca.tv.model.EventModel`**: Modelos de datos (`EventItem`, `StreamOption`, `EventStatus`). Soporta cálculo dinámico de estados (`● EN VIVO`, `POR EMPEZAR`, `PROGRAMADO`, `FINALIZADO`, `REPETICIÓN`, `NO DISPONIBLE`, `CANAL 24/7`), marcas de fecha (`rawDate`) y milisegundos (`timestamp`).
+* **`com.gareca.tv.MainActivity`**: Actividad principal Leanback. Gestiona el ciclo de vida, reloj en tiempo real (`TextClock`), control de frecuencia de refresco, buscador dinámico, botones de ordenación y navegación D-Pad.
+* **`com.gareca.tv.CategoryAdapter`**: Barra de pestañas horizontal (`rvCategories`) con animación de escala (`1.06f`) y captura de evento de flecha abajo para transferir el foco al buscador o lista.
+* **`com.gareca.tv.EventAdapter`**: Adaptador para las tarjetas de partidos y canales con selector `card_selector.xml` y atenuación visual (`alpha = 0.5f`) para partidos finalizados o no disponibles.
+* **`com.gareca.tv.CommunityStreamManager`**: Sincronizador con la base comunitaria de Supabase (`public.errado_community_streams`), permitiendo deduplicar enlaces caídos y compartirlos entre dispositivos.
+* **`com.gareca.tv.telemetry.SupabaseLogger`**: Telemetría en segundo plano para auditoría de inicio, clics y errores de reproducción.
+* **`com.gareca.tv.PlayerActivity`**: Reproductor nativo AndroidX Media3 ExoPlayer con `OkHttpDataSource.Factory` conectado a `SecureDns` en pantalla completa con soporte de mandos a distancia.
+* **`com.gareca.tv.WebStreamActivity`**: Visor WebView seguro con bloqueo de publicidad para señales externas web.
 
 ---
 
@@ -74,6 +75,8 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
    * Visor de telemetría en tiempo real (`--watch`) y visor de enlaces caídos reportados por la comunidad (`--community`).
 5. **[`supabase_setup.sql`](file:///home/sataca/Descargas/APLICACIONES/errado/supabase_setup.sql)**:
    * Definición DDL de las tablas `errado_tv_logs` y `errado_community_streams` en Supabase con trigger de limpieza circular.
+6. **[`herramientas/cifrador_clave/encrypt_key.py`](file:///home/sataca/Descargas/APLICACIONES/errado/herramientas/cifrador_clave/encrypt_key.py)**:
+   * Herramienta de Cifrado de Sobre AES-256 para encriptar la clave secreta antes de subirla a `version.json` en GitHub, impidiendo que curiosos o sniffers capturen la clave en texto plano. Acompañada de su [`MANUAL.md`](file:///home/sataca/Descargas/APLICACIONES/errado/herramientas/cifrador_clave/MANUAL.md).
 
 ---
 
@@ -130,3 +133,11 @@ Si en el futuro deseas cambiar el proveedor de DNS para todos los televisores in
 | **AdGuard DNS** | `https://dns.adguard-dns.com/dns-query` | Bloqueo de dominios de rastreo y publicidad a nivel DNS. |
 
 * **Comportamiento en la TV**: Al iniciar, la app lee `version.json`, detecta el nuevo `"doh_url"`, lo almacena en `SharedPreferences` (`cached_doh_url`) y actualiza `SecureDns` en caliente. Si el servidor DoH configurado llegase a fallar, la app conmuta automáticamente al DNS local del sistema para evitar interrupciones de señal.
+
+### 6.4. Validación Estricta de JSON en Descifrado y Esquema Híbrido de Resiliencia
+* **Problema prevenido**: Si una clave remota llegara desfasada o la memoria caché contuviera datos incompletos, el descifrado AES podría arrojar bytes corruptos en lugar de un error.
+* **Mecanismo de seguridad**:
+  * En `CryptoUtils.kt`, la función `decrypt()` valida obligatoriamente que la salida empiece por `{` o `[` (formato JSON válido).
+  * Si no es JSON legítimo, se descarta de inmediato el resultado y se activa en caliente la clave de fábrica en RAM (`getFactoryKey()`), impidiendo caídas o que la lista de partidos quede reducida.
+* **Esquema de Clave Híbrida en `version.json`**:
+  `version.json` soporta simultáneamente `active_key` (para versiones anteriores) y `active_key_enc` (para versiones 1.6.2+ con Cifrado de Sobre), garantizando compatibilidad retroactiva total.
