@@ -15,11 +15,12 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
-import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
+import com.gareca.tv.api.ApiClient
 import com.gareca.tv.telemetry.SupabaseLogger
 
 class PlayerActivity : AppCompatActivity() {
@@ -72,9 +73,8 @@ class PlayerActivity : AppCompatActivity() {
             }
 
             val defaultUa = customUserAgent ?: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+            val httpDataSourceFactory = OkHttpDataSource.Factory(ApiClient.httpClient)
                 .setUserAgent(defaultUa)
-                .setAllowCrossProtocolRedirects(true)
 
             if (url.contains("teveplay.net")) {
                 val channelId = url.substringAfter("/api/stream/").substringBefore("/index.m3u8")

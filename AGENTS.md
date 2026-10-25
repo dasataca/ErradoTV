@@ -64,18 +64,22 @@ La aplicación consume archivos JSON cifrados alojados en el CDN global **Cloudf
 
 ---
 
-## 4. Ingeniería Inversa Criptográfica
+## 4. Ingeniería Inversa Criptográfica y Evasión DNS (DoH)
 
 * **Algoritmo**: `AES/CBC/PKCS5Padding`.
-* **Clave Base64 de Fábrica**: `R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==` (Texto plano: `GolazooAppSecretKey2024Secure!!`).
+* **Blindaje de Clave en Memoria (Anti-Decompilación XOR)**:
+  * La clave Base64 de fábrica (`R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==`) **no existe en texto plano en el APK ni en el DEX**.
+  * Se almacena ofuscada mediante máscara XOR de 1 byte (`SHIELD_MASK = 0x5A`) en `SHIELDED_KEY_BYTES` y se recompone en memoria volátil en `getFactoryKey()`.
 * **Derivación de Clave de 256 bits**:
   $$\text{Key}_{256} = \text{SHA-256}(\text{"R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ=="})$$
   Hash resultante: `3e2998e90f7fdb6becafd0df6889e1578a8032a41823a0f2f2e036d7be15b783`
 * **Estructura del Payload Cifrado**:
   * Bytes `0` a `15`: Vector de Inicialización (**IV**).
   * Bytes `16` al final: Carga útil cifrada (**Ciphertext**).
-* **Mecanismo de Resiliencia**:
-  `CryptoUtils.kt` consulta primero [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en GitHub. Si la clave cambia en el servidor, se almacena en `SharedPreferences` y la app la utiliza de inmediato sin requerir reinstalación.
+* **Mecanismo de Resiliencia Remota**:
+  `CryptoUtils.kt` consulta primero [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en GitHub. Si la clave cambia en el servidor (`active_key`), se almacena en `SharedPreferences` y la app la utiliza de inmediato sin requerir reinstalación.
+* **DNS sobre HTTPS (DoH) Remoto**:
+  `SecureDns.kt` resuelve dominios con Cloudflare (`https://cloudflare-dns.com/dns-query`) y Google (`8.8.8.8`). Si se desea cambiar el proveedor DoH globalmente, se añade el campo `"doh_url"` en `version.json`.
 
 ---
 

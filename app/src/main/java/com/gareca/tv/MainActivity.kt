@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity() {
         "🇧🇷 Brasil",
         "🇺🇸 USA / MLS",
         "🇬🇧 Premier League",
-        "🇮🇹 Serie A",
+        "🇮🇹 Italia - Serie A",
         "🇩🇪 Bundesliga",
         "🇫🇷 Ligue 1",
         "🇵🇹 Portugal",

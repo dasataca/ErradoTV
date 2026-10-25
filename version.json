@@ -1,9 +1,9 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "latest_version_code": 39,
-  "latest_version_name": "1.6.0",
-  "release_timestamp": 1792911867976,
+  "latest_version_code": 40,
+  "latest_version_name": "1.6.1",
+  "release_timestamp": 1792934317660,
   "release_date": "2026-10-25",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Verificador web con gracia de 2 días y actualización obligatoria al 3er día"
+  "changelog": "GarecaTV: Blindaje XOR de clave criptográfica y DNS sobre HTTPS (DoH) anti-bloqueos"
 }

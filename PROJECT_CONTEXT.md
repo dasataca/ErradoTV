@@ -87,3 +87,46 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
    * La app consulta `version.json` al iniciar (tanto en `LoginActivity` como en `MainActivity`) y periódicamente.
    * **Días 1 y 2 (Periodo de Gracia)**: Si hay una nueva versión, se informa al usuario mediante diálogo modal, pero este puede posponer la actualización ("Más tarde") y continuar disfrutando de la programación.
    * **Día 3 en adelante (Bloqueo Obligatorio)**: Tras 48+ horas del lanzamiento oficial de la nueva versión, la app exige obligatoriamente actualizar para iniciar. El diálogo no es cancelable, el botón se transforma en "Salir" (`finishAffinity()`), impidiendo el uso de versiones obsoletas.
+
+---
+
+## 6. Seguridad Criptográfica, Blindaje XOR y Evasión DNS Remota (DoH)
+
+### 6.1. Blindaje de la Clave de Seguridad (Anti-Decompilación con Máscara XOR)
+* **Problema resuelto**: Anteriormente la clave de fábrica estaba en texto plano en Kotlin (`R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==`), visible en segundos mediante descompiladores como Jadx o APKTool.
+* **Mecanismo de blindaje**:
+  * En `CryptoUtils.kt`, la clave se almacena descompuesta en un array de bytes ofuscados (`SHIELDED_KEY_BYTES`) procesados con una máscara XOR de 1 byte (`SHIELD_MASK = 0x5A`).
+  * La clave real **no existe en ningún archivo ni DEX del APK**.
+  * Solo se reconstruye dinámicamente en la memoria RAM del televisor al momento de descifrar las fuentes mediante `getFactoryKey()`.
+
+### 6.2. DNS sobre HTTPS (DoH) y Evasión de Bloqueos de Operadores
+Los operadores de internet (Movistar, Claro, Personal, etc.) aplican el 85% de los bloqueos a transmisiones deportivas manipulando las respuestas DNS de los routers domésticos.
+
+* **Cómo lo anula GarecaTV**:
+  * La app implementa `SecureDns.kt` usando `okhttp-dnsoverhttps` tanto en `ApiClient` como en el reproductor `ExoPlayer` (`OkHttpDataSource.Factory`).
+  * Las consultas DNS viajan 100% encriptadas mediante HTTPS directamente a servidores seguros globales, dejando ciego al cortafuegos del router del operador.
+  * **Servidor de fábrica predeterminado**: `https://cloudflare-dns.com/dns-query` (Cloudflare 1.1.1.1 con respaldo Google 8.8.8.8).
+
+### 6.3. ¿Cómo Cambiar el Servidor DNS Remotamente sin Tocar el APK?
+Si en el futuro deseas cambiar el proveedor de DNS para todos los televisores instalados, **no necesitas actualizar la app ni recompilar**. Solo debes agregar el campo `"doh_url"` en tu archivo [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en GitHub:
+
+```json
+{
+  "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
+  "doh_url": "https://dns.quad9.net/dns-query",
+  "latest_version_code": 39,
+  "latest_version_name": "1.6.0",
+  "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
+  "changelog": "..."
+}
+```
+
+#### Proveedores DoH Globales Compatibles para Usar en `doh_url`:
+| Proveedor | URL para `version.json` | Características |
+| :--- | :--- | :--- |
+| **Cloudflare** *(por defecto)* | `https://cloudflare-dns.com/dns-query` | Máxima velocidad y baja latencia en todo el mundo. |
+| **Quad9** | `https://dns.quad9.net/dns-query` | Alta privacidad y protección contra bloqueos maliciosos. |
+| **Google Public DNS** | `https://dns.google/dns-query` | Máxima disponibilidad y estabilidad global garantizada. |
+| **AdGuard DNS** | `https://dns.adguard-dns.com/dns-query` | Bloqueo de dominios de rastreo y publicidad a nivel DNS. |
+
+* **Comportamiento en la TV**: Al iniciar, la app lee `version.json`, detecta el nuevo `"doh_url"`, lo almacena en `SharedPreferences` (`cached_doh_url`) y actualiza `SecureDns` en caliente. Si el servidor DoH configurado llegase a fallar, la app conmuta automáticamente al DNS local del sistema para evitar interrupciones de señal.

@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
 
     val httpClient = OkHttpClient.Builder()
+        .dns(com.gareca.tv.network.SecureDns)
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
@@ -482,10 +483,10 @@ object ApiClient {
             "uruguay" in g || "uruguay" in n -> "🇺🇾 Uruguay"
             "brasil" in g || "brasileirao" in g || "brasil" in n -> "🇧🇷 Brasil"
             "usa" in g || "mls" in g || "league cup" in n || "leagues cup" in n -> "🇺🇸 USA / MLS"
-            "premier" in g || "inglaterra" in g || "championship" in g -> "🇬🇧 Premier League"
-            "serie a" in g -> "🇮🇹 Serie A"
-            "bundesliga" in g -> "🇩🇪 Bundesliga"
-            "ligue 1" in g -> "🇫🇷 Ligue 1"
+            "premier" in g || "inglaterra" in g || "championship" in g || "premier" in n -> "🇬🇧 Premier League"
+            "serie a" in g || "italia" in g || "serie a" in n -> "🇮🇹 Italia - Serie A"
+            "bundesliga" in g || "alemania" in g || "bundesliga" in n -> "🇩🇪 Bundesliga"
+            "ligue 1" in g || "francia" in g || "ligue 1" in n -> "🇫🇷 Ligue 1"
             "portugal" in g || "primeira" in g -> "🇵🇹 Portugal"
             "latinoamerica" in g || "costa rica" in g || "concacaf" in n || "centroamericana" in n -> "🌎 Latinoamérica"
             "f1" in g || "formula 1" in g || "moto" in g -> "🏎️ F1 / Motor"

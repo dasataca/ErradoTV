@@ -15,8 +15,26 @@ import javax.crypto.spec.SecretKeySpec
 
 object CryptoUtils {
 
-    // Clave local por defecto integrada en la app
-    const val DEFAULT_KEY_B64 = "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ=="
+    // Máscara y bytes protegidos para evitar extracción estática con Jadx / APKTool
+    private const val SHIELD_MASK: Byte = 0x5A
+    private val SHIELDED_KEY_BYTES = byteArrayOf(
+        (0x08).toByte(), (0x68).toByte(), (0x63).toByte(), (0x29).toByte(), (0x03).toByte(), (0x02).toByte(), (0x2A).toByte(), (0x2C).toByte(),
+        (0x38).toByte(), (0x6A).toByte(), (0x1C).toByte(), (0x2D).toByte(), (0x39).toByte(), (0x1C).toByte(), (0x14).toByte(), (0x36).toByte(),
+        (0x03).toByte(), (0x69).toByte(), (0x10).toByte(), (0x36).toByte(), (0x3E).toByte(), (0x1F).toByte(), (0x2E).toByte(), (0x36).toByte(),
+        (0x3F).toByte(), (0x0E).toByte(), (0x13).toByte(), (0x2D).toByte(), (0x17).toByte(), (0x30).toByte(), (0x08).toByte(), (0x0E).toByte(),
+        (0x00).toByte(), (0x0D).toByte(), (0x14).toByte(), (0x6B).toByte(), (0x39).toByte(), (0x37).toByte(), (0x0F).toByte(), (0x32).toByte(),
+        (0x13).toByte(), (0x0B).toByte(), (0x67).toByte(), (0x67).toByte()
+    )
+
+    fun getFactoryKey(): String {
+        val raw = ByteArray(SHIELDED_KEY_BYTES.size) { i ->
+            (SHIELDED_KEY_BYTES[i].toInt() xor SHIELD_MASK.toInt()).toByte()
+        }
+        return String(raw, Charsets.US_ASCII)
+    }
+
+    // Servidor DNS sobre HTTPS (DoH) seguro por defecto
+    const val DEFAULT_DOH_URL = "https://cloudflare-dns.com/dns-query"
 
     // URLs remotas (Repositiorio GitHub como fuente principal automatizada y Gist como respaldo)
     val remoteConfigUrls = listOf(
@@ -27,7 +45,10 @@ object CryptoUtils {
     var remoteConfigUrl: String = remoteConfigUrls.first()
 
     @Volatile
-    var activeKeyB64: String = DEFAULT_KEY_B64
+    var activeKeyB64: String = getFactoryKey()
+
+    @Volatile
+    var activeDohUrl: String = DEFAULT_DOH_URL
 
     fun init(context: Context) {
         val prefs = context.getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
@@ -36,7 +57,9 @@ object CryptoUtils {
         if (oldCachedKey != null && !prefs.contains("cached_key")) {
             prefs.edit().putString("cached_key", oldCachedKey).apply()
         }
-        activeKeyB64 = prefs.getString("cached_key", DEFAULT_KEY_B64) ?: DEFAULT_KEY_B64
+        activeKeyB64 = prefs.getString("cached_key", getFactoryKey()) ?: getFactoryKey()
+        activeDohUrl = prefs.getString("cached_doh_url", DEFAULT_DOH_URL) ?: DEFAULT_DOH_URL
+        com.gareca.tv.network.SecureDns.updateDohServer(activeDohUrl)
     }
 
     suspend fun syncRemoteKey(context: Context, httpClient: OkHttpClient) = withContext(Dispatchers.IO) {
@@ -48,11 +71,20 @@ object CryptoUtils {
                     val body = resp.body?.string().orEmpty()
                     val json = JSONObject(body)
                     val newKey = json.optString("active_key", "").trim()
+                    val prefs = context.getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
                     if (newKey.isNotEmpty() && newKey != activeKeyB64) {
                         activeKeyB64 = newKey
-                        val prefs = context.getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
                         prefs.edit().putString("cached_key", newKey).apply()
                     }
+
+                    // Sincronización remota del servidor DNS sobre HTTPS (DoH)
+                    val newDoh = json.optString("doh_url", "").trim()
+                    if (newDoh.isNotEmpty() && newDoh != activeDohUrl) {
+                        activeDohUrl = newDoh
+                        prefs.edit().putString("cached_doh_url", newDoh).apply()
+                        com.gareca.tv.network.SecureDns.updateDohServer(newDoh)
+                    }
+
                     remoteConfigUrl = url
                     break
                 }
@@ -73,10 +105,11 @@ object CryptoUtils {
         if (result.isNotEmpty()) return result
 
         // 2. Si falló y la clave activa era distinta de la predeterminada, intenta con la de fábrica
-        if (activeKeyB64 != DEFAULT_KEY_B64) {
-            val fallbackResult = tryDecryptWithKey(trimmed, DEFAULT_KEY_B64)
+        val factoryKey = getFactoryKey()
+        if (activeKeyB64 != factoryKey) {
+            val fallbackResult = tryDecryptWithKey(trimmed, factoryKey)
             if (fallbackResult.isNotEmpty()) {
-                activeKeyB64 = DEFAULT_KEY_B64
+                activeKeyB64 = factoryKey
                 return fallbackResult
             }
         }
