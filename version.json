@@ -1,7 +1,9 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "latest_version_code": 38,
-  "latest_version_name": "1.5.9",
+  "latest_version_code": 39,
+  "latest_version_name": "1.6.0",
+  "release_timestamp": 1792911867976,
+  "release_date": "2026-10-25",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Canales 24/7 nunca se etiquetan como NO DISPONIBLE"
+  "changelog": "GarecaTV: Verificador web con gracia de 2 días y actualización obligatoria al 3er día"
 }

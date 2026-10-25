@@ -37,11 +37,15 @@ echo "✅ APK generado:"
 ls -lh "$APK_VERSIONED" "$APK_LATEST"
 
 # 4. Generar version.json automático para la TV (Sin necesidad de tocar Gist nunca más)
+RELEASE_TIMESTAMP=$(date +%s%3N 2>/dev/null || echo "$(date +%s)000")
+RELEASE_DATE=$(date +%Y-%m-%d)
 cat <<EOF > version.json
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
   "latest_version_code": $VERSION_CODE,
   "latest_version_name": "$VERSION_NAME",
+  "release_timestamp": $RELEASE_TIMESTAMP,
+  "release_date": "$RELEASE_DATE",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
   "changelog": "$CHANGELOG"
 }

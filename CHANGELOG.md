@@ -2,6 +2,17 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.6.0] - 2026-10-25
+### Añadido y Optimizado
+- **Verificador Web de Versión con Periodo de Gracia y Bloqueo Obligatorio**:
+  - Detección autónoma de nuevas versiones disponibles mediante `version.json` remoto (`latest_version_code`, `release_timestamp` y `release_date`).
+  - **Periodo de Gracia de 2 días**: Durante los primeros 2 días tras la publicación de una nueva versión, el usuario recibe un diálogo informativo pero puede posponer la actualización ("Más tarde") y continuar usando la aplicación con normalidad.
+  - **Bloqueo Obligatorio al 3er día**: A partir del tercer día transcurrido (48+ horas desde el release), la actualización se vuelve estrictamente obligatoria:
+    - Diálogo modal bloqueante no cancelable (`setCancelable(false)`).
+    - El botón de posponer se transforma en "Salir" y ejecuta cierre completo del aplicativo (`finishAffinity()`).
+    - Bloqueo en `LoginActivity` y `MainActivity`: ningún usuario puede eludir la actualización ni iniciar sesión si su versión tiene 3 o más días de antigüedad respecto al servidor.
+  - **Automatización en Releases**: `publish_release.sh` ahora inyecta automáticamente `release_timestamp` (epoch millis) y `release_date` (`YYYY-MM-DD`) en `version.json`.
+
 ## [1.5.9] - 2026-10-24
 ### Modificado y Optimizado
 - **Canales 24/7 Excluidos de Etiqueta "NO DISPONIBLE"**:

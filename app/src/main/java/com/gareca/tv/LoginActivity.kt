@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.gareca.tv.auth.AuthManager
 import com.gareca.tv.auth.AuthResult
+import com.gareca.tv.updater.AppUpdater
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -61,6 +62,14 @@ class LoginActivity : AppCompatActivity() {
         btnGoogleLogin = findViewById(R.id.btnGoogleLogin)
         progressBar = findViewById(R.id.progressBar)
         tvErrorStatus = findViewById(R.id.tvErrorStatus)
+
+        // Verificar versión en la web al iniciar la pantalla
+        lifecycleScope.launch {
+            val update = AppUpdater.checkForUpdates(this@LoginActivity)
+            if (update != null) {
+                AppUpdater.showUpdateDialog(this@LoginActivity, update)
+            }
+        }
 
         // Eventos
         btnLogin.setOnClickListener {

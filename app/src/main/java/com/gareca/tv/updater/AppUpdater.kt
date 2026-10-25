@@ -1,25 +1,44 @@
 package com.gareca.tv.updater
 
 import android.app.Activity
+import android.app.Dialog
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
+import android.view.KeyEvent
+import android.view.View
+import android.widget.Button
+import android.widget.ProgressBar
+import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.gareca.tv.R
 import com.gareca.tv.api.ApiClient
 import com.gareca.tv.api.CryptoUtils
 import com.gareca.tv.telemetry.SupabaseLogger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
 
 data class UpdateInfo(
     val versionCode: Int,
     val versionName: String,
     val apkUrl: String,
-    val changelog: String
+    val changelog: String,
+    val releaseTimestamp: Long = 0L,
+    val releaseDate: String? = null,
+    val daysOutdated: Int = 0,
+    val isMandatory: Boolean = false
 )
 
 object AppUpdater {
@@ -84,6 +103,8 @@ object AppUpdater {
                 }
 
                 val changelog = json.optString("changelog", "Mejoras y correcciones generales.")
+                val releaseTimestamp = json.optLong("release_timestamp", 0L)
+                val releaseDateStr = json.optString("release_date", "")
 
                 SupabaseLogger.info(
                     "update_check",
@@ -92,7 +113,55 @@ object AppUpdater {
                 )
 
                 if (latestCode > currentCode && apkUrl.isNotEmpty()) {
-                    return@withContext UpdateInfo(latestCode, latestName, apkUrl, changelog)
+                    val prefs = context.getSharedPreferences("gareca_updater_prefs", Context.MODE_PRIVATE)
+                    val keyFirstDetected = "first_detected_code_$latestCode"
+                    var firstDetected = prefs.getLong(keyFirstDetected, 0L)
+                    val now = System.currentTimeMillis()
+
+                    if (firstDetected == 0L) {
+                        firstDetected = now
+                        prefs.edit().putLong(keyFirstDetected, now).apply()
+                    }
+
+                    // Calcular días de desactualización
+                    val baseTime = if (releaseTimestamp in 1..now) releaseTimestamp else firstDetected
+                    val elapsedMillis = now - baseTime
+                    val daysFromMillis = (elapsedMillis / (24 * 60 * 60 * 1000L)).toInt()
+
+                    var calendarDaysDiff = 0
+                    if (releaseDateStr.isNotEmpty()) {
+                        try {
+                            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+                                timeZone = TimeZone.getDefault()
+                            }
+                            val relDate = sdf.parse(releaseDateStr)
+                            if (relDate != null) {
+                                val calNow = Calendar.getInstance()
+                                val calRel = Calendar.getInstance().apply { time = relDate }
+                                val diff = ((calNow.timeInMillis - calRel.timeInMillis) / (24 * 3600 * 1000L)).toInt()
+                                calendarDaysDiff = Math.max(0, diff)
+                            }
+                        } catch (_: Exception) {}
+                    }
+
+                    val daysOutdated = Math.max(daysFromMillis, calendarDaysDiff)
+
+                    // Regla de negocio:
+                    // 2 días de desactualización permitidos (días 0 y 1 transcurridos).
+                    // Al tercer día (daysOutdated >= 2, es decir 48+ horas transcurridas),
+                    // se exige actualización obligatoria para iniciar la app.
+                    val isMandatory = daysOutdated >= 2
+
+                    return@withContext UpdateInfo(
+                        versionCode = latestCode,
+                        versionName = latestName,
+                        apkUrl = apkUrl,
+                        changelog = changelog,
+                        releaseTimestamp = releaseTimestamp,
+                        releaseDate = releaseDateStr,
+                        daysOutdated = daysOutdated,
+                        isMandatory = isMandatory
+                    )
                 }
                 // Si la URL principal respondió válidamente y no hay actualización, terminamos
                 if (latestCode > 0) {
@@ -104,6 +173,109 @@ object AppUpdater {
         }
 
         null
+    }
+
+    fun showUpdateDialog(
+        activity: Activity,
+        update: UpdateInfo,
+        onDismissOptional: (() -> Unit)? = null
+    ) {
+        if (activity.isFinishing || activity.isDestroyed) return
+
+        val dialog = Dialog(activity)
+        dialog.setContentView(R.layout.dialog_update_confirm)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val tvHeader = dialog.findViewById<TextView>(R.id.tvUpdateHeader)
+        val tvTitle = dialog.findViewById<TextView>(R.id.tvVersionTitle)
+        val tvGrace = dialog.findViewById<TextView>(R.id.tvGracePeriodWarning)
+        val tvChangelog = dialog.findViewById<TextView>(R.id.tvChangelog)
+        val btnCancel = dialog.findViewById<Button>(R.id.btnCancelUpdate)
+        val btnConfirm = dialog.findViewById<Button>(R.id.btnConfirmUpdate)
+
+        val currentVer = getCurrentVersionName(activity)
+        tvTitle.text = "GarecaTV v${update.versionName} (Instalada: v$currentVer)"
+        tvChangelog.text = update.changelog
+
+        if (update.isMandatory) {
+            dialog.setCancelable(false)
+            dialog.setCanceledOnTouchOutside(false)
+            dialog.setOnKeyListener { _, keyCode, event ->
+                if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+                    activity.finishAffinity()
+                    true
+                } else false
+            }
+
+            tvHeader.text = "⛔ ¡Actualización Obligatoria!"
+            tvHeader.setTextColor(Color.parseColor("#EF4444"))
+
+            tvGrace.visibility = View.VISIBLE
+            tvGrace.text = "Esta versión ha caducado (más de 2 días desactualizada).\nDebes actualizar GarecaTV para poder iniciar la aplicación."
+            tvGrace.setTextColor(Color.parseColor("#EF4444"))
+
+            btnCancel.text = "Salir"
+            btnCancel.setOnClickListener {
+                dialog.dismiss()
+                activity.finishAffinity()
+            }
+        } else {
+            dialog.setCancelable(true)
+            val daysRemaining = Math.max(1, 2 - update.daysOutdated)
+            tvGrace.visibility = View.VISIBLE
+            tvGrace.text = "⏳ Tienes $daysRemaining día(s) de gracia antes de que sea obligatoria."
+            tvGrace.setTextColor(Color.parseColor("#F59E0B"))
+
+            btnCancel.text = "Más tarde"
+            btnCancel.setOnClickListener {
+                dialog.dismiss()
+                onDismissOptional?.invoke()
+            }
+        }
+
+        btnConfirm.setOnClickListener {
+            dialog.dismiss()
+            showDownloadProgressDialog(activity, update)
+        }
+
+        dialog.show()
+        btnConfirm.requestFocus()
+    }
+
+    fun showDownloadProgressDialog(activity: Activity, update: UpdateInfo) {
+        if (activity.isFinishing || activity.isDestroyed) return
+
+        val dialog = Dialog(activity)
+        dialog.setContentView(R.layout.dialog_update_progress)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.setCancelable(false)
+        dialog.setCanceledOnTouchOutside(false)
+
+        val pbDownload = dialog.findViewById<ProgressBar>(R.id.pbUpdateDownload)
+        val tvPercent = dialog.findViewById<TextView>(R.id.tvUpdatePercent)
+
+        dialog.show()
+
+        CoroutineScope(Dispatchers.Main).launch {
+            downloadAndInstall(
+                activity = activity,
+                updateInfo = update,
+                onProgress = { percent ->
+                    pbDownload.progress = percent
+                    tvPercent.text = "$percent%"
+                    if (percent >= 100) {
+                        dialog.dismiss()
+                    }
+                },
+                onError = { error ->
+                    dialog.dismiss()
+                    Toast.makeText(activity, "Error al descargar: $error", Toast.LENGTH_LONG).show()
+                    if (update.isMandatory) {
+                        showUpdateDialog(activity, update)
+                    }
+                }
+            )
+        }
     }
 
     private val downloadClient = ApiClient.httpClient.newBuilder()

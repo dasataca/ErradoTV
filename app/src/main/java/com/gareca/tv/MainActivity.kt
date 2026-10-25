@@ -244,6 +244,9 @@ class MainActivity : AppCompatActivity() {
             checkAndPromptUpdate(userInitiated = true)
         }
 
+        // Comprobación de versión en la web al iniciar
+        checkAndPromptUpdate(userInitiated = false)
+
         // Carga al abrir la app con punto de control de 15 minutos
         loadData(silent = false, force = false)
     }
@@ -1053,7 +1056,7 @@ class MainActivity : AppCompatActivity() {
             }
             val update = AppUpdater.checkForUpdates(this@MainActivity)
             if (update != null) {
-                showUpdateAvailableDialog(update)
+                AppUpdater.showUpdateDialog(this@MainActivity, update)
             } else if (userInitiated) {
                 Toast.makeText(
                     this@MainActivity,
@@ -1061,63 +1064,6 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG
                 ).show()
             }
-        }
-    }
-
-    private fun showUpdateAvailableDialog(update: UpdateInfo) {
-        val dialog = Dialog(this)
-        dialog.setContentView(R.layout.dialog_update_confirm)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        val tvTitle = dialog.findViewById<TextView>(R.id.tvVersionTitle)
-        val tvChangelog = dialog.findViewById<TextView>(R.id.tvChangelog)
-        val btnCancel = dialog.findViewById<Button>(R.id.btnCancelUpdate)
-        val btnConfirm = dialog.findViewById<Button>(R.id.btnConfirmUpdate)
-
-        val currentVer = AppUpdater.getCurrentVersionName(this)
-        tvTitle.text = "GarecaTV v${update.versionName} (Instalada: v$currentVer)"
-        tvChangelog.text = update.changelog
-
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        btnConfirm.setOnClickListener {
-            dialog.dismiss()
-            showDownloadProgressDialog(update)
-        }
-
-        dialog.show()
-        btnConfirm.requestFocus()
-    }
-
-    private fun showDownloadProgressDialog(update: UpdateInfo) {
-        val dialog = Dialog(this)
-        dialog.setContentView(R.layout.dialog_update_progress)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.setCancelable(false)
-
-        val pbDownload = dialog.findViewById<ProgressBar>(R.id.pbUpdateDownload)
-        val tvPercent = dialog.findViewById<TextView>(R.id.tvUpdatePercent)
-
-        dialog.show()
-
-        lifecycleScope.launch {
-            AppUpdater.downloadAndInstall(
-                activity = this@MainActivity,
-                updateInfo = update,
-                onProgress = { percent ->
-                    pbDownload.progress = percent
-                    tvPercent.text = "$percent%"
-                    if (percent >= 100) {
-                        dialog.dismiss()
-                    }
-                },
-                onError = { error ->
-                    dialog.dismiss()
-                    Toast.makeText(this@MainActivity, "Error: $error", Toast.LENGTH_LONG).show()
-                }
-            )
         }
     }
 

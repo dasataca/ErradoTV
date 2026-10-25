@@ -7,6 +7,7 @@
     android:padding="28dp">
 
     <TextView
+        android:id="@+id/tvUpdateHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="¡Nueva Versión Disponible!"
@@ -23,6 +24,17 @@
         android:textStyle="bold"
         android:textColor="@color/text_primary"
         android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tvGracePeriodWarning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Días de gracia restantes: 2 días"
+        android:textSize="14sp"
+        android:textColor="#F59E0B"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:layout_marginTop="6dp" />
 
     <TextView
         android:id="@+id/tvChangelog"

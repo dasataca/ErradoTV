@@ -82,5 +82,8 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
 1. **Archivo Maestro de Versión (`version.json`)**:
    Ubicado en la raíz del repositorio:
    `https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json`
-2. **Detección Autónoma en la TV**:
-   La app consulta `version.json` al iniciar y en segundo plano. Al detectar una versión superior a la instalada, presenta el diálogo de confirmación en la TV y descarga/actualiza el APK por WiFi sin requerir intervención manual.
+   Contiene `latest_version_code`, `latest_version_name`, `apk_url`, `release_timestamp` y `release_date`.
+2. **Detección Autónoma y Regla de Caducidad (Gracia de 2 Días / Bloqueo Obligatorio)**:
+   * La app consulta `version.json` al iniciar (tanto en `LoginActivity` como en `MainActivity`) y periódicamente.
+   * **Días 1 y 2 (Periodo de Gracia)**: Si hay una nueva versión, se informa al usuario mediante diálogo modal, pero este puede posponer la actualización ("Más tarde") y continuar disfrutando de la programación.
+   * **Día 3 en adelante (Bloqueo Obligatorio)**: Tras 48+ horas del lanzamiento oficial de la nueva versión, la app exige obligatoriamente actualizar para iniciar. El diálogo no es cancelable, el botón se transforma en "Salir" (`finishAffinity()`), impidiendo el uso de versiones obsoletas.
