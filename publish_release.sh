@@ -43,6 +43,7 @@ ACTIVE_KEY_ENC=$(python3 herramientas/cifrador_clave/encrypt_key.py | grep '"act
 
 cat <<EOF > version.json
 {
+  "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
   "active_key_enc": "$ACTIVE_KEY_ENC",
   "latest_version_code": $VERSION_CODE,
   "latest_version_name": "$VERSION_NAME",

@@ -150,18 +150,18 @@ object CryptoUtils {
             return trimmed
         }
 
-        // 1. Intenta descifrar con la clave activa en caché o remota
+        // 1. Intenta descifrar con la clave activa en caché o remota y valida que sea JSON auténtico
         val result = tryDecryptWithKey(trimmed, activeKeyB64)
-        if (result.isNotEmpty()) return result
+        if (result.startsWith("{") || result.startsWith("[")) {
+            return result
+        }
 
-        // 2. Si falló y la clave activa era distinta de la predeterminada, intenta con la de fábrica
+        // 2. Si falló o produjo datos corruptos, recurre obligatoriamente a la clave de fábrica
         val factoryKey = getFactoryKey()
-        if (activeKeyB64 != factoryKey) {
-            val fallbackResult = tryDecryptWithKey(trimmed, factoryKey)
-            if (fallbackResult.isNotEmpty()) {
-                activeKeyB64 = factoryKey
-                return fallbackResult
-            }
+        val fallbackResult = tryDecryptWithKey(trimmed, factoryKey)
+        if (fallbackResult.startsWith("{") || fallbackResult.startsWith("[")) {
+            activeKeyB64 = factoryKey
+            return fallbackResult
         }
 
         return ""

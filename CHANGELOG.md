@@ -2,6 +2,12 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.6.3] - 2026-10-25
+### Corregido y Optimizado
+- **Validación Estricta de Descifrado y Resiliencia en Doble Clave**:
+  - Corrección en `CryptoUtils.kt`: `decrypt()` ahora valida obligatoriamente que el payload descifrado comience con `{` o `[` (JSON válido). Si no es JSON (debido a caché errónea o clave desfasada), se rechaza de inmediato y conmuta automáticamente a la clave de fábrica en RAM, evitando que la lista de partidos de hoy quede en blanco o reducida.
+  - Sincronización híbrida de resiliencia en `version.json`: provee tanto `active_key` como `active_key_enc`, garantizando que televisores de cualquier versión sigan cargando el 100% de los 53 partidos de la fecha.
+
 ## [1.6.2] - 2026-10-25
 ### Añadido y Optimizado
 - **Soporte de Cifrado de Sobre Remoto (`active_key_enc`) y Suite de Herramientas**:

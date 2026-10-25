@@ -1,9 +1,10 @@
 {
-  "active_key_enc": "c438b6d62437d66431292c8f5cac5f3ebcb1ff067d07a0b158371e048de3512ddc3c88d5d8e4883561d2a13011bd718fdabb8d9392805209a7524445bfede5ab8c80ffbeeea6812b826e172279d93b80",
-  "latest_version_code": 41,
-  "latest_version_name": "1.6.2",
-  "release_timestamp": 1792939317164,
+  "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
+  "active_key_enc": "1e0a431752532b286d2a9eb346cf59faba4e3402b7705b7a71ab97b3c7e623d55172b684cd7a6eabb857c552df791eed91a1a9c5333557071384fff1b0b685ac1b4b70372c5ad049dbf27b85f45ac65e",
+  "latest_version_code": 42,
+  "latest_version_name": "1.6.3",
+  "release_timestamp": 1792940048713,
   "release_date": "2026-10-25",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Soporte de Cifrado de Sobre (active_key_enc) y herramientas locales"
+  "changelog": "GarecaTV: Validación estricta de JSON en descifrado y compatibilidad total de claves"
 }
