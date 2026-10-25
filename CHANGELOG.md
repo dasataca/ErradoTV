@@ -2,6 +2,14 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.6.4] - 2026-10-25
+### Añadido y Optimizado
+- **Versión Visible en Cabecera Superior y Estado Dinámico en Botón Actualizar**:
+  - Se añade etiqueta de versión actual (`tvAppVersion`) visible en la parte superior junto a la fecha/día (`• v1.6.4`).
+  - Estado inteligente del botón de actualización:
+    - Si la versión instalada coincide con la versión remota, el botón muestra únicamente `Actualizado`.
+    - Si el servidor (`version.json`) detecta una versión más reciente, el botón pasa a indicar `Actualizar (vX.X.X)` y abre directamente el diálogo de descarga OTA al presionarlo.
+
 ## [1.6.3] - 2026-10-25
 ### Corregido y Optimizado
 - **Validación Estricta de Descifrado y Resiliencia en Doble Clave**:

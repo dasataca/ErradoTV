@@ -71,15 +71,32 @@
                     android:layout_marginStart="6dp" />
             </LinearLayout>
 
-            <!-- Fila inferior: Fecha (menor magnitud compacta) -->
-            <TextView
-                android:id="@+id/tvDate"
+            <!-- Fila inferior: Fecha y Versión Actual -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=""
-                android:textSize="13sp"
-                android:textColor="@color/text_secondary"
-                android:layout_marginTop="2dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="2dp">
+
+                <TextView
+                    android:id="@+id/tvDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="13sp"
+                    android:textColor="@color/text_secondary" />
+
+                <TextView
+                    android:id="@+id/tvAppVersion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/accent"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
         </LinearLayout>
 
         <View

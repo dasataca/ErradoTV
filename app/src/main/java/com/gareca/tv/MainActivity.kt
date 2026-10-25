@@ -50,8 +50,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvEmpty: TextView
     private lateinit var tvDate: TextView
     private lateinit var tvTimeZone: TextView
+    private lateinit var tvAppVersion: TextView
+    private lateinit var tvUpdateLabel: TextView
     private lateinit var btnRefresh: View
     private lateinit var btnUpdate: View
+    private var pendingUpdate: com.gareca.tv.updater.UpdateInfo? = null
     private lateinit var adapter: EventAdapter
     private lateinit var categoryAdapter: CategoryAdapter
     private var autoRefreshJob: Job? = null
@@ -169,6 +172,7 @@ class MainActivity : AppCompatActivity() {
         tvEmpty = findViewById(R.id.tvEmpty)
         tvDate = findViewById(R.id.tvDate)
         tvTimeZone = findViewById(R.id.tvTimeZone)
+        tvAppVersion = findViewById(R.id.tvAppVersion)
         btnRefresh = findViewById(R.id.btnRefresh)
         btnUpdate = findViewById(R.id.btnUpdate)
 
@@ -187,11 +191,12 @@ class MainActivity : AppCompatActivity() {
         setupSearchAndSortControls()
         setupGlobalSearchControls()
 
-        val tvUpdateLabel = findViewById<TextView>(R.id.tvUpdateLabel)
+        tvUpdateLabel = findViewById(R.id.tvUpdateLabel)
         val ivUpdateIcon = findViewById<ImageView>(R.id.ivUpdateIcon)
         val tvRefresh = findViewById<TextView>(R.id.btnRefresh)
         val currentVersion = AppUpdater.getCurrentVersionName(this)
-        tvUpdateLabel.text = "Actualizar (v$currentVersion)"
+        tvAppVersion.text = "v$currentVersion"
+        tvUpdateLabel.text = "Actualizado"
 
         btnUpdate.setOnFocusChangeListener { _, hasFocus ->
             tvUpdateLabel.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
@@ -241,7 +246,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnUpdate.setOnClickListener {
-            checkAndPromptUpdate(userInitiated = true)
+            val update = pendingUpdate
+            if (update != null) {
+                AppUpdater.showUpdateDialog(this, update)
+            } else {
+                checkAndPromptUpdate(userInitiated = true)
+            }
         }
 
         // Comprobación de versión en la web al iniciar
@@ -786,6 +796,8 @@ class MainActivity : AppCompatActivity() {
                 enrichTeveplayMatches(liveChannels, dailyResponse.events)
 
                 tvDate.text = dailyResponse.date
+                val currentVer = AppUpdater.getCurrentVersionName(this@MainActivity)
+                tvAppVersion.text = if (dailyResponse.date.isNotEmpty()) "• v$currentVer" else "v$currentVer"
                 updateTimeZoneHeader()
 
                 // Separación estricta: en Partidos del Día SOLO van partidos que NO sean repetición
@@ -1055,14 +1067,19 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "Buscando actualizaciones...", Toast.LENGTH_SHORT).show()
             }
             val update = AppUpdater.checkForUpdates(this@MainActivity)
+            pendingUpdate = update
             if (update != null) {
+                tvUpdateLabel.text = "Actualizar (v${update.versionName})"
                 AppUpdater.showUpdateDialog(this@MainActivity, update)
-            } else if (userInitiated) {
-                Toast.makeText(
-                    this@MainActivity,
-                    "GarecaTV ya está actualizado (v${AppUpdater.getCurrentVersionName(this@MainActivity)})",
-                    Toast.LENGTH_LONG
-                ).show()
+            } else {
+                tvUpdateLabel.text = "Actualizado"
+                if (userInitiated) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "GarecaTV ya está actualizado (v${AppUpdater.getCurrentVersionName(this@MainActivity)})",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }

@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "1e0a431752532b286d2a9eb346cf59faba4e3402b7705b7a71ab97b3c7e623d55172b684cd7a6eabb857c552df791eed91a1a9c5333557071384fff1b0b685ac1b4b70372c5ad049dbf27b85f45ac65e",
-  "latest_version_code": 42,
-  "latest_version_name": "1.6.3",
-  "release_timestamp": 1792940048713,
+  "active_key_enc": "7412bd757a03cfc3fd50406b069fd2c5241ea15fe28c376a73219e2c0b2841e64680f27afc390b6863ca232fa4b2ffdd397cf7ec612e96fec9c8a04e697c3a4b2ee2b9dd9ee3f2aa84414a590e3e64f4",
+  "latest_version_code": 43,
+  "latest_version_name": "1.6.4",
+  "release_timestamp": 1792942114213,
   "release_date": "2026-10-25",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Validación estricta de JSON en descifrado y compatibilidad total de claves"
+  "changelog": "GarecaTV: Versión visible en cabecera y estado dinámico en botón actualizar"
 }
