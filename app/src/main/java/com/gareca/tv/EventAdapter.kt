@@ -93,17 +93,24 @@ class EventAdapter(
                 ivThumbnail.visibility = View.GONE
             }
 
+            val is247 = item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 || item.category != "Partidos"
+            val effectiveStatus = if (is247 && item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                if (item.originalStatus != EventStatus.REPLAY_UNAVAILABLE) item.originalStatus else EventStatus.CHANNEL_24_7
+            } else {
+                item.status
+            }
+
             // Configurar insignia de estado dinámico (EN VIVO, POR EMPEZAR, PROGRAMADO, FINALIZADO)
-            tvStreamBadge.text = item.status.label
+            tvStreamBadge.text = effectiveStatus.label
             val badgeDrawable = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 cornerRadius = 10f
-                setColor(Color.parseColor(item.status.colorHex))
+                setColor(Color.parseColor(effectiveStatus.colorHex))
             }
             tvStreamBadge.background = badgeDrawable
 
-            // Si el partido ya finalizó o no está disponible, atenuar la tarjeta
-            itemView.alpha = if (item.status == EventStatus.FINISHED || item.status == EventStatus.REPLAY_UNAVAILABLE) 0.5f else 1.0f
+            // Si el partido ya finalizó o no está disponible, atenuar la tarjeta (canales 24/7 nunca se atenúan)
+            itemView.alpha = if (!is247 && (effectiveStatus == EventStatus.FINISHED || effectiveStatus == EventStatus.REPLAY_UNAVAILABLE)) 0.5f else 1.0f
 
             itemView.setOnClickListener {
                 onItemClick(item)

@@ -689,6 +689,15 @@ class MainActivity : AppCompatActivity() {
         // se restaura automáticamente la etiqueta que tenía previamente (originalStatus).
         var updated = false
         fun syncItemAvailability(item: EventItem) {
+            val is247 = item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 || item.category != "Partidos"
+            if (is247) {
+                if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                    item.status = if (item.originalStatus != EventStatus.REPLAY_UNAVAILABLE) item.originalStatus else EventStatus.CHANNEL_24_7
+                    updated = true
+                }
+                return
+            }
+
             val allUnavailable = item.streams.isNotEmpty() && item.streams.all { StreamCache.isUnavailable(it.url) }
             if (allUnavailable && item.status != EventStatus.REPLAY_UNAVAILABLE) {
                 item.originalStatus = item.status
@@ -798,7 +807,16 @@ class MainActivity : AppCompatActivity() {
 
                 // Aprendizaje comunitario y local: sólo las señales reportadas por fallo real se muestran como no disponibles.
                 // Si la señal vuelve a estar activa, restaura su etiqueta previa (originalStatus).
+                // NOTA: Para canales 24/7 NO se etiqueta nunca como NO DISPONIBLE.
                 fun applyAvailability(item: EventItem) {
+                    val is247 = item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 || item.category != "Partidos"
+                    if (is247) {
+                        if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                            item.status = if (item.originalStatus != EventStatus.REPLAY_UNAVAILABLE) item.originalStatus else EventStatus.CHANNEL_24_7
+                        }
+                        return
+                    }
+
                     val allUnavailable = item.streams.isNotEmpty() && item.streams.all { StreamCache.isUnavailable(it.url) }
                     if (allUnavailable) {
                         if (item.status != EventStatus.REPLAY_UNAVAILABLE) {
@@ -864,9 +882,7 @@ class MainActivity : AppCompatActivity() {
                     channel.countdownText = matched.countdownText
                     channel.originalStatus = matched.status
                     channel.startEpochMillis = matched.startEpochMillis
-                    if (channel.status != EventStatus.REPLAY_UNAVAILABLE) {
-                        channel.status = matched.status
-                    }
+                    channel.status = matched.status
                     val displayTime = channel.localTime ?: channel.time
                     channel.subtitle = "🟢 TevePlay • ${if (displayTime != null) "Hora local: $displayTime • " else ""}${matched.countdownText ?: "En agenda"}"
                 }
@@ -1012,8 +1028,8 @@ class MainActivity : AppCompatActivity() {
                     // Programados van después
                     item.status == EventStatus.SCHEDULED -> 30
 
-                    // Luego los canales 24/7 (si están NO DISPONIBLE, se quedan en su lugar entre los 24/7)
-                    item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 -> 40
+                    // Luego los canales 24/7 (nunca se etiquetan como NO DISPONIBLE)
+                    item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 || item.category != "Partidos" -> 40
 
                     // Repeticiones (en búsqueda global)
                     item.status == EventStatus.REPLAY -> 50
