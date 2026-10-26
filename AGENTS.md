@@ -19,12 +19,21 @@
 4. **Organización de Catálogos y Búsqueda en TV**:
    * **⚽ Partidos del Día**: Muestra única y exclusivamente los partidos en vivo, por empezar o programados de la fecha de hoy.
    * **🔁 Repeticiones**: Pestaña dedicada situada inmediatamente antes de `📺 Regionales`, con buscador en tiempo real y botones de ordenación por Fecha (recientes/antiguos) y Nombre (A-Z/Z-A).
-   * **Navegación Ergonómica en Búsqueda**: Al pulsar abajo desde la pestaña de Repeticiones, el foco pasa a la caja de texto. Para escribir se pulsa OK/Center (activa el cursor y despliega teclado); si se pulsa abajo de nuevo sin presionar OK, el foco salta directamente al primer partido de la lista.
-   * **Resiliencia de Disponibilidad**: Los partidos etiquetados como `NO DISPONIBLE` se desplazan siempre de forma automática al fondo de la lista.
+   * **🔍 Buscar Todo**: Pestaña consolidada inicial para buscar en eventos del día, señales en vivo y repeticiones simultáneamente, con botón de ordenamiento por Nombre (`btnSortNameGlobal`).
+   * **Navegación Ergonómica y Captura Pre-IME (`SearchEditText`)**:
+     * **Disposición**: Botón de micrófono a la izquierda, caja de texto al centro y botón de la Lupa dedicado a la derecha.
+     * **Sugerencias en Tiempo Real**: Al ingresar 2 o más caracteres, se despliegan sugerencias (`rvSuggestions`).
+     * **Captura Pre-IME de Tecla Atrás**: `SearchEditText` sobrescribe `onKeyPreIme()` para capturar la tecla Atrás antes de que el teclado virtual la consuma silenciosamente. Oculta el teclado y transfiere el foco al primer elemento de la lista de sugerencias.
+     * **Foco Automático al Botón Lupa**: Al seleccionar una sugerencia con OK/Center, el texto se escribe en la caja, la lista se oculta y el foco salta directamente al botón de la Lupa.
+     * **Descarte de Sugerencias**: Si el usuario está enfocado en las sugerencias y pulsa Atrás, la lista se oculta y el foco regresa a la caja de texto.
+     * **Resiliencia Touch Mode**: `rvSuggestions` y cada fila (`item_search_suggestion.xml`) implementan `android:focusableInTouchMode="true"` para garantizar que el foco sea aceptado tras cerrar el teclado en Android TV.
+   * **Resiliencia de Disponibilidad**: Los partidos etiquetados como `NO DISPONIBLE` se desplazan siempre de forma automática al fondo de la lista (los canales 24/7 nunca se etiquetan como `NO DISPONIBLE`).
 5. **Reproducción de Video Nativa**:
    * Prioridad absoluta a **AndroidX Media3 ExoPlayer** para reproducir flujos HLS (`.m3u8`).
    * Configuración de `DefaultTrackSelector` forzando siempre la máxima resolución (`setMaxVideoSize(3840, 2160)`) y bitrate disponible (`setForceHighestSupportedBitrate(true)`).
 6. **Resiliencia y Actualización OTA Autónoma**:
+   * Etiqueta de versión visible en cabecera junto a la fecha (`tvAppVersion`).
+   * Botón de actualización inteligente: indica `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` abriendo el diálogo OTA si hay una versión superior.
    * El sistema de actualización remota Over-The-Air se gestiona a través del archivo [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en el repositorio GitHub (`dasataca/ErradoTV`).
 
 ---
@@ -104,6 +113,6 @@ Para generar y subir una nueva versión del software:
 ```bash
 ./publish_release.sh [versionName] [versionCode] "[changelog]"
 # Ejemplo:
-./publish_release.sh 1.6.3 42 "GarecaTV: Validación estricta de JSON en descifrado y compatibilidad total de claves"
+./publish_release.sh 1.6.7 46 "GarecaTV: Captura Pre-IME de tecla Atrás y transferencia instantánea de foco a sugerencias en ambos buscadores"
 ```
 El script compila el APK, actualiza `version.json`, organiza los archivos en `release/` y realiza el `git push` a `origin main` de manera completamente autónoma.

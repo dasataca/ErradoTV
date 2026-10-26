@@ -40,20 +40,32 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
 ### Separación de Catálogos y Búsqueda en TV
 1. **Partidos del Día (`⚽ Partidos del Día`)**: Muestra únicamente los partidos en vivo, por empezar o programados de la jornada actual (`cachedDailyEvents`). Se excluyen todas las repeticiones.
 2. **Pestaña Exclusiva de Repeticiones (`🔁 Repeticiones`)**: Situada justo antes de `📺 Regionales`, reúne el catálogo de partidos históricos (`cachedReplayEvents`).
-3. **Buscador y Ordenación Leanback**:
-   * Permite filtrar repeticiones al instante por equipo, título o fecha.
-   * Botones de ordenación por **Fecha** (más recientes o más antiguos) y por **Nombre** (alfabético A-Z o Z-A).
-   * **Navegación con control remoto**: Al pulsar flecha abajo desde la pestaña, el foco pasa a la caja de texto. Si el usuario pulsa OK/Center, se activa el cursor y se abre el teclado; si pulsa abajo directamente sin presionar OK, el foco salta al primer partido de la lista.
+3. **Buscador Global (`🔍 Buscar Todo`)**: Pestaña inicial que consolida la búsqueda simultánea en partidos de hoy, canales lineales y repeticiones. Dispone de botón de ordenamiento por **`🔤 Nombre`** (`btnSortNameGlobal`), alternando entre orden por defecto, A-Z y Z-A.
+4. **Arquitectura de Búsqueda y Sugerencias Ergonómicas en TV**:
+   * **Disposición Visual**: Botón de micrófono a la izquierda (`btnVoiceSearchReplay` / `btnVoiceGlobalSearch`), campo de texto en el centro (`etSearch` / `etGlobalSearch`) y botón Lupa dedicado a la derecha (`btnSearchReplay` / `btnSearchGlobal`).
+   * **Interceptación Pre-IME de Tecla Atrás (`SearchEditText`)**: En Android TV, el teclado virtual del sistema operativo consume el primer evento `KEYCODE_BACK` para ocultarse, evitando que llegue a la `Activity` y dejando el foco atrapado en el campo de texto. `SearchEditText.kt` sobreescribe `onKeyPreIme()` para capturar la tecla Atrás con prioridad, ocultar el teclado y transferir el foco al primer elemento del listado de sugerencias.
+   * **Resiliencia en Touch Mode**: Tanto el contenedor `rvSuggestions` como cada elemento (`item_search_suggestion.xml`) tienen `android:focusableInTouchMode="true"`, asegurando que el foco sea aceptado por el control remoto de TV aún cuando el sistema permanezca momentáneamente en modo táctil tras el cierre del teclado.
+   * **Flujo de Navegación D-Pad**:
+     1. Al escribir 2 o más letras, `filterSuggestions()` despliega sugerencias en `rvSuggestions`.
+     2. Al pulsar **Atrás (BACK)**, el teclado desaparece y el foco salta de inmediato a la primera sugerencia.
+     3. Al presionar **OK / Center** sobre una sugerencia, el texto se escribe en la caja, la lista se cierra y el foco salta directamente al botón de la **Lupa** para ejecutar la búsqueda o reordenar.
+     4. Al pulsar **Atrás (BACK)** estando en la lista de sugerencias sin elegir nada, la lista se oculta y el foco regresa a la caja de búsqueda.
+     5. Al pulsar **Arriba (DPAD_UP)** desde la primera sugerencia, el foco regresa a la caja de texto (`onUpFromFirst`).
+5. **Cabecera de Versión y Actualización Inteligente**:
+   * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.6.7`).
+   * Botón de actualización dinámico: muestra `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` si hay un release superior disponible en el repositorio.
 
 ---
 
 ## 3. Arquitectura del Código Fuente (Android TV)
 
+* **`com.gareca.tv.SearchEditText`**: Componente personalizado que hereda de `AppCompatAutoCompleteTextView` y sobreescribe `onKeyPreIme()` para capturar la tecla Atrás antes de que el teclado virtual la consuma, garantizando la transferencia de foco a sugerencias en Smart TVs.
+* **`com.gareca.tv.SuggestionAdapter`**: Adaptador para el `RecyclerView` de sugerencias (`rvSuggestions`). Implementa selectores visuales de alto contraste (`button_focus_selector.xml`), animación de escala (`1.02f`) al enfocar, callback de selección (`onItemClick`) y navegación vertical hacia la caja de texto (`onUpFromFirst`).
 * **`com.gareca.tv.api.CryptoUtils`**: Módulo criptográfico AES-256-CBC con clave blindada con máscara XOR (`getFactoryKey()`), soporte de Cifrado de Sobre (`decryptEnvelope`) para `"active_key_enc"`, almacenamiento en `SharedPreferences` y validación estricta de JSON en memoria RAM.
 * **`com.gareca.tv.network.SecureDns`**: Proveedor nativo de DNS sobre HTTPS (DoH) basado en `okhttp-dnsoverhttps` con servidores seguros de Cloudflare (`1.1.1.1`), Google (`8.8.8.8`) y conmutación automática de respaldo a DNS del sistema.
 * **`com.gareca.tv.api.ApiClient`**: Cliente HTTP basado en `OkHttpClient` y corrutinas, enrutado por `SecureDns`. Descarga, descifra y mapea `event.json`, `destacado.json` y los canales de `teveplay.net`. Extrae fechas y timestamps (`YYYY-MM-DD`) para ordenación.
 * **`com.gareca.tv.model.EventModel`**: Modelos de datos (`EventItem`, `StreamOption`, `EventStatus`). Soporta cálculo dinámico de estados (`● EN VIVO`, `POR EMPEZAR`, `PROGRAMADO`, `FINALIZADO`, `REPETICIÓN`, `NO DISPONIBLE`, `CANAL 24/7`), marcas de fecha (`rawDate`) y milisegundos (`timestamp`).
-* **`com.gareca.tv.MainActivity`**: Actividad principal Leanback. Gestiona el ciclo de vida, reloj en tiempo real (`TextClock`), control de frecuencia de refresco, buscador dinámico, botones de ordenación y navegación D-Pad.
+* **`com.gareca.tv.MainActivity`**: Actividad principal Leanback. Gestiona el ciclo de vida, reloj en tiempo real (`TextClock`), control de frecuencia de refresco, buscador dinámico, botones de ordenación (`ReplaySortMode` y `GlobalSortMode`), gestión de sugerencias y navegación D-Pad.
 * **`com.gareca.tv.CategoryAdapter`**: Barra de pestañas horizontal (`rvCategories`) con animación de escala (`1.06f`) y captura de evento de flecha abajo para transferir el foco al buscador o lista.
 * **`com.gareca.tv.EventAdapter`**: Adaptador para las tarjetas de partidos y canales con selector `card_selector.xml` y atenuación visual (`alpha = 0.5f`) para partidos finalizados o no disponibles.
 * **`com.gareca.tv.CommunityStreamManager`**: Sincronizador con la base comunitaria de Supabase (`public.errado_community_streams`), permitiendo deduplicar enlaces caídos y compartirlos entre dispositivos.
