@@ -11,6 +11,8 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -61,15 +63,17 @@ class MainActivity : AppCompatActivity() {
 
     // Controles de búsqueda y ordenación para TV (Repeticiones)
     private lateinit var searchContainer: LinearLayout
-    private lateinit var etSearch: EditText
+    private lateinit var etSearch: AutoCompleteTextView
     private lateinit var btnVoiceSearchReplay: View
+    private lateinit var btnSearchReplay: View
     private lateinit var btnSortDate: Button
     private lateinit var btnSortName: Button
 
     // Controles de Búsqueda Global (Todo el catálogo)
     private lateinit var globalSearchContainer: LinearLayout
-    private lateinit var etGlobalSearch: EditText
+    private lateinit var etGlobalSearch: AutoCompleteTextView
     private lateinit var btnVoiceGlobalSearch: View
+    private lateinit var btnSearchGlobal: View
     private lateinit var btnClearGlobalSearch: Button
     private var globalSearchQuery = ""
     private var isVoiceForGlobal = false
@@ -84,14 +88,10 @@ class MainActivity : AppCompatActivity() {
             if (!spokenText.isNullOrEmpty()) {
                 if (isVoiceForGlobal) {
                     etGlobalSearch.setText(spokenText)
-                    globalSearchQuery = spokenText.trim()
-                    filterAndDisplayEvents(silent = false)
-                    focusFirstEventItem()
+                    executeSearch(isGlobal = true)
                 } else {
                     etSearch.setText(spokenText)
-                    searchQuery = spokenText.trim()
-                    filterAndDisplayEvents(silent = false)
-                    focusFirstEventItem()
+                    executeSearch(isGlobal = false)
                 }
             }
         }
@@ -179,12 +179,14 @@ class MainActivity : AppCompatActivity() {
         searchContainer = findViewById(R.id.searchContainer)
         etSearch = findViewById(R.id.etSearch)
         btnVoiceSearchReplay = findViewById(R.id.btnVoiceSearchReplay)
+        btnSearchReplay = findViewById(R.id.btnSearchReplay)
         btnSortDate = findViewById(R.id.btnSortDate)
         btnSortName = findViewById(R.id.btnSortName)
 
         globalSearchContainer = findViewById(R.id.globalSearchContainer)
         etGlobalSearch = findViewById(R.id.etGlobalSearch)
         btnVoiceGlobalSearch = findViewById(R.id.btnVoiceGlobalSearch)
+        btnSearchGlobal = findViewById(R.id.btnSearchGlobal)
         btnClearGlobalSearch = findViewById(R.id.btnClearGlobalSearch)
 
         updateTimeZoneHeader()
@@ -261,10 +263,74 @@ class MainActivity : AppCompatActivity() {
         loadData(silent = false, force = false)
     }
 
+    private fun executeSearch(isGlobal: Boolean) {
+        if (isGlobal) {
+            deactivateGlobalSearchInput()
+            globalSearchQuery = etGlobalSearch.text?.toString()?.trim().orEmpty()
+            filterAndDisplayEvents(silent = false)
+            focusFirstEventItem()
+        } else {
+            deactivateSearchInput()
+            searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+            filterAndDisplayEvents(silent = false)
+            focusFirstEventItem()
+        }
+    }
+
+    private fun updateSearchSuggestions() {
+        val replayWords = linkedSetOf<String>()
+        val globalWords = linkedSetOf<String>()
+
+        fun extractWords(title: String, targetSet: MutableSet<String>) {
+            if (title.isBlank()) return
+            targetSet.add(title.trim())
+            val parts = title.split(Regex("""(?i)\s+(?:vs\.?|-|–|y|contra)\s+"""))
+            for (p in parts) {
+                val clean = p.trim()
+                if (clean.length >= 3) {
+                    targetSet.add(clean)
+                }
+            }
+        }
+
+        for (item in cachedReplayEvents) {
+            extractWords(item.title, replayWords)
+        }
+
+        for (item in cachedDailyEvents) {
+            extractWords(item.title, globalWords)
+        }
+        for (item in cachedLiveChannels) {
+            extractWords(item.title, globalWords)
+        }
+        globalWords.addAll(replayWords)
+
+        val replayList = replayWords.toList()
+        val globalList = globalWords.toList()
+
+        runOnUiThread {
+            if (::etSearch.isInitialized) {
+                val replayAdapter = ArrayAdapter(
+                    this,
+                    R.layout.item_search_suggestion,
+                    R.id.tvSuggestionText,
+                    replayList
+                )
+                etSearch.setAdapter(replayAdapter)
+            }
+            if (::etGlobalSearch.isInitialized) {
+                val globalAdapter = ArrayAdapter(
+                    this,
+                    R.layout.item_search_suggestion,
+                    R.id.tvSuggestionText,
+                    globalList
+                )
+                etGlobalSearch.setAdapter(globalAdapter)
+            }
+        }
+    }
+
     private fun setupSearchAndSortControls() {
-        // En Leanback TV, la caja de búsqueda se enfoca al bajar con la cruceta (D-Pad DOWN)
-        // pero NO debe desplegar inmediatamente el teclado ni mostrar el cursor.
-        // El usuario debe pulsar una vez más (OK / Center / Enter) para activar la edición.
         etSearch.isCursorVisible = false
 
         etSearch.setOnFocusChangeListener { _, hasFocus ->
@@ -273,36 +339,33 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Al pulsar OK / Center / Click sobre la caja de búsqueda, se activa el cursor y teclado
         etSearch.setOnClickListener {
             activateSearchInput()
         }
 
         etSearch.setOnKeyListener { _, keyCode, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
-                when (keyCode) {
-                    KeyEvent.KEYCODE_DPAD_DOWN -> {
-                        // Si el cursor no está activo, el foco pasa inmediatamente al primer elemento de la lista
-                        if (!etSearch.isCursorVisible) {
+                // Solo intervenir si el cursor no está activo (navegación por control remoto)
+                if (!etSearch.isCursorVisible) {
+                    when (keyCode) {
+                        KeyEvent.KEYCODE_DPAD_DOWN -> {
                             focusFirstEventItem()
                             return@setOnKeyListener true
                         }
-                    }
-                    KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                        if (!etSearch.isCursorVisible) {
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                             activateSearchInput()
                             return@setOnKeyListener true
                         }
-                    }
-                    KeyEvent.KEYCODE_DPAD_UP -> {
-                        if (!etSearch.isCursorVisible) {
+                        KeyEvent.KEYCODE_DPAD_UP -> {
                             rvCategories.requestFocus()
                             return@setOnKeyListener true
                         }
-                    }
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                        if (!etSearch.isCursorVisible) {
+                        KeyEvent.KEYCODE_DPAD_LEFT -> {
                             btnVoiceSearchReplay.requestFocus()
+                            return@setOnKeyListener true
+                        }
+                        KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                            btnSearchReplay.requestFocus()
                             return@setOnKeyListener true
                         }
                     }
@@ -311,6 +374,35 @@ class MainActivity : AppCompatActivity() {
             false
         }
 
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchQuery = s?.toString()?.trim().orEmpty()
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        // Al seleccionar una sugerencia del autocompletado
+        etSearch.setOnItemClickListener { parent, _, position, _ ->
+            val suggestion = parent.getItemAtPosition(position) as? String
+            if (!suggestion.isNullOrEmpty()) {
+                etSearch.setText(suggestion)
+                etSearch.setSelection(suggestion.length)
+                executeSearch(isGlobal = false)
+            }
+        }
+
+        // Al pulsar la lupa del teclado virtual (IME_ACTION_SEARCH)
+        etSearch.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                executeSearch(isGlobal = false)
+                true
+            } else {
+                false
+            }
+        }
+
+        // Botón Micrófono Replay (a la izquierda)
         btnVoiceSearchReplay.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
                 view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
@@ -322,6 +414,36 @@ class MainActivity : AppCompatActivity() {
             startVoiceSearch(isGlobal = false)
         }
         btnVoiceSearchReplay.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        focusFirstEventItem()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        etSearch.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                }
+            }
+            false
+        }
+
+        // Botón Lupa Replay (a la derecha de la caja de texto, sin texto)
+        val ivSearchIconReplay = findViewById<ImageView>(R.id.ivSearchIconReplay)
+        btnSearchReplay.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
+                ivSearchIconReplay?.setColorFilter(android.graphics.Color.BLACK)
+            } else {
+                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+                ivSearchIconReplay?.setColorFilter(android.graphics.Color.WHITE)
+            }
+        }
+        btnSearchReplay.setOnClickListener {
+            executeSearch(isGlobal = false)
+        }
+        btnSearchReplay.setOnKeyListener { _, keyCode, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 when (keyCode) {
                     KeyEvent.KEYCODE_DPAD_DOWN -> {
@@ -341,30 +463,6 @@ class MainActivity : AppCompatActivity() {
             false
         }
 
-        etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                searchQuery = s?.toString()?.trim().orEmpty()
-                if (currentCategory == "🔁 Repeticiones") {
-                    filterAndDisplayEvents(silent = true)
-                }
-            }
-            override fun afterTextChanged(s: Editable?) {}
-        })
-
-        etSearch.setOnEditorActionListener { _, actionId, event ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
-                actionId == EditorInfo.IME_ACTION_DONE ||
-                event?.keyCode == KeyEvent.KEYCODE_ENTER
-            ) {
-                deactivateSearchInput()
-                focusFirstEventItem()
-                true
-            } else {
-                false
-            }
-        }
-
         btnSortDate.setOnFocusChangeListener { _, hasFocus ->
             btnSortDate.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
         }
@@ -380,7 +478,7 @@ class MainActivity : AppCompatActivity() {
                         return@setOnKeyListener true
                     }
                     KeyEvent.KEYCODE_DPAD_LEFT -> {
-                        btnVoiceSearchReplay.requestFocus()
+                        btnSearchReplay.requestFocus()
                         return@setOnKeyListener true
                     }
                     KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -448,28 +546,26 @@ class MainActivity : AppCompatActivity() {
 
         etGlobalSearch.setOnKeyListener { _, keyCode, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
-                when (keyCode) {
-                    KeyEvent.KEYCODE_DPAD_DOWN -> {
-                        if (!etGlobalSearch.isCursorVisible) {
+                if (!etGlobalSearch.isCursorVisible) {
+                    when (keyCode) {
+                        KeyEvent.KEYCODE_DPAD_DOWN -> {
                             focusFirstEventItem()
                             return@setOnKeyListener true
                         }
-                    }
-                    KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                        if (!etGlobalSearch.isCursorVisible) {
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                             activateGlobalSearchInput()
                             return@setOnKeyListener true
                         }
-                    }
-                    KeyEvent.KEYCODE_DPAD_UP -> {
-                        if (!etGlobalSearch.isCursorVisible) {
+                        KeyEvent.KEYCODE_DPAD_UP -> {
                             rvCategories.requestFocus()
                             return@setOnKeyListener true
                         }
-                    }
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                        if (!etGlobalSearch.isCursorVisible) {
+                        KeyEvent.KEYCODE_DPAD_LEFT -> {
                             btnVoiceGlobalSearch.requestFocus()
+                            return@setOnKeyListener true
+                        }
+                        KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                            btnSearchGlobal.requestFocus()
                             return@setOnKeyListener true
                         }
                     }
@@ -482,26 +578,31 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 globalSearchQuery = s?.toString()?.trim().orEmpty()
-                if (currentCategory == "🔍 Buscar Todo") {
-                    filterAndDisplayEvents(silent = true)
-                }
             }
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        etGlobalSearch.setOnEditorActionListener { _, actionId, event ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
-                actionId == EditorInfo.IME_ACTION_DONE ||
-                event?.keyCode == KeyEvent.KEYCODE_ENTER
-            ) {
-                deactivateGlobalSearchInput()
-                focusFirstEventItem()
+        // Al seleccionar una sugerencia del autocompletado
+        etGlobalSearch.setOnItemClickListener { parent, _, position, _ ->
+            val suggestion = parent.getItemAtPosition(position) as? String
+            if (!suggestion.isNullOrEmpty()) {
+                etGlobalSearch.setText(suggestion)
+                etGlobalSearch.setSelection(suggestion.length)
+                executeSearch(isGlobal = true)
+            }
+        }
+
+        // Al pulsar la lupa del teclado virtual (IME_ACTION_SEARCH)
+        etGlobalSearch.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                executeSearch(isGlobal = true)
                 true
             } else {
                 false
             }
         }
 
+        // Botón Micrófono Global (a la izquierda)
         btnVoiceGlobalSearch.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
                 view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
@@ -513,6 +614,36 @@ class MainActivity : AppCompatActivity() {
             startVoiceSearch(isGlobal = true)
         }
         btnVoiceGlobalSearch.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        focusFirstEventItem()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        etGlobalSearch.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                }
+            }
+            false
+        }
+
+        // Botón Lupa Global (a la derecha de la caja de texto, sin texto)
+        val ivSearchIconGlobal = findViewById<ImageView>(R.id.ivSearchIconGlobal)
+        btnSearchGlobal.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
+                ivSearchIconGlobal?.setColorFilter(android.graphics.Color.BLACK)
+            } else {
+                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+                ivSearchIconGlobal?.setColorFilter(android.graphics.Color.WHITE)
+            }
+        }
+        btnSearchGlobal.setOnClickListener {
+            executeSearch(isGlobal = true)
+        }
+        btnSearchGlobal.setOnKeyListener { _, keyCode, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 when (keyCode) {
                     KeyEvent.KEYCODE_DPAD_DOWN -> {
@@ -532,6 +663,7 @@ class MainActivity : AppCompatActivity() {
             false
         }
 
+        // Botón Limpiar
         btnClearGlobalSearch.setOnFocusChangeListener { _, hasFocus ->
             btnClearGlobalSearch.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
         }
@@ -549,7 +681,7 @@ class MainActivity : AppCompatActivity() {
                         return@setOnKeyListener true
                     }
                     KeyEvent.KEYCODE_DPAD_LEFT -> {
-                        btnVoiceGlobalSearch.requestFocus()
+                        btnSearchGlobal.requestFocus()
                         return@setOnKeyListener true
                     }
                 }
@@ -560,13 +692,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun activateGlobalSearchInput() {
         etGlobalSearch.isCursorVisible = true
+        etGlobalSearch.requestFocus()
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(etGlobalSearch, InputMethodManager.SHOW_IMPLICIT)
+        if (etGlobalSearch.text.isNotEmpty()) {
+            etGlobalSearch.showDropDown()
+        }
     }
 
     private fun deactivateGlobalSearchInput() {
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(etGlobalSearch.windowToken, 0)
+        etGlobalSearch.dismissDropDown()
         etGlobalSearch.isCursorVisible = false
     }
 
@@ -620,13 +757,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun activateSearchInput() {
         etSearch.isCursorVisible = true
+        etSearch.requestFocus()
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT)
+        if (etSearch.text.isNotEmpty()) {
+            etSearch.showDropDown()
+        }
     }
 
     private fun deactivateSearchInput() {
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
+        etSearch.dismissDropDown()
         etSearch.isCursorVisible = false
     }
 
@@ -854,6 +996,7 @@ class MainActivity : AppCompatActivity() {
                 cachedDailyEvents = sortEventList(todayMatches)
                 cachedReplayEvents = replayMatches
                 cachedLiveChannels = sortEventList(liveChannels)
+                updateSearchSuggestions()
                 prefs.edit().putLong("last_sync_time", System.currentTimeMillis()).apply()
 
                 if (!silent) {
@@ -979,8 +1122,8 @@ class MainActivity : AppCompatActivity() {
             tvEmpty.visibility = View.GONE
             adapter.submitList(displayList)
             if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
-                && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus() && !btnVoiceSearchReplay.hasFocus()))
-                && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnClearGlobalSearch.hasFocus()))
+                && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus() && !btnVoiceSearchReplay.hasFocus() && !btnSearchReplay.hasFocus()))
+                && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnClearGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus()))
             ) {
                 rvEvents.requestFocus()
             }

@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.6.5] - 2026-10-26
+### Añadido y Corregido
+- **Buscador Ergonómico para TV con Teclado Persistente, Sugerencias y Botón Lupa**:
+  - **Corrección de Cierre Prematuro del Teclado**: Se corrigió el error en `setOnEditorActionListener` donde presionar cualquier letra en el teclado virtual (enviando `KEYCODE_ENTER` desde el D-Pad del control remoto) cerraba el teclado. Ahora el teclado permanece abierto de forma continua mientras el usuario escribe y solo se oculta al pulsar la lupa del teclado virtual (`actionSearch`), al pulsar el botón Lupa o con la tecla Atrás (`BACK`).
+  - **Nueva Disposición Ergonómica**: El botón de micrófono se reubica al extremo izquierdo de la caja de búsqueda, y se incorpora a su derecha un botón Lupa dedicado (sin texto, con icono `ic_search` enfocado) para iniciar la búsqueda en pantalla.
+  - **Sugerencias de Autocompletado en Tiempo Real**: Se implementó `AutoCompleteTextView` conectado a un catálogo indexado de palabras clave, nombres de equipos y canales (`cachedDailyEvents`, `cachedReplayEvents`, `cachedLiveChannels`), sugiriendo automáticamente coincidencias según las iniciales ingresadas.
+
 ## [1.6.4] - 2026-10-25
 ### Añadido y Optimizado
 - **Versión Visible en Cabecera Superior y Estado Dinámico en Botón Actualizar**:
