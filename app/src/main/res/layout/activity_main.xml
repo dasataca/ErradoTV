@@ -196,33 +196,60 @@
                 android:contentDescription="Búsqueda por voz" />
         </LinearLayout>
 
-        <com.gareca.tv.SearchEditText
-            android:id="@+id/etSearch"
+        <!-- Caja de Búsqueda Visual Unificada con X interna (Repeticiones) -->
+        <LinearLayout
+            android:id="@+id/searchBoxContainerReplay"
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
-            android:hint="Buscar repetición por partido o fecha (ej: Madrid, 10/10)..."
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_secondary"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:background="@drawable/search_box_selector"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:textSize="15sp"
-            android:singleLine="true"
-            android:imeOptions="actionSearch"
-            android:inputType="text"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:cursorVisible="false"
-            android:completionThreshold="1"
-            android:dropDownWidth="match_parent"
-            android:popupBackground="@color/card_bg"
-            android:nextFocusUp="@id/rvCategories"
-            android:nextFocusDown="@id/rvEvents"
-            android:nextFocusLeft="@id/btnVoiceSearchReplay"
-            android:nextFocusRight="@id/btnSearchReplay" />
+            android:addStatesFromChildren="true">
+
+            <com.gareca.tv.SearchEditText
+                android:id="@+id/etSearch"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:hint="Buscar repetición por partido o fecha (ej: Madrid, 10/10)..."
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:paddingStart="16dp"
+                android:paddingEnd="8dp"
+                android:textSize="15sp"
+                android:singleLine="true"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:cursorVisible="false"
+                android:nextFocusUp="@id/rvCategories"
+                android:nextFocusDown="@id/rvEvents"
+                android:nextFocusLeft="@id/btnVoiceSearchReplay"
+                android:nextFocusRight="@id/btnClearSearchText" />
+
+            <ImageView
+                android:id="@+id/btnClearSearchText"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginEnd="6dp"
+                android:padding="6dp"
+                android:src="@drawable/ic_close"
+                android:background="@drawable/button_focus_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:focusableInTouchMode="true"
+                android:visibility="gone"
+                android:contentDescription="Borrar texto y escribir"
+                android:nextFocusUp="@id/rvCategories"
+                android:nextFocusDown="@id/rvEvents"
+                android:nextFocusLeft="@id/etSearch"
+                android:nextFocusRight="@id/btnSearchReplay" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/btnSearchReplay"
@@ -315,33 +342,60 @@
                 android:contentDescription="Búsqueda por voz" />
         </LinearLayout>
 
-        <com.gareca.tv.SearchEditText
-            android:id="@+id/etGlobalSearch"
+        <!-- Caja de Búsqueda Visual Unificada con X interna (Buscar Todo) -->
+        <LinearLayout
+            android:id="@+id/searchBoxContainerGlobal"
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
-            android:hint="Buscar equipo o canal en TODO GarecaTV (ej: Madrid, Boca, ESPN)..."
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_secondary"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:background="@drawable/search_box_selector"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:textSize="15sp"
-            android:singleLine="true"
-            android:imeOptions="actionSearch"
-            android:inputType="text"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:cursorVisible="false"
-            android:completionThreshold="1"
-            android:dropDownWidth="match_parent"
-            android:popupBackground="@color/card_bg"
-            android:nextFocusUp="@id/rvCategories"
-            android:nextFocusDown="@id/rvEvents"
-            android:nextFocusLeft="@id/btnVoiceGlobalSearch"
-            android:nextFocusRight="@id/btnSearchGlobal" />
+            android:addStatesFromChildren="true">
+
+            <com.gareca.tv.SearchEditText
+                android:id="@+id/etGlobalSearch"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:hint="Buscar equipo o canal en TODO GarecaTV (ej: Madrid, Boca, ESPN)..."
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:paddingStart="16dp"
+                android:paddingEnd="8dp"
+                android:textSize="15sp"
+                android:singleLine="true"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:cursorVisible="false"
+                android:nextFocusUp="@id/rvCategories"
+                android:nextFocusDown="@id/rvEvents"
+                android:nextFocusLeft="@id/btnVoiceGlobalSearch"
+                android:nextFocusRight="@id/btnClearGlobalText" />
+
+            <ImageView
+                android:id="@+id/btnClearGlobalText"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginEnd="6dp"
+                android:padding="6dp"
+                android:src="@drawable/ic_close"
+                android:background="@drawable/button_focus_selector"
+                android:focusable="true"
+                android:clickable="true"
+                android:focusableInTouchMode="true"
+                android:visibility="gone"
+                android:contentDescription="Borrar texto y escribir"
+                android:nextFocusUp="@id/rvCategories"
+                android:nextFocusDown="@id/rvEvents"
+                android:nextFocusLeft="@id/etGlobalSearch"
+                android:nextFocusRight="@id/btnSearchGlobal" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/btnSearchGlobal"
@@ -353,7 +407,7 @@
             android:background="@drawable/button_focus_selector"
             android:nextFocusUp="@id/rvCategories"
             android:nextFocusDown="@id/rvEvents"
-            android:nextFocusLeft="@id/etGlobalSearch"
+            android:nextFocusLeft="@id/btnClearGlobalText"
             android:nextFocusRight="@id/btnSortNameGlobal">
 
             <ImageView
@@ -382,26 +436,7 @@
             android:clickable="true"
             android:nextFocusUp="@id/rvCategories"
             android:nextFocusDown="@id/rvEvents"
-            android:nextFocusLeft="@id/btnSearchGlobal"
-            android:nextFocusRight="@id/btnClearGlobalSearch" />
-
-        <Button
-            android:id="@+id/btnClearGlobalSearch"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:layout_marginStart="8dp"
-            android:text="✕ Limpiar"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/button_text_selector"
-            android:background="@drawable/button_focus_selector"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:focusable="true"
-            android:clickable="true"
-            android:nextFocusUp="@id/rvCategories"
-            android:nextFocusDown="@id/rvEvents"
-            android:nextFocusLeft="@id/btnSortNameGlobal" />
+            android:nextFocusLeft="@id/btnSearchGlobal" />
     </LinearLayout>
 
     <!-- Contenedor de Sugerencias en Pantalla para TV -->

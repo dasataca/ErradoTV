@@ -41,18 +41,21 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
 1. **Partidos del Día (`⚽ Partidos del Día`)**: Muestra únicamente los partidos en vivo, por empezar o programados de la jornada actual (`cachedDailyEvents`). Se excluyen todas las repeticiones.
 2. **Pestaña Exclusiva de Repeticiones (`🔁 Repeticiones`)**: Situada justo antes de `📺 Regionales`, reúne el catálogo de partidos históricos (`cachedReplayEvents`).
 3. **Buscador Global (`🔍 Buscar Todo`)**: Pestaña inicial que consolida la búsqueda simultánea en partidos de hoy, canales lineales y repeticiones. Dispone de botón de ordenamiento por **`🔤 Nombre`** (`btnSortNameGlobal`), alternando entre orden por defecto, A-Z y Z-A.
-4. **Arquitectura de Búsqueda y Sugerencias Ergonómicas en TV**:
-   * **Disposición Visual**: Botón de micrófono a la izquierda (`btnVoiceSearchReplay` / `btnVoiceGlobalSearch`), campo de texto en el centro (`etSearch` / `etGlobalSearch`) y botón Lupa dedicado a la derecha (`btnSearchReplay` / `btnSearchGlobal`).
+4. **Arquitectura de Búsqueda, Botón "✕" Interno y Búsqueda Tokenizada**:
+   * **Disposición Visual**: Botón de micrófono a la izquierda (`btnVoiceSearchReplay` / `btnVoiceGlobalSearch`), campo de texto unificado con botón "✕" interno (`btnClearSearchText` / `btnClearGlobalText`) y botón Lupa dedicado a la derecha (`btnSearchReplay` / `btnSearchGlobal`).
+   * **Botón "✕" Interno con Activación Inmediata de Teclado**: Ubicado en el extremo interior derecho del campo de texto, visible sólo cuando hay texto. Al seleccionarlo con el D-Pad y pulsar OK, limpia todo el texto del campo, refresca los eventos y levanta automáticamente el teclado virtual (`activateSearchInput()` / `activateGlobalSearchInput()`) con el cursor listo para escribir una nueva consulta.
+   * **Búsqueda Tokenizada Multidisjuntiva**: Divide las consultas por espacios (`split(Regex("""\s+"""))`), evaluando que cada término o equipo coincida de forma independiente en título, subtítulo, fecha o categoría (`tokens.all { target.contains(it) }`). Esto soluciona búsquedas como "racing boca" o "boca racing" en repeticiones y catálogo global.
    * **Interceptación Pre-IME de Tecla Atrás (`SearchEditText`)**: En Android TV, el teclado virtual del sistema operativo consume el primer evento `KEYCODE_BACK` para ocultarse, evitando que llegue a la `Activity` y dejando el foco atrapado en el campo de texto. `SearchEditText.kt` sobreescribe `onKeyPreIme()` para capturar la tecla Atrás con prioridad, ocultar el teclado y transferir el foco al primer elemento del listado de sugerencias.
    * **Resiliencia en Touch Mode**: Tanto el contenedor `rvSuggestions` como cada elemento (`item_search_suggestion.xml`) tienen `android:focusableInTouchMode="true"`, asegurando que el foco sea aceptado por el control remoto de TV aún cuando el sistema permanezca momentáneamente en modo táctil tras el cierre del teclado.
    * **Flujo de Navegación D-Pad**:
-     1. Al escribir 2 o más letras, `filterSuggestions()` despliega sugerencias en `rvSuggestions`.
+     1. Al escribir 2 o más letras, `filterSuggestions()` despliega sugerencias tokenizadas en `rvSuggestions`.
      2. Al pulsar **Atrás (BACK)**, el teclado desaparece y el foco salta de inmediato a la primera sugerencia.
-     3. Al presionar **OK / Center** sobre una sugerencia, el texto se escribe en la caja, la lista se cierra y el foco salta directamente al botón de la **Lupa** para ejecutar la búsqueda o reordenar.
+     3. Al presionar **OK / Center** sobre una sugerencia, el texto se escribe en la caja, la lista se cierra, se ejecuta la búsqueda y el foco salta directamente al botón de la **Lupa** para ejecutar la búsqueda o reordenar.
      4. Al pulsar **Atrás (BACK)** estando en la lista de sugerencias sin elegir nada, la lista se oculta y el foco regresa a la caja de búsqueda.
      5. Al pulsar **Arriba (DPAD_UP)** desde la primera sugerencia, el foco regresa a la caja de texto (`onUpFromFirst`).
+     6. Al pulsar **Derecha (DPAD_RIGHT)** desde la caja de texto (cuando hay texto), el foco va al botón interno **"✕"**.
 5. **Cabecera de Versión y Actualización Inteligente**:
-   * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.6.7`).
+   * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.6.8`).
    * Botón de actualización dinámico: muestra `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` si hay un release superior disponible en el repositorio.
 
 ---

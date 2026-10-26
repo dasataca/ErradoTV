@@ -2,6 +2,19 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.6.8] - 2026-10-26
+### Corregido y Añadido
+- **Búsqueda Tokenizada Multidisjuntiva (Soporte "Racing Boca", "Boca Racing", etc.)**:
+  - Se resolvió el fallo en el que búsquedas con más de una palabra (ej: "racing boca") devolvían cero resultados porque el motor exigía una coincidencia literal contigua sobre "Racing Club - Boca Juniors".
+  - Se implementó división por tokens (`split(Regex("""\s+"""))`), exigiendo que todos los términos ingresados coincidan independientemente en los campos de título, subtítulo, fecha o categoría (`tokens.all { target.contains(it) }`).
+  - Aplicado a: Sugerencias en tiempo real (`filterSuggestions`), Búsqueda en Repeticiones (`getFilteredAndSortedReplays`) y Búsqueda Global en todo el catálogo (`getFilteredGlobalEvents`).
+- **Botón "✕" Integrado dentro de la Caja de Búsqueda con Activación Inmediata de Teclado**:
+  - Se diseñó un contenedor visual unificado (`searchBoxContainerReplay` y `searchBoxContainerGlobal`) que incrusta un botón "✕" (`btnClearSearchText` y `btnClearGlobalText`) en el extremo interior derecho del campo de texto, visible únicamente cuando hay caracteres ingresados.
+  - Totalmente navegable y seleccionable con el D-Pad del control remoto de Android TV.
+  - Al presionar OK/Center sobre la "✕", se limpia todo el texto del campo, se refresca el catálogo y se invoca de inmediato el teclado virtual (`activateSearchInput()` / `activateGlobalSearchInput()`) con el cursor activo listo para tipear una nueva búsqueda.
+  - Navegación D-Pad adaptativa: `D-Pad Derecha` desde la caja de texto enfoca la "✕" (si está visible); de lo contrario, salta al botón Lupa. `D-Pad Izquierda` desde el botón Lupa enfoca la "✕" si está activa.
+- **Limpieza de Interfaz**: Se retiró el botón externo redundante `✕ Limpiar` de la fila de "Buscar Todo", unificando el diseño de ambos buscadores.
+
 ## [1.6.7] - 2026-10-26
 ### Corregido y Optimizado
 - **Captura Pre-IME de Tecla Atrás (`SearchEditText`) y Transferencia Inmediata de Foco a Sugerencias**:

@@ -20,9 +20,11 @@
    * **⚽ Partidos del Día**: Muestra única y exclusivamente los partidos en vivo, por empezar o programados de la fecha de hoy.
    * **🔁 Repeticiones**: Pestaña dedicada situada inmediatamente antes de `📺 Regionales`, con buscador en tiempo real y botones de ordenación por Fecha (recientes/antiguos) y Nombre (A-Z/Z-A).
    * **🔍 Buscar Todo**: Pestaña consolidada inicial para buscar en eventos del día, señales en vivo y repeticiones simultáneamente, con botón de ordenamiento por Nombre (`btnSortNameGlobal`).
-   * **Navegación Ergonómica y Captura Pre-IME (`SearchEditText`)**:
-     * **Disposición**: Botón de micrófono a la izquierda, caja de texto al centro y botón de la Lupa dedicado a la derecha.
-     * **Sugerencias en Tiempo Real**: Al ingresar 2 o más caracteres, se despliegan sugerencias (`rvSuggestions`).
+   * **Navegación Ergonómica, Botón "✕" Interno y Búsqueda Tokenizada**:
+     * **Disposición**: Botón de micrófono a la izquierda, caja de texto unificada con botón interno "✕" (`btnClearSearchText`/`btnClearGlobalText`) al centro, y botón de la Lupa dedicado a la derecha.
+     * **Botón "✕" Interno**: Embebido dentro del borde de la caja de texto. Visible únicamente si hay texto. Al enfocarse con D-Pad y pulsar OK, vacía el texto, actualiza los resultados e invoca inmediatamente el teclado virtual con el cursor activo.
+     * **Búsqueda Tokenizada Multidisjuntiva**: Divide las consultas por espacios en blanco (`tokens.all { target.contains(it) }`), garantizando que búsquedas compuestas como "racing boca" o "boca racing" coincidan correctamente en repeticiones y catálogo global.
+     * **Sugerencias en Tiempo Real**: Al ingresar 2 o más caracteres, se despliegan sugerencias tokenizadas (`rvSuggestions`).
      * **Captura Pre-IME de Tecla Atrás**: `SearchEditText` sobrescribe `onKeyPreIme()` para capturar la tecla Atrás antes de que el teclado virtual la consuma silenciosamente. Oculta el teclado y transfiere el foco al primer elemento de la lista de sugerencias.
      * **Foco Automático al Botón Lupa**: Al seleccionar una sugerencia con OK/Center, el texto se escribe en la caja, la lista se oculta y el foco salta directamente al botón de la Lupa.
      * **Descarte de Sugerencias**: Si el usuario está enfocado en las sugerencias y pulsa Atrás, la lista se oculta y el foco regresa a la caja de texto.

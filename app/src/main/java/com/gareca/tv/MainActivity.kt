@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etSearch: SearchEditText
     private lateinit var btnVoiceSearchReplay: View
     private lateinit var btnSearchReplay: View
+    private lateinit var btnClearSearchText: ImageView
     private lateinit var btnSortDate: Button
     private lateinit var btnSortName: Button
 
@@ -74,8 +75,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etGlobalSearch: SearchEditText
     private lateinit var btnVoiceGlobalSearch: View
     private lateinit var btnSearchGlobal: View
+    private lateinit var btnClearGlobalText: ImageView
     private lateinit var btnSortNameGlobal: Button
-    private lateinit var btnClearGlobalSearch: Button
     private var globalSearchQuery = ""
     private var isVoiceForGlobal = false
 
@@ -201,7 +202,8 @@ class MainActivity : AppCompatActivity() {
         btnVoiceGlobalSearch = findViewById(R.id.btnVoiceGlobalSearch)
         btnSearchGlobal = findViewById(R.id.btnSearchGlobal)
         btnSortNameGlobal = findViewById(R.id.btnSortNameGlobal)
-        btnClearGlobalSearch = findViewById(R.id.btnClearGlobalSearch)
+        btnClearSearchText = findViewById(R.id.btnClearSearchText)
+        btnClearGlobalText = findViewById(R.id.btnClearGlobalText)
 
         rvSuggestions = findViewById(R.id.rvSuggestions)
         rvSuggestions.layoutManager = LinearLayoutManager(this)
@@ -323,12 +325,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val matches = allKeywords.filter { it.lowercase().contains(q) }
-            .sortedBy { item ->
-                val lower = item.lowercase()
-                if (lower.startsWith(q)) 0 else 1
-            }
-            .take(6)
+        val tokens = q.split(Regex("""\s+""")).filter { it.isNotBlank() }
+
+        val matches = allKeywords.filter { keyword ->
+            val lower = keyword.lowercase()
+            tokens.all { lower.contains(it) }
+        }.sortedBy { item ->
+            val lower = item.lowercase()
+            if (lower.startsWith(q)) 0 else 1
+        }.take(6)
 
         if (matches.isNotEmpty() && ::rvSuggestions.isInitialized) {
             suggestionAdapter.submitList(matches)
@@ -349,12 +354,22 @@ class MainActivity : AppCompatActivity() {
             etGlobalSearch.isCursorVisible = false
             etGlobalSearch.setText(selectedText)
             etGlobalSearch.setSelection(selectedText.length)
+            globalSearchQuery = selectedText.trim()
+            if (::btnClearGlobalText.isInitialized) {
+                btnClearGlobalText.visibility = View.VISIBLE
+            }
+            filterAndDisplayEvents(silent = false)
             btnSearchGlobal.requestFocus()
         } else {
             imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
             etSearch.isCursorVisible = false
             etSearch.setText(selectedText)
             etSearch.setSelection(selectedText.length)
+            searchQuery = selectedText.trim()
+            if (::btnClearSearchText.isInitialized) {
+                btnClearSearchText.visibility = View.VISIBLE
+            }
+            filterAndDisplayEvents(silent = false)
             btnSearchReplay.requestFocus()
         }
     }
@@ -483,7 +498,11 @@ class MainActivity : AppCompatActivity() {
                             return@setOnKeyListener true
                         }
                         KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                            btnSearchReplay.requestFocus()
+                            if (btnClearSearchText.visibility == View.VISIBLE) {
+                                btnClearSearchText.requestFocus()
+                            } else {
+                                btnSearchReplay.requestFocus()
+                            }
                             return@setOnKeyListener true
                         }
                     }
@@ -496,10 +515,59 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 searchQuery = s?.toString()?.trim().orEmpty()
+                btnClearSearchText.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
                 filterSuggestions(searchQuery)
             }
             override fun afterTextChanged(s: Editable?) {}
         })
+
+        // Botón "X" interno para limpiar texto e invocar teclado (Repeticiones)
+        btnClearSearchText.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.animate().scaleX(1.1f).scaleY(1.1f).setDuration(120).start()
+                btnClearSearchText.setColorFilter(android.graphics.Color.BLACK)
+            } else {
+                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+                btnClearSearchText.setColorFilter(android.graphics.Color.WHITE)
+            }
+        }
+        btnClearSearchText.setOnClickListener {
+            etSearch.setText("")
+            searchQuery = ""
+            btnClearSearchText.visibility = View.GONE
+            if (::rvSuggestions.isInitialized) {
+                rvSuggestions.visibility = View.GONE
+            }
+            filterAndDisplayEvents(silent = true)
+            activateSearchInput()
+        }
+        btnClearSearchText.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        if (::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE && suggestionAdapter.itemCount > 0) {
+                            focusSuggestionsList()
+                        } else {
+                            focusFirstEventItem()
+                        }
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        etSearch.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        btnSearchReplay.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_UP -> {
+                        rvCategories.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                }
+            }
+            false
+        }
 
         // Al pulsar la lupa del teclado virtual (IME_ACTION_SEARCH)
         etSearch.setOnEditorActionListener { _, actionId, _ ->
@@ -560,7 +628,11 @@ class MainActivity : AppCompatActivity() {
                         return@setOnKeyListener true
                     }
                     KeyEvent.KEYCODE_DPAD_LEFT -> {
-                        etSearch.requestFocus()
+                        if (btnClearSearchText.visibility == View.VISIBLE) {
+                            btnClearSearchText.requestFocus()
+                        } else {
+                            etSearch.requestFocus()
+                        }
                         return@setOnKeyListener true
                     }
                     KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -682,7 +754,11 @@ class MainActivity : AppCompatActivity() {
                             return@setOnKeyListener true
                         }
                         KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                            btnSearchGlobal.requestFocus()
+                            if (btnClearGlobalText.visibility == View.VISIBLE) {
+                                btnClearGlobalText.requestFocus()
+                            } else {
+                                btnSearchGlobal.requestFocus()
+                            }
                             return@setOnKeyListener true
                         }
                     }
@@ -695,10 +771,61 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 globalSearchQuery = s?.toString()?.trim().orEmpty()
+                btnClearGlobalText.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
                 filterSuggestions(globalSearchQuery)
             }
             override fun afterTextChanged(s: Editable?) {}
         })
+
+        // Botón "X" interno para limpiar texto e invocar teclado (Buscar Todo)
+        btnClearGlobalText.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.animate().scaleX(1.1f).scaleY(1.1f).setDuration(120).start()
+                btnClearGlobalText.setColorFilter(android.graphics.Color.BLACK)
+            } else {
+                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+                btnClearGlobalText.setColorFilter(android.graphics.Color.WHITE)
+            }
+        }
+        btnClearGlobalText.setOnClickListener {
+            etGlobalSearch.setText("")
+            globalSearchQuery = ""
+            currentGlobalSortMode = GlobalSortMode.DEFAULT
+            updateGlobalSortButtonsUi()
+            btnClearGlobalText.visibility = View.GONE
+            if (::rvSuggestions.isInitialized) {
+                rvSuggestions.visibility = View.GONE
+            }
+            filterAndDisplayEvents(silent = true)
+            activateGlobalSearchInput()
+        }
+        btnClearGlobalText.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        if (::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE && suggestionAdapter.itemCount > 0) {
+                            focusSuggestionsList()
+                        } else {
+                            focusFirstEventItem()
+                        }
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        etGlobalSearch.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        btnSearchGlobal.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_UP -> {
+                        rvCategories.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                }
+            }
+            false
+        }
 
         // Al pulsar la lupa del teclado virtual (IME_ACTION_SEARCH)
         etGlobalSearch.setOnEditorActionListener { _, actionId, _ ->
@@ -759,7 +886,11 @@ class MainActivity : AppCompatActivity() {
                         return@setOnKeyListener true
                     }
                     KeyEvent.KEYCODE_DPAD_LEFT -> {
-                        etGlobalSearch.requestFocus()
+                        if (btnClearGlobalText.visibility == View.VISIBLE) {
+                            btnClearGlobalText.requestFocus()
+                        } else {
+                            etGlobalSearch.requestFocus()
+                        }
                         return@setOnKeyListener true
                     }
                     KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -786,10 +917,6 @@ class MainActivity : AppCompatActivity() {
                         btnSearchGlobal.requestFocus()
                         return@setOnKeyListener true
                     }
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                        btnClearGlobalSearch.requestFocus()
-                        return@setOnKeyListener true
-                    }
                 }
             }
             false
@@ -805,37 +932,6 @@ class MainActivity : AppCompatActivity() {
             rvEvents.scrollToPosition(0)
         }
         updateGlobalSortButtonsUi()
-
-        // Botón Limpiar
-        btnClearGlobalSearch.setOnFocusChangeListener { _, hasFocus ->
-            btnClearGlobalSearch.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
-        }
-        btnClearGlobalSearch.setOnClickListener {
-            etGlobalSearch.setText("")
-            globalSearchQuery = ""
-            currentGlobalSortMode = GlobalSortMode.DEFAULT
-            updateGlobalSortButtonsUi()
-            if (::rvSuggestions.isInitialized) {
-                rvSuggestions.visibility = View.GONE
-            }
-            filterAndDisplayEvents(silent = true)
-            etGlobalSearch.requestFocus()
-        }
-        btnClearGlobalSearch.setOnKeyListener { _, keyCode, event ->
-            if (event.action == KeyEvent.ACTION_DOWN) {
-                when (keyCode) {
-                    KeyEvent.KEYCODE_DPAD_DOWN -> {
-                        focusFirstEventItem()
-                        return@setOnKeyListener true
-                    }
-                    KeyEvent.KEYCODE_DPAD_LEFT -> {
-                        btnSortNameGlobal.requestFocus()
-                        return@setOnKeyListener true
-                    }
-                }
-            }
-            false
-        }
     }
 
     private fun activateGlobalSearchInput() {
@@ -1211,20 +1307,26 @@ class MainActivity : AppCompatActivity() {
         if (q.isEmpty()) {
             return cachedDailyEvents
         }
+        val tokens = q.split(Regex("""\s+""")).filter { it.isNotBlank() }
         val results = mutableListOf<EventItem>()
 
+        fun matchesTokens(item: EventItem): Boolean {
+            val target = "${item.title} ${item.subtitle} ${item.category}".lowercase()
+            return tokens.all { target.contains(it) }
+        }
+
         for (item in cachedDailyEvents) {
-            if (item.title.lowercase().contains(q) || item.subtitle.lowercase().contains(q)) {
+            if (matchesTokens(item)) {
                 results.add(item)
             }
         }
         for (item in cachedLiveChannels) {
-            if (item.title.lowercase().contains(q) || item.category.lowercase().contains(q) || item.subtitle.lowercase().contains(q)) {
+            if (matchesTokens(item)) {
                 results.add(item)
             }
         }
         for (item in cachedReplayEvents) {
-            if (item.title.lowercase().contains(q) || item.subtitle.lowercase().contains(q)) {
+            if (matchesTokens(item)) {
                 results.add(item)
             }
         }
@@ -1293,8 +1395,8 @@ class MainActivity : AppCompatActivity() {
             tvEmpty.visibility = View.GONE
             adapter.submitList(displayList)
             if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
-                && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus() && !btnVoiceSearchReplay.hasFocus() && !btnSearchReplay.hasFocus()))
-                && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnClearGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus() && !btnSortNameGlobal.hasFocus()))
+                && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus() && !btnVoiceSearchReplay.hasFocus() && !btnSearchReplay.hasFocus() && (!::btnClearSearchText.isInitialized || !btnClearSearchText.hasFocus())))
+                && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus() && !btnSortNameGlobal.hasFocus() && (!::btnClearGlobalText.isInitialized || !btnClearGlobalText.hasFocus())))
                 && (!::rvSuggestions.isInitialized || !rvSuggestions.hasFocus())
             ) {
                 rvEvents.requestFocus()
@@ -1305,12 +1407,10 @@ class MainActivity : AppCompatActivity() {
     private fun getFilteredAndSortedReplays(): List<EventItem> {
         var list = cachedReplayEvents
         if (searchQuery.isNotEmpty()) {
-            val q = searchQuery.lowercase().trim()
-            list = list.filter {
-                it.title.lowercase().contains(q) ||
-                it.subtitle.lowercase().contains(q) ||
-                (it.time?.contains(q) == true) ||
-                (it.rawDate != null && it.rawDate.contains(q))
+            val tokens = searchQuery.lowercase().trim().split(Regex("""\s+""")).filter { it.isNotBlank() }
+            list = list.filter { item ->
+                val target = "${item.title} ${item.subtitle} ${item.time.orEmpty()} ${item.rawDate.orEmpty()}".lowercase()
+                tokens.all { target.contains(it) }
             }
         }
 

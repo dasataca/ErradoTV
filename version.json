@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "d692f8958bc44659eea5c8ff13b98abaafe613e878e3bce38c79960e05202698193c1855829f595521c48c29705807ac581c49f22c384a4b935db40ec9eff3e72e23a471384b92b3c85034fee0c2e8a5",
-  "latest_version_code": 46,
-  "latest_version_name": "1.6.7",
-  "release_timestamp": 1793054518101,
+  "active_key_enc": "d40a924c76dd2dc63cdd479b7551a3f268e383f62b286106fcf2d154775c3d91fb9666911df021952a80628f5cf812c67782ed3f2c952b07ef76851ee282b81d62a1b04e04d99f43848c228aaec83f4a",
+  "latest_version_code": 47,
+  "latest_version_name": "1.6.8",
+  "release_timestamp": 1793055788833,
   "release_date": "2026-10-26",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Captura Pre-IME de tecla Atrás y transferencia instantánea de foco a sugerencias en ambos buscadores"
+  "changelog": "GarecaTV: Búsqueda tokenizada multidisjuntiva (ej. Racing Boca) y botón X interno con despliegue de teclado"
 }
