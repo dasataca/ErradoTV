@@ -26,7 +26,7 @@
      * **Búsqueda Tokenizada Multidisjuntiva**: Divide las consultas por espacios en blanco (`tokens.all { target.contains(it) }`), garantizando que búsquedas compuestas como "racing boca" o "boca racing" coincidan correctamente en repeticiones y catálogo global.
      * **Sugerencias en Tiempo Real**: Al ingresar 2 o más caracteres, se despliegan sugerencias tokenizadas (`rvSuggestions`).
      * **Captura Pre-IME de Tecla Atrás**: `SearchEditText` sobrescribe `onKeyPreIme()` para capturar la tecla Atrás antes de que el teclado virtual la consuma silenciosamente. Oculta el teclado y transfiere el foco al primer elemento de la lista de sugerencias.
-     * **Foco Automático al Botón Lupa**: Al seleccionar una sugerencia con OK/Center, el texto se escribe en la caja, la lista se oculta y el foco salta directamente al botón de la Lupa.
+     * **Filtrado Directo y Foco en Resultados**: Al seleccionar una sugerencia con OK/Center, se oculta y vacía la lista, se ejecuta el filtrado instantáneo del catálogo y el foco se transfiere directamente a la primera tarjeta de resultado (`focusFirstEventItem`).
      * **Descarte de Sugerencias**: Si el usuario está enfocado en las sugerencias y pulsa Atrás, la lista se oculta y el foco regresa a la caja de texto.
      * **Resiliencia Touch Mode**: `rvSuggestions` y cada fila (`item_search_suggestion.xml`) implementan `android:focusableInTouchMode="true"` para garantizar que el foco sea aceptado tras cerrar el teclado en Android TV.
    * **Resiliencia de Disponibilidad**: Los partidos etiquetados como `NO DISPONIBLE` se desplazan siempre de forma automática al fondo de la lista (los canales 24/7 nunca se etiquetan como `NO DISPONIBLE`).

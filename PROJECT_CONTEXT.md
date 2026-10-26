@@ -50,12 +50,12 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
    * **Flujo de Navegación D-Pad**:
      1. Al escribir 2 o más letras, `filterSuggestions()` despliega sugerencias tokenizadas en `rvSuggestions`.
      2. Al pulsar **Atrás (BACK)**, el teclado desaparece y el foco salta de inmediato a la primera sugerencia.
-     3. Al presionar **OK / Center** sobre una sugerencia, el texto se escribe en la caja, la lista se cierra, se ejecuta la búsqueda y el foco salta directamente al botón de la **Lupa** para ejecutar la búsqueda o reordenar.
+     3. Al presionar **OK / Center** sobre una sugerencia, el texto se escribe en la caja, la lista de sugerencias se cierra, se ejecuta el filtrado inmediato y el foco salta directamente a la primera tarjeta de resultado del catálogo (`focusFirstEventItem`).
      4. Al pulsar **Atrás (BACK)** estando en la lista de sugerencias sin elegir nada, la lista se oculta y el foco regresa a la caja de búsqueda.
      5. Al pulsar **Arriba (DPAD_UP)** desde la primera sugerencia, el foco regresa a la caja de texto (`onUpFromFirst`).
      6. Al pulsar **Derecha (DPAD_RIGHT)** desde la caja de texto (cuando hay texto), el foco va al botón interno **"✕"**.
 5. **Cabecera de Versión y Actualización Inteligente**:
-   * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.6.8`).
+   * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.6.9`).
    * Botón de actualización dinámico: muestra `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` si hay un release superior disponible en el repositorio.
 
 ---

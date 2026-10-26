@@ -47,6 +47,10 @@ class SuggestionAdapter(
                     onUpFromFirst?.invoke()
                     return@setOnKeyListener true
                 }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+                    onItemClick(text)
+                    return@setOnKeyListener true
+                }
             }
             false
         }

@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.6.9] - 2026-10-26
+### Corregido y Optimizado
+- **Filtrado Inmediato y Foco Directo en Resultados al Seleccionar Sugerencia**:
+  - **Corrección de Foco**: Al hacer clic o pulsar OK/Center en un elemento de la lista de sugerencias, el foco saltaba erróneamente al botón de la Lupa en vez de filtrar y presentar los partidos. Se reestructuró `onSuggestionSelected` para ejecutar el filtrado de inmediato, cerrar y vaciar la lista de sugerencias, y transferir el foco del control remoto directamente a la primera tarjeta de resultado del catálogo (`focusFirstEventItem`).
+  - **Bloqueo de Reapertura de Sugerencias**: Se incorporó la bandera `isSelectingSuggestion` para evitar que la actualización programática de la caja de texto (`setText`) dispare el listener `onTextChanged` y vuelva a desplegar las sugerencias encima de los resultados.
+  - **Soporte TV Multi-Control**: `SuggestionAdapter` captura de forma explícita `KEYCODE_DPAD_CENTER` y `KEYCODE_ENTER`, asegurando respuesta inmediata con cualquier control remoto o air-mouse.
+
 ## [1.6.8] - 2026-10-26
 ### Corregido y Añadido
 - **Búsqueda Tokenizada Multidisjuntiva (Soporte "Racing Boca", "Boca Racing", etc.)**:

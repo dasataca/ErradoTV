@@ -91,6 +91,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rvSuggestions: RecyclerView
     private lateinit var suggestionAdapter: SuggestionAdapter
     private val allKeywords = linkedSetOf<String>()
+    private var isSelectingSuggestion = false
 
     private val voiceSearchLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -301,17 +302,20 @@ class MainActivity : AppCompatActivity() {
     private fun executeSearch(isGlobal: Boolean) {
         if (::rvSuggestions.isInitialized) {
             rvSuggestions.visibility = View.GONE
+            suggestionAdapter.submitList(emptyList())
         }
         if (isGlobal) {
             deactivateGlobalSearchInput()
             globalSearchQuery = etGlobalSearch.text?.toString()?.trim().orEmpty()
             filterAndDisplayEvents(silent = false)
-            focusFirstEventItem()
+            rvEvents.scrollToPosition(0)
+            rvEvents.post { focusFirstEventItem() }
         } else {
             deactivateSearchInput()
             searchQuery = etSearch.text?.toString()?.trim().orEmpty()
             filterAndDisplayEvents(silent = false)
-            focusFirstEventItem()
+            rvEvents.scrollToPosition(0)
+            rvEvents.post { focusFirstEventItem() }
         }
     }
 
@@ -345,32 +349,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onSuggestionSelected(selectedText: String) {
+        isSelectingSuggestion = true
+        try {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            if (currentCategory == "🔍 Buscar Todo") {
+                imm.hideSoftInputFromWindow(etGlobalSearch.windowToken, 0)
+                etGlobalSearch.isCursorVisible = false
+                etGlobalSearch.clearFocus()
+                etGlobalSearch.setText(selectedText)
+                etGlobalSearch.setSelection(selectedText.length)
+                globalSearchQuery = selectedText.trim()
+                if (::btnClearGlobalText.isInitialized) {
+                    btnClearGlobalText.visibility = View.VISIBLE
+                }
+            } else {
+                imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
+                etSearch.isCursorVisible = false
+                etSearch.clearFocus()
+                etSearch.setText(selectedText)
+                etSearch.setSelection(selectedText.length)
+                searchQuery = selectedText.trim()
+                if (::btnClearSearchText.isInitialized) {
+                    btnClearSearchText.visibility = View.VISIBLE
+                }
+            }
+        } finally {
+            isSelectingSuggestion = false
+        }
+
         if (::rvSuggestions.isInitialized) {
             rvSuggestions.visibility = View.GONE
+            suggestionAdapter.submitList(emptyList())
         }
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        if (currentCategory == "🔍 Buscar Todo") {
-            imm.hideSoftInputFromWindow(etGlobalSearch.windowToken, 0)
-            etGlobalSearch.isCursorVisible = false
-            etGlobalSearch.setText(selectedText)
-            etGlobalSearch.setSelection(selectedText.length)
-            globalSearchQuery = selectedText.trim()
-            if (::btnClearGlobalText.isInitialized) {
-                btnClearGlobalText.visibility = View.VISIBLE
-            }
-            filterAndDisplayEvents(silent = false)
-            btnSearchGlobal.requestFocus()
-        } else {
-            imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
-            etSearch.isCursorVisible = false
-            etSearch.setText(selectedText)
-            etSearch.setSelection(selectedText.length)
-            searchQuery = selectedText.trim()
-            if (::btnClearSearchText.isInitialized) {
-                btnClearSearchText.visibility = View.VISIBLE
-            }
-            filterAndDisplayEvents(silent = false)
-            btnSearchReplay.requestFocus()
+
+        filterAndDisplayEvents(silent = false)
+        rvEvents.scrollToPosition(0)
+        rvEvents.post {
+            focusFirstEventItem()
         }
     }
 
@@ -514,6 +529,7 @@ class MainActivity : AppCompatActivity() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (isSelectingSuggestion) return
                 searchQuery = s?.toString()?.trim().orEmpty()
                 btnClearSearchText.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
                 filterSuggestions(searchQuery)
@@ -770,6 +786,7 @@ class MainActivity : AppCompatActivity() {
         etGlobalSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (isSelectingSuggestion) return
                 globalSearchQuery = s?.toString()?.trim().orEmpty()
                 btnClearGlobalText.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
                 filterSuggestions(globalSearchQuery)
@@ -990,12 +1007,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun focusFirstEventItem() {
-        val firstHolder = rvEvents.findViewHolderForAdapterPosition(0)
-        if (firstHolder != null) {
-            firstHolder.itemView.requestFocus()
-        } else {
-            val firstView = rvEvents.layoutManager?.findViewByPosition(0)
-            firstView?.requestFocus() ?: rvEvents.requestFocus()
+        fun tryFocus(): Boolean {
+            val child = rvEvents.findViewHolderForAdapterPosition(0)?.itemView
+                ?: rvEvents.layoutManager?.findViewByPosition(0)
+                ?: rvEvents.getChildAt(0)
+            return child?.requestFocus() ?: false
+        }
+
+        if (!tryFocus()) {
+            rvEvents.post {
+                tryFocus()
+            }
         }
     }
 
