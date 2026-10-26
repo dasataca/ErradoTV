@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.6.7] - 2026-10-26
+### Corregido y Optimizado
+- **Captura Pre-IME de Tecla Atrás (`SearchEditText`) y Transferencia Inmediata de Foco a Sugerencias**:
+  - **Interceptación Pre-IME de Tecla Atrás**: Se implementó `SearchEditText` sobreescribiendo `onKeyPreIme`. Anteriormente, el teclado del sistema consumía el primer toque de la tecla Atrás antes de llegar al sistema de despacho de la ventana, reteniendo el foco en la caja de texto. Con `SearchEditText`, la pulsación de Atrás se intercepta con prioridad absoluta en ambos buscadores (`🔁 Repeticiones` y `🔍 Buscar Todo`), cerrando el teclado y transfiriendo el foco de inmediato a la lista de sugerencias en pantalla.
+  - **Soporte de Foco en Touch Mode**: Se activó `android:focusableInTouchMode="true"` en el contenedor de sugerencias y en cada fila (`item_search_suggestion.xml`), garantizando que el D-Pad del televisor seleccione y resalte visualmente la primera sugerencia al instante tras ocultar el teclado virtual.
+  - **Efecto Visual de Selección**: Animación de escala y resaltado de alto contraste al navegar por las sugerencias con las flechas del control remoto.
+
 ## [1.6.6] - 2026-10-26
 ### Añadido y Corregido
 - **Navegación Ergonómica de Sugerencias con Control Remoto (D-Pad)**:

@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
 
     // Controles de búsqueda y ordenación para TV (Repeticiones)
     private lateinit var searchContainer: LinearLayout
-    private lateinit var etSearch: AutoCompleteTextView
+    private lateinit var etSearch: SearchEditText
     private lateinit var btnVoiceSearchReplay: View
     private lateinit var btnSearchReplay: View
     private lateinit var btnSortDate: Button
@@ -71,7 +71,7 @@ class MainActivity : AppCompatActivity() {
 
     // Controles de Búsqueda Global (Todo el catálogo)
     private lateinit var globalSearchContainer: LinearLayout
-    private lateinit var etGlobalSearch: AutoCompleteTextView
+    private lateinit var etGlobalSearch: SearchEditText
     private lateinit var btnVoiceGlobalSearch: View
     private lateinit var btnSearchGlobal: View
     private lateinit var btnSortNameGlobal: Button
@@ -394,8 +394,58 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun focusSuggestionsList(): Boolean {
+        if (!::rvSuggestions.isInitialized || rvSuggestions.visibility != View.VISIBLE || suggestionAdapter.itemCount == 0) {
+            return false
+        }
+        rvSuggestions.isFocusable = true
+        rvSuggestions.isFocusableInTouchMode = true
+
+        fun tryFocus(): Boolean {
+            val child = rvSuggestions.findViewHolderForAdapterPosition(0)?.itemView
+                ?: rvSuggestions.layoutManager?.findViewByPosition(0)
+                ?: rvSuggestions.getChildAt(0)
+            if (child != null) {
+                child.isFocusable = true
+                child.isFocusableInTouchMode = true
+                return child.requestFocus()
+            }
+            return false
+        }
+
+        if (!tryFocus()) {
+            rvSuggestions.post {
+                if (!tryFocus()) {
+                    rvSuggestions.requestFocus()
+                }
+            }
+        }
+        return true
+    }
+
+    private fun handleSearchBack(isGlobal: Boolean): Boolean {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val currentEt = if (isGlobal) etGlobalSearch else etSearch
+        imm.hideSoftInputFromWindow(currentEt.windowToken, 0)
+        currentEt.isCursorVisible = false
+
+        if (::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE && suggestionAdapter.itemCount > 0) {
+            currentEt.clearFocus()
+            focusSuggestionsList()
+            return true
+        } else {
+            currentEt.clearFocus()
+            rvEvents.requestFocus()
+            return true
+        }
+    }
+
     private fun setupSearchAndSortControls() {
         etSearch.isCursorVisible = false
+
+        etSearch.onBackListener = {
+            handleSearchBack(isGlobal = false)
+        }
 
         etSearch.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
@@ -414,9 +464,7 @@ class MainActivity : AppCompatActivity() {
                     when (keyCode) {
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE && suggestionAdapter.itemCount > 0) {
-                                val firstChild = rvSuggestions.findViewHolderForAdapterPosition(0)?.itemView
-                                    ?: rvSuggestions.layoutManager?.findViewByPosition(0)
-                                firstChild?.requestFocus() ?: rvSuggestions.requestFocus()
+                                focusSuggestionsList()
                             } else {
                                 focusFirstEventItem()
                             }
@@ -595,6 +643,10 @@ class MainActivity : AppCompatActivity() {
     private fun setupGlobalSearchControls() {
         etGlobalSearch.isCursorVisible = false
 
+        etGlobalSearch.onBackListener = {
+            handleSearchBack(isGlobal = true)
+        }
+
         etGlobalSearch.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 etGlobalSearch.isCursorVisible = false
@@ -611,9 +663,7 @@ class MainActivity : AppCompatActivity() {
                     when (keyCode) {
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE && suggestionAdapter.itemCount > 0) {
-                                val firstChild = rvSuggestions.findViewHolderForAdapterPosition(0)?.itemView
-                                    ?: rvSuggestions.layoutManager?.findViewByPosition(0)
-                                firstChild?.requestFocus() ?: rvSuggestions.requestFocus()
+                                focusSuggestionsList()
                             } else {
                                 focusFirstEventItem()
                             }
@@ -913,26 +963,7 @@ class MainActivity : AppCompatActivity() {
             val isEditingGlobal = ::etGlobalSearch.isInitialized && (etGlobalSearch.isCursorVisible || etGlobalSearch.hasFocus())
 
             if (isEditingSearch || isEditingGlobal) {
-                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                val currentEt = if (isEditingGlobal) etGlobalSearch else etSearch
-                imm.hideSoftInputFromWindow(currentEt.windowToken, 0)
-                currentEt.isCursorVisible = false
-
-                // Si hay sugerencias en pantalla, la lista permanece visible y recibe el foco del control remoto
-                if (::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE && suggestionAdapter.itemCount > 0) {
-                    currentEt.clearFocus()
-                    rvSuggestions.post {
-                        val firstChild = rvSuggestions.findViewHolderForAdapterPosition(0)?.itemView
-                            ?: rvSuggestions.layoutManager?.findViewByPosition(0)
-                        firstChild?.requestFocus() ?: rvSuggestions.requestFocus()
-                    }
-                    return true
-                } else {
-                    // Si no hay sugerencias, salir de la caja y enfocar los eventos
-                    currentEt.clearFocus()
-                    rvEvents.requestFocus()
-                    return true
-                }
+                return handleSearchBack(isGlobal = isEditingGlobal)
             }
         }
         return super.dispatchKeyEvent(event)

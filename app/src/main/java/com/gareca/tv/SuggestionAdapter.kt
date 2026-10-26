@@ -29,6 +29,15 @@ class SuggestionAdapter(
     override fun onBindViewHolder(holder: SuggestionViewHolder, position: Int) {
         val text = items[position]
         holder.tvText.text = text
+        holder.itemView.isFocusable = true
+        holder.itemView.isFocusableInTouchMode = true
+        holder.itemView.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.animate().scaleX(1.02f).scaleY(1.02f).setDuration(100).start()
+            } else {
+                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+            }
+        }
         holder.itemView.setOnClickListener {
             onItemClick(text)
         }
