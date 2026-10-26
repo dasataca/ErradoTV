@@ -74,9 +74,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etGlobalSearch: AutoCompleteTextView
     private lateinit var btnVoiceGlobalSearch: View
     private lateinit var btnSearchGlobal: View
+    private lateinit var btnSortNameGlobal: Button
     private lateinit var btnClearGlobalSearch: Button
     private var globalSearchQuery = ""
     private var isVoiceForGlobal = false
+
+    private enum class GlobalSortMode {
+        DEFAULT,
+        NAME_ASC,
+        NAME_DESC
+    }
+    private var currentGlobalSortMode = GlobalSortMode.DEFAULT
+
+    // Sugerencias en pantalla para Leanback TV
+    private lateinit var rvSuggestions: RecyclerView
+    private lateinit var suggestionAdapter: SuggestionAdapter
+    private val allKeywords = linkedSetOf<String>()
 
     private val voiceSearchLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -187,7 +200,24 @@ class MainActivity : AppCompatActivity() {
         etGlobalSearch = findViewById(R.id.etGlobalSearch)
         btnVoiceGlobalSearch = findViewById(R.id.btnVoiceGlobalSearch)
         btnSearchGlobal = findViewById(R.id.btnSearchGlobal)
+        btnSortNameGlobal = findViewById(R.id.btnSortNameGlobal)
         btnClearGlobalSearch = findViewById(R.id.btnClearGlobalSearch)
+
+        rvSuggestions = findViewById(R.id.rvSuggestions)
+        rvSuggestions.layoutManager = LinearLayoutManager(this)
+        suggestionAdapter = SuggestionAdapter(
+            onItemClick = { selectedText ->
+                onSuggestionSelected(selectedText)
+            },
+            onUpFromFirst = {
+                if (currentCategory == "🔍 Buscar Todo") {
+                    etGlobalSearch.requestFocus()
+                } else {
+                    etSearch.requestFocus()
+                }
+            }
+        )
+        rvSuggestions.adapter = suggestionAdapter
 
         updateTimeZoneHeader()
         setupSearchAndSortControls()
@@ -215,6 +245,9 @@ class MainActivity : AppCompatActivity() {
             selectedCategory = currentCategory,
             onCategoryClick = { selectedCat ->
                 currentCategory = selectedCat
+                if (::rvSuggestions.isInitialized) {
+                    rvSuggestions.visibility = View.GONE
+                }
                 filterAndDisplayEvents(silent = false)
             },
             onDownPressed = { category ->
@@ -264,6 +297,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun executeSearch(isGlobal: Boolean) {
+        if (::rvSuggestions.isInitialized) {
+            rvSuggestions.visibility = View.GONE
+        }
         if (isGlobal) {
             deactivateGlobalSearchInput()
             globalSearchQuery = etGlobalSearch.text?.toString()?.trim().orEmpty()
@@ -277,56 +313,84 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateSearchSuggestions() {
-        val replayWords = linkedSetOf<String>()
-        val globalWords = linkedSetOf<String>()
+    private fun filterSuggestions(query: String) {
+        val q = query.trim().lowercase()
+        if (q.length < 2) {
+            if (::rvSuggestions.isInitialized) {
+                rvSuggestions.visibility = View.GONE
+                suggestionAdapter.submitList(emptyList())
+            }
+            return
+        }
 
-        fun extractWords(title: String, targetSet: MutableSet<String>) {
+        val matches = allKeywords.filter { it.lowercase().contains(q) }
+            .sortedBy { item ->
+                val lower = item.lowercase()
+                if (lower.startsWith(q)) 0 else 1
+            }
+            .take(6)
+
+        if (matches.isNotEmpty() && ::rvSuggestions.isInitialized) {
+            suggestionAdapter.submitList(matches)
+            rvSuggestions.visibility = View.VISIBLE
+        } else if (::rvSuggestions.isInitialized) {
+            rvSuggestions.visibility = View.GONE
+            suggestionAdapter.submitList(emptyList())
+        }
+    }
+
+    private fun onSuggestionSelected(selectedText: String) {
+        if (::rvSuggestions.isInitialized) {
+            rvSuggestions.visibility = View.GONE
+        }
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        if (currentCategory == "🔍 Buscar Todo") {
+            imm.hideSoftInputFromWindow(etGlobalSearch.windowToken, 0)
+            etGlobalSearch.isCursorVisible = false
+            etGlobalSearch.setText(selectedText)
+            etGlobalSearch.setSelection(selectedText.length)
+            btnSearchGlobal.requestFocus()
+        } else {
+            imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
+            etSearch.isCursorVisible = false
+            etSearch.setText(selectedText)
+            etSearch.setSelection(selectedText.length)
+            btnSearchReplay.requestFocus()
+        }
+    }
+
+    private fun updateSearchSuggestions() {
+        allKeywords.clear()
+
+        fun extractWords(title: String) {
             if (title.isBlank()) return
-            targetSet.add(title.trim())
+            allKeywords.add(title.trim())
             val parts = title.split(Regex("""(?i)\s+(?:vs\.?|-|–|y|contra)\s+"""))
             for (p in parts) {
                 val clean = p.trim()
                 if (clean.length >= 3) {
-                    targetSet.add(clean)
+                    allKeywords.add(clean)
                 }
             }
         }
 
         for (item in cachedReplayEvents) {
-            extractWords(item.title, replayWords)
+            extractWords(item.title)
         }
-
         for (item in cachedDailyEvents) {
-            extractWords(item.title, globalWords)
+            extractWords(item.title)
         }
         for (item in cachedLiveChannels) {
-            extractWords(item.title, globalWords)
+            extractWords(item.title)
         }
-        globalWords.addAll(replayWords)
+    }
 
-        val replayList = replayWords.toList()
-        val globalList = globalWords.toList()
-
-        runOnUiThread {
-            if (::etSearch.isInitialized) {
-                val replayAdapter = ArrayAdapter(
-                    this,
-                    R.layout.item_search_suggestion,
-                    R.id.tvSuggestionText,
-                    replayList
-                )
-                etSearch.setAdapter(replayAdapter)
-            }
-            if (::etGlobalSearch.isInitialized) {
-                val globalAdapter = ArrayAdapter(
-                    this,
-                    R.layout.item_search_suggestion,
-                    R.id.tvSuggestionText,
-                    globalList
-                )
-                etGlobalSearch.setAdapter(globalAdapter)
-            }
+    private fun updateGlobalSortButtonsUi() {
+        if (!::btnSortNameGlobal.isInitialized) return
+        btnSortNameGlobal.text = when (currentGlobalSortMode) {
+            GlobalSortMode.DEFAULT -> "🔤 Nombre"
+            GlobalSortMode.NAME_ASC -> "🔤 Nombre (A-Z ↓)"
+            GlobalSortMode.NAME_DESC -> "🔤 Nombre (Z-A ↑)"
         }
     }
 
@@ -349,7 +413,13 @@ class MainActivity : AppCompatActivity() {
                 if (!etSearch.isCursorVisible) {
                     when (keyCode) {
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
-                            focusFirstEventItem()
+                            if (::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE && suggestionAdapter.itemCount > 0) {
+                                val firstChild = rvSuggestions.findViewHolderForAdapterPosition(0)?.itemView
+                                    ?: rvSuggestions.layoutManager?.findViewByPosition(0)
+                                firstChild?.requestFocus() ?: rvSuggestions.requestFocus()
+                            } else {
+                                focusFirstEventItem()
+                            }
                             return@setOnKeyListener true
                         }
                         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
@@ -378,19 +448,10 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 searchQuery = s?.toString()?.trim().orEmpty()
+                filterSuggestions(searchQuery)
             }
             override fun afterTextChanged(s: Editable?) {}
         })
-
-        // Al seleccionar una sugerencia del autocompletado
-        etSearch.setOnItemClickListener { parent, _, position, _ ->
-            val suggestion = parent.getItemAtPosition(position) as? String
-            if (!suggestion.isNullOrEmpty()) {
-                etSearch.setText(suggestion)
-                etSearch.setSelection(suggestion.length)
-                executeSearch(isGlobal = false)
-            }
-        }
 
         // Al pulsar la lupa del teclado virtual (IME_ACTION_SEARCH)
         etSearch.setOnEditorActionListener { _, actionId, _ ->
@@ -549,7 +610,13 @@ class MainActivity : AppCompatActivity() {
                 if (!etGlobalSearch.isCursorVisible) {
                     when (keyCode) {
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
-                            focusFirstEventItem()
+                            if (::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE && suggestionAdapter.itemCount > 0) {
+                                val firstChild = rvSuggestions.findViewHolderForAdapterPosition(0)?.itemView
+                                    ?: rvSuggestions.layoutManager?.findViewByPosition(0)
+                                firstChild?.requestFocus() ?: rvSuggestions.requestFocus()
+                            } else {
+                                focusFirstEventItem()
+                            }
                             return@setOnKeyListener true
                         }
                         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
@@ -578,19 +645,10 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 globalSearchQuery = s?.toString()?.trim().orEmpty()
+                filterSuggestions(globalSearchQuery)
             }
             override fun afterTextChanged(s: Editable?) {}
         })
-
-        // Al seleccionar una sugerencia del autocompletado
-        etGlobalSearch.setOnItemClickListener { parent, _, position, _ ->
-            val suggestion = parent.getItemAtPosition(position) as? String
-            if (!suggestion.isNullOrEmpty()) {
-                etGlobalSearch.setText(suggestion)
-                etGlobalSearch.setSelection(suggestion.length)
-                executeSearch(isGlobal = true)
-            }
-        }
 
         // Al pulsar la lupa del teclado virtual (IME_ACTION_SEARCH)
         etGlobalSearch.setOnEditorActionListener { _, actionId, _ ->
@@ -655,6 +713,30 @@ class MainActivity : AppCompatActivity() {
                         return@setOnKeyListener true
                     }
                     KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        btnSortNameGlobal.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                }
+            }
+            false
+        }
+
+        // Botón Ordenamiento por Nombre en Búsqueda Global
+        btnSortNameGlobal.setOnFocusChangeListener { _, hasFocus ->
+            btnSortNameGlobal.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+        btnSortNameGlobal.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        focusFirstEventItem()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        btnSearchGlobal.requestFocus()
+                        return@setOnKeyListener true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
                         btnClearGlobalSearch.requestFocus()
                         return@setOnKeyListener true
                     }
@@ -662,6 +744,17 @@ class MainActivity : AppCompatActivity() {
             }
             false
         }
+        btnSortNameGlobal.setOnClickListener {
+            currentGlobalSortMode = when (currentGlobalSortMode) {
+                GlobalSortMode.DEFAULT -> GlobalSortMode.NAME_ASC
+                GlobalSortMode.NAME_ASC -> GlobalSortMode.NAME_DESC
+                GlobalSortMode.NAME_DESC -> GlobalSortMode.DEFAULT
+            }
+            updateGlobalSortButtonsUi()
+            filterAndDisplayEvents(silent = true)
+            rvEvents.scrollToPosition(0)
+        }
+        updateGlobalSortButtonsUi()
 
         // Botón Limpiar
         btnClearGlobalSearch.setOnFocusChangeListener { _, hasFocus ->
@@ -670,6 +763,11 @@ class MainActivity : AppCompatActivity() {
         btnClearGlobalSearch.setOnClickListener {
             etGlobalSearch.setText("")
             globalSearchQuery = ""
+            currentGlobalSortMode = GlobalSortMode.DEFAULT
+            updateGlobalSortButtonsUi()
+            if (::rvSuggestions.isInitialized) {
+                rvSuggestions.visibility = View.GONE
+            }
             filterAndDisplayEvents(silent = true)
             etGlobalSearch.requestFocus()
         }
@@ -681,7 +779,7 @@ class MainActivity : AppCompatActivity() {
                         return@setOnKeyListener true
                     }
                     KeyEvent.KEYCODE_DPAD_LEFT -> {
-                        btnSearchGlobal.requestFocus()
+                        btnSortNameGlobal.requestFocus()
                         return@setOnKeyListener true
                     }
                 }
@@ -695,15 +793,15 @@ class MainActivity : AppCompatActivity() {
         etGlobalSearch.requestFocus()
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(etGlobalSearch, InputMethodManager.SHOW_IMPLICIT)
-        if (etGlobalSearch.text.isNotEmpty()) {
-            etGlobalSearch.showDropDown()
+        val text = etGlobalSearch.text?.toString().orEmpty()
+        if (text.length >= 2) {
+            filterSuggestions(text)
         }
     }
 
     private fun deactivateGlobalSearchInput() {
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(etGlobalSearch.windowToken, 0)
-        etGlobalSearch.dismissDropDown()
         etGlobalSearch.isCursorVisible = false
     }
 
@@ -760,15 +858,15 @@ class MainActivity : AppCompatActivity() {
         etSearch.requestFocus()
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT)
-        if (etSearch.text.isNotEmpty()) {
-            etSearch.showDropDown()
+        val text = etSearch.text?.toString().orEmpty()
+        if (text.length >= 2) {
+            filterSuggestions(text)
         }
     }
 
     private fun deactivateSearchInput() {
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
-        etSearch.dismissDropDown()
         etSearch.isCursorVisible = false
     }
 
@@ -795,17 +893,46 @@ class MainActivity : AppCompatActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_BACK) {
-            if (::etGlobalSearch.isInitialized && (etGlobalSearch.isCursorVisible || etGlobalSearch.hasFocus())) {
-                deactivateGlobalSearchInput()
-                etGlobalSearch.clearFocus()
-                rvEvents.requestFocus()
+            // Caso 1: Si el foco está DENTRO de la lista de sugerencias y el usuario presiona ATRÁS:
+            // "si estoy en lilstado y no quiero escoger nada y queiro que se desaparezca el listado voy para atras"
+            val isInsideSuggestions = ::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE &&
+                    (rvSuggestions.hasFocus() || (rvSuggestions.findFocus() != null))
+            if (isInsideSuggestions) {
+                rvSuggestions.visibility = View.GONE
+                if (currentCategory == "🔍 Buscar Todo") {
+                    etGlobalSearch.requestFocus()
+                } else {
+                    etSearch.requestFocus()
+                }
                 return true
             }
-            if (::etSearch.isInitialized && (etSearch.isCursorVisible || etSearch.hasFocus())) {
-                deactivateSearchInput()
-                etSearch.clearFocus()
-                rvEvents.requestFocus()
-                return true
+
+            // Caso 2: El usuario está editando en la caja de texto (teclado virtual en pantalla o cursor activo):
+            // "cuando sale la sugernaica enlistado debe el aplicativo permitirme retroceder con el cntroll pero permanecer la lista y tener el foco con el fin que con el teclado poder elegir una opcion del listado"
+            val isEditingSearch = ::etSearch.isInitialized && (etSearch.isCursorVisible || etSearch.hasFocus())
+            val isEditingGlobal = ::etGlobalSearch.isInitialized && (etGlobalSearch.isCursorVisible || etGlobalSearch.hasFocus())
+
+            if (isEditingSearch || isEditingGlobal) {
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                val currentEt = if (isEditingGlobal) etGlobalSearch else etSearch
+                imm.hideSoftInputFromWindow(currentEt.windowToken, 0)
+                currentEt.isCursorVisible = false
+
+                // Si hay sugerencias en pantalla, la lista permanece visible y recibe el foco del control remoto
+                if (::rvSuggestions.isInitialized && rvSuggestions.visibility == View.VISIBLE && suggestionAdapter.itemCount > 0) {
+                    currentEt.clearFocus()
+                    rvSuggestions.post {
+                        val firstChild = rvSuggestions.findViewHolderForAdapterPosition(0)?.itemView
+                            ?: rvSuggestions.layoutManager?.findViewByPosition(0)
+                        firstChild?.requestFocus() ?: rvSuggestions.requestFocus()
+                    }
+                    return true
+                } else {
+                    // Si no hay sugerencias, salir de la caja y enfocar los eventos
+                    currentEt.clearFocus()
+                    rvEvents.requestFocus()
+                    return true
+                }
             }
         }
         return super.dispatchKeyEvent(event)
@@ -1094,7 +1221,20 @@ class MainActivity : AppCompatActivity() {
         }
 
         val displayList = when (currentCategory) {
-            "🔍 Buscar Todo" -> sortEventList(getFilteredGlobalEvents())
+            "🔍 Buscar Todo" -> {
+                val base = getFilteredGlobalEvents()
+                when (currentGlobalSortMode) {
+                    GlobalSortMode.NAME_ASC -> base.sortedWith(
+                        compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE || it.status == EventStatus.FINISHED) 1 else 0 }
+                            .thenBy { it.title.lowercase() }
+                    )
+                    GlobalSortMode.NAME_DESC -> base.sortedWith(
+                        compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE || it.status == EventStatus.FINISHED) 1 else 0 }
+                            .thenByDescending { it.title.lowercase() }
+                    )
+                    GlobalSortMode.DEFAULT -> sortEventList(base)
+                }
+            }
             "⚽ Partidos del Día" -> cachedDailyEvents
             "🔁 Repeticiones" -> getFilteredAndSortedReplays()
             "🌐 Todos los Canales" -> cachedLiveChannels
@@ -1123,7 +1263,8 @@ class MainActivity : AppCompatActivity() {
             adapter.submitList(displayList)
             if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
                 && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus() && !btnVoiceSearchReplay.hasFocus() && !btnSearchReplay.hasFocus()))
-                && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnClearGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus()))
+                && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnClearGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus() && !btnSortNameGlobal.hasFocus()))
+                && (!::rvSuggestions.isInitialized || !rvSuggestions.hasFocus())
             ) {
                 rvEvents.requestFocus()
             }

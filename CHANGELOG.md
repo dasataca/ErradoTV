@@ -2,6 +2,16 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.6.6] - 2026-10-26
+### Añadido y Corregido
+- **Navegación Ergonómica de Sugerencias con Control Remoto (D-Pad)**:
+  - **Foco Persistente en Sugerencias al Cerrar Teclado**: Al pulsar Atrás (`BACK`) en el control remoto mientras el teclado virtual está desplegado, el teclado se oculta pero la lista de sugerencias permanece visible en pantalla y recibe el foco del D-Pad de inmediato, permitiendo elegir una opción con las flechas del control.
+  - **Foco Automático al Botón Lupa tras Seleccionar**: Al presionar OK / Center sobre una sugerencia, el texto se transfiere al campo de búsqueda, la lista se oculta y el foco salta directamente al botón de la Lupa (`btnSearchReplay` o `btnSearchGlobal`).
+  - **Descarte Rápido de Sugerencias**: Si el usuario está enfocado en la lista de sugerencias y no desea escoger ninguna, al pulsar Atrás (`BACK`) la lista desaparece y el foco regresa a la caja de texto.
+  - **Navegación Bidireccional D-Pad**: Pulsar Arriba (`DPAD_UP`) desde el primer elemento de la lista de sugerencias devuelve el foco a la caja de texto; pulsar Abajo (`DPAD_DOWN`) desde la caja de texto entra a las sugerencias.
+- **Botón de Ordenamiento por Nombre en Búsqueda Global**:
+  - Se añade el botón `🔤 Nombre` (`btnSortNameGlobal`) en la barra de "🔍 Buscar Todo", permitiendo ordenar alfabéticamente (A-Z y Z-A) los resultados consolidados de partidos del día, canales en vivo y repeticiones.
+
 ## [1.6.5] - 2026-10-26
 ### Añadido y Corregido
 - **Buscador Ergonómico para TV con Teclado Persistente, Sugerencias y Botón Lupa**:

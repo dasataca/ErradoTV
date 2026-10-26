@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "0950bf83a3fd64bbe28ec7d8ef942a82da2d605ade7b9175e5487dc25e60ee8fd9331232d3b0f4ade41dbec0277f6ce6e0f9fefebf7b4aea2b83d2af766617f34b11b558dfbd6cbc17175d143e236ee5",
-  "latest_version_code": 44,
-  "latest_version_name": "1.6.5",
-  "release_timestamp": 1793051601499,
+  "active_key_enc": "bd184e48b81f2746fe4341c3ee5165ef519f3b7a93b8d83c6491440386d6f8d8ca204258a4fc32ccb398538317d9b3231b943c6c98a5f098767b4a5aed3884b651b061954d3bc29911604551628af49a",
+  "latest_version_code": 45,
+  "latest_version_name": "1.6.6",
+  "release_timestamp": 1793053934311,
   "release_date": "2026-10-26",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Teclado persistente en búsqueda, botón lupa, micrófono a la izquierda y sugerencias"
+  "changelog": "GarecaTV: Navegación de sugerencias con foco D-Pad, botón lupa y ordenamiento por nombre en búsqueda global"
 }

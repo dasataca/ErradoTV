@@ -354,7 +354,7 @@
             android:nextFocusUp="@id/rvCategories"
             android:nextFocusDown="@id/rvEvents"
             android:nextFocusLeft="@id/etGlobalSearch"
-            android:nextFocusRight="@id/btnClearGlobalSearch">
+            android:nextFocusRight="@id/btnSortNameGlobal">
 
             <ImageView
                 android:id="@+id/ivSearchIconGlobal"
@@ -365,6 +365,25 @@
                 app:tint="@color/button_text_selector"
                 android:contentDescription="Buscar" />
         </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSortNameGlobal"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginStart="8dp"
+            android:text="🔤 Nombre (A-Z)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/button_text_selector"
+            android:background="@drawable/button_focus_selector"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:nextFocusUp="@id/rvCategories"
+            android:nextFocusDown="@id/rvEvents"
+            android:nextFocusLeft="@id/btnSearchGlobal"
+            android:nextFocusRight="@id/btnClearGlobalSearch" />
 
         <Button
             android:id="@+id/btnClearGlobalSearch"
@@ -382,8 +401,19 @@
             android:clickable="true"
             android:nextFocusUp="@id/rvCategories"
             android:nextFocusDown="@id/rvEvents"
-            android:nextFocusLeft="@id/btnSearchGlobal" />
+            android:nextFocusLeft="@id/btnSortNameGlobal" />
     </LinearLayout>
+
+    <!-- Contenedor de Sugerencias en Pantalla para TV -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvSuggestions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_marginBottom="12dp"
+        android:descendantFocusability="afterDescendants"
+        android:focusable="false" />
 
     <!-- Main Content Frame -->
     <FrameLayout
