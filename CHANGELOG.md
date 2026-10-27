@@ -2,6 +2,14 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.7.4] - 2026-10-27
+### Añadido y Optimizado
+- **Colchón de Latencia Objetivo para Canales en Vivo (`MediaItem.LiveConfiguration`)**:
+  - **Margen de Protección Constante de 12 Segundos**: Para señales lineales y canales en directo (TevePlay y agenda diaria), se configuró `LiveConfiguration` en ExoPlayer con `setTargetOffsetMs(12000L)`, `setMinOffsetMs(6000L)` y `setMaxOffsetMs(20000L)`.
+  - **Arranque Inmediato sin Pantalla Negra**: A diferencia de forzar un búfer previo prolongado que causaría una espera de 15s al hacer zapping, el televisor arranca el canal en 1 segundo y se posiciona de forma continua a 12 segundos del borde en vivo del CDN.
+  - **Absorción Preventiva sin Micro-Pausas**: El reproductor almacena de forma permanente 3 a 4 fragmentos (`.ts`) ya decodificados en memoria RAM. Cualquier congelamiento momentáneo del socket o retraso del CDN en generar el siguiente fragmento es absorbido de forma invisible sin pausar el video ni mostrar spinner.
+  - **Ajuste Fino de Velocidad Dinámica**: Se incorporaron `minPlaybackSpeed = 0.97f` y `maxPlaybackSpeed = 1.03f`, permitiendo a ExoPlayer recuperar imperceptiblemente el colchón óptimo de 12 segundos sin tirones de audio ni saltos visuales.
+
 ## [1.7.3] - 2026-10-27
 ### Añadido y Optimizado
 - **Arquitectura de Auto-Recuperación Transparente y Búfer Resiliente ante Micro-Cortes HLS**:

@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "bac73dbf0dd782143ddef09043259e9061461b897285f89e48df5b2376c2a16d68c7bf0f4edb46af3b6072518ca8d95aadfd752c58c4fde4b48f509fdf0e23b596b5d4920f32439a387e69565a73ee43",
-  "latest_version_code": 52,
-  "latest_version_name": "1.7.3",
-  "release_timestamp": 1793114546368,
+  "active_key_enc": "a66b55d4441eac11034cc3ab673df5e83aae0973e5773f54c04f6bb5d645bad1cc49fb914fb09e1c5187d86f5536bb7ce7840cfac54486ffdaa2fc58f2c23524c2e952c990b148438b81b913857e527e",
+  "latest_version_code": 53,
+  "latest_version_name": "1.7.4",
+  "release_timestamp": 1793116618775,
   "release_date": "2026-10-27",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Arquitectura de auto-recuperación transparente en 4 capas y búfer resiliente ante micro-cortes HLS"
+  "changelog": "GarecaTV: Colchón de latencia objetivo (LiveConfiguration 12s) para protección constante contra micro-cortes en canales en vivo"
 }

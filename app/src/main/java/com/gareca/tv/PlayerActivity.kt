@@ -339,6 +339,19 @@ class PlayerActivity : AppCompatActivity() {
             )
         }
 
+        // Colchón de Latencia Objetivo para Canales en Vivo (12s de margen de protección constante)
+        val isReplay = url.contains("refooty") || url.contains("_replay") || (currentSubtitle?.contains("Repetición", ignoreCase = true) == true)
+        if (!isReplay) {
+            val liveConfig = MediaItem.LiveConfiguration.Builder()
+                .setTargetOffsetMs(12_000L) // 12 segundos detrás del live edge para absorber micro-cortes del CDN
+                .setMinOffsetMs(6_000L)     // Mínimo 6s para evitar caer en el borde del CDN
+                .setMaxOffsetMs(20_000L)    // Máximo 20s
+                .setMinPlaybackSpeed(0.97f) // Micro-ajuste imperceptible de velocidad para preservar el colchón
+                .setMaxPlaybackSpeed(1.03f)
+                .build()
+            mediaItemBuilder.setLiveConfiguration(liveConfig)
+        }
+
         val mediaItem = mediaItemBuilder.build()
         return mediaSourceFactory.createMediaSource(mediaItem)
     }

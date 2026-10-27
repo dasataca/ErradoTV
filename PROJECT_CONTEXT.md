@@ -175,3 +175,12 @@ Si en el futuro deseas cambiar el proveedor de DNS para todos los televisores in
   3. **Capa 3 (Revalidación puntual de enlace)**: Si tras los 3 reintentos no reengancha, se consulta de forma puntual el resolver del canal actual (`ApiClient.resolveStreamUrl`) para verificar si se renovó el enlace o token sin sobrecargar la red.
   4. **Capa 4 (Fallo definitivo)**: Solo si tras los 3 reintentos y la revalidación el flujo sigue sin responder, recién se marca la señal como no disponible en `StreamCache` y se despliega el mensaje de error en pantalla.
 
+### 7.3. Colchón de Latencia Objetivo para Canales en Vivo (MediaItem.LiveConfiguration)
+* **Problema resuelto**: Forzar un búfer previo alto al iniciar un canal genera una pantalla negra de 15 segundos al hacer zapping.
+* **Mecanismo implementado**:
+  * En `PlayerActivity.buildMediaSource()`, para streams en vivo se configuró `MediaItem.LiveConfiguration`:
+    * `targetOffsetMs = 12000L` (12 segundos detrás del live edge del CDN).
+    * `minOffsetMs = 6000L` y `maxOffsetMs = 20000L`.
+    * `minPlaybackSpeed = 0.97f` y `maxPlaybackSpeed = 1.03f`.
+  * **Efecto práctico**: El canal arranca en apenas 1 segundo, pero ExoPlayer se posiciona 12 segundos detrás del borde del CDN, reteniendo permanentemente en RAM 3 a 4 fragmentos (`.ts`) ya listos. Ante un micro-retraso o freeze transitorio del socket del servidor de 2 a 4 segundos, el televisor sigue reproduciendo del colchón sin pausar jamás el video.
+
