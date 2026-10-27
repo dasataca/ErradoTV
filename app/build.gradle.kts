@@ -11,8 +11,8 @@ android {
         applicationId = "com.gareca.tv"
         minSdk = 24
         targetSdk = 34
-        versionCode = 51
-        versionName = "1.7.2"
+        versionCode = 52
+        versionName = "1.7.3"
     }
 
     buildTypes {

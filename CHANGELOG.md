@@ -2,6 +2,16 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.7.3] - 2026-10-27
+### Añadido y Optimizado
+- **Arquitectura de Auto-Recuperación Transparente y Búfer Resiliente ante Micro-Cortes HLS**:
+  - **Capa 1 (Búfer de Absorción con `DefaultLoadControl`)**: Se implementó en ExoPlayer un búfer de anticipación en RAM (`minBufferMs = 25000ms` [25s], `maxBufferMs = 40000ms` [40s], `bufferForPlaybackAfterRebufferMs = 1500ms`, `prioritizeTimeOverSizeThresholds = true`). Micro-cortes transitorios de 2 a 3 segundos en el CDN son absorbidos por el búfer sin pausar la reproducción ni congelar la imagen.
+  - **Capa 2 (Reconexión Silenciosa Progresiva con Backoff)**: Ante caídas transitorias de paquetes o timeouts (`ERROR_CODE_IO_UNSPECIFIED`, código 2000), el reproductor no capitula ni despliega el mensaje de "Señal no disponible". Mantiene activo el spinner discreto (`playerBuffering`) y ejecuta hasta 3 reintentos automáticos progresivos en segundo plano (a los 500ms, 2s y 4s). Al reenganchar la señal, el spinner se desvanece y la transmisión continúa fluidamente.
+  - **Capa 3 (Revalidación Puntual de Enlace Quirúrgica)**: Si tras los 3 reintentos el flujo sigue sin responder, el sistema re-resuelve de forma puntual el `StreamOption` del canal actual (`ApiClient.resolveStreamUrl`), comprobando si el CDN renovó el enlace o token sin sobrecargar la red ni descargar catálogos completos innecesarios.
+  - **Capa 4 (Fallo Definitivo)**: Únicamente si tras los 3 reintentos y la revalidación puntual la señal no responde, se marca como no disponible en `StreamCache` y se despliega el mensaje explicativo en pantalla con indicaciones para el control remoto.
+  - **Resiliencia de Watchdog**: El temporizador de 10s se conectó con el ciclo de auto-recuperación, evitando falsos positivos por retardos de red.
+  - **Preservación de Metadatos de Enlace**: Se incorporaron `EXTRA_ORIGINAL_URL` y `EXTRA_ORIGINAL_TYPE` en el intent de reproducción desde `MainActivity`, garantizando la revalidación individualizada de señales.
+
 ## [1.7.2] - 2026-10-27
 ### Corregido y Optimizado
 - **Corrección de Ocultación de Controles Multimedia y Banner en TV**:

@@ -1714,6 +1714,8 @@ class MainActivity : AppCompatActivity() {
                         putExtra("EXTRA_USER_AGENT", resolved.userAgent)
                         putExtra("EXTRA_IMAGE_URL", parentItem?.imageUrl)
                         putExtra("EXTRA_SUBTITLE", parentItem?.subtitle)
+                        putExtra("EXTRA_ORIGINAL_URL", stream.url)
+                        putExtra("EXTRA_ORIGINAL_TYPE", stream.type)
                     }
                     startActivity(intent)
                 } else {

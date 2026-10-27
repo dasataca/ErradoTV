@@ -162,15 +162,16 @@ Si en el futuro deseas cambiar el proveedor de DNS para todos los televisores in
 
 ---
 
-## 7. Próxima Tarea Técnica: Resiliencia de Streaming HLS y Auto-Recuperación Transparente (Seamless Reconnect)
+## 7. Arquitectura de Auto-Recuperación Transparente y Búfer Resiliente ante Micro-Cortes HLS (v1.7.3)
 
 ### 7.1. Antecedentes y Telemetría Registrada
-* **Incidente Registrado**: Durante la reproducción de canales 24/7 (ej. Latina a las 11:55 / 14:55 UTC), se produjo un corte abrupto de señal con `player_error: Source error (ERROR_CODE_IO_UNSPECIFIED, code 2000)`. Al salir al menú y volver a pulsar el canal segundos después, reprodujo de inmediato con la **misma URL** (`https://teveplay.net/api/stream/75d2ab2e0c4f85d3/index.m3u8`).
-* **Diagnóstico**: No se trataba de un enlace caído ni de un cambio de ID en el CDN, sino de un microcorte transitorio de fragmentos HLS (`.ts`) o timeout de socket de 1 segundo. El reproductor actual trataba cualquier error de origen como fatal y mostraba el cartel de señal caída en vez de reconectar.
+* **Incidente Registrado**: Durante la reproducción de canales 24/7 (ej. Latina a las 11:55 / 14:55 UTC), se producía un corte abrupto de señal con `player_error: Source error (ERROR_CODE_IO_UNSPECIFIED, code 2000)`. Al salir al menú y volver a pulsar el canal segundos después, reprodujo de inmediato con la **misma URL** (`https://teveplay.net/api/stream/75d2ab2e0c4f85d3/index.m3u8`).
+* **Diagnóstico**: No se trataba de un enlace caído ni de un cambio de ID en el CDN, sino de un microcorte transitorio de fragmentos HLS (`.ts`) o socket timeout de 1 segundo. El reproductor trataba cualquier error de origen como fatal y mostraba el cartel de señal caída en vez de reconectar.
 
-### 7.2. Directiva de Diseño: No Sobrecargar, Optimizar Quirúrgicamente
-* **Prohibido**: Descargar la lista completa de canales (`/api/channels`, 312+ canales) ante un corte. Genera latencia, consumo de memoria y sobrecarga innecesaria de red.
-* **Aprobado**: Arquitectura de **Auto-Recuperación en 3 Capas**:
-  1. **Buffer de Absorción HLS (`DefaultLoadControl`)**: Ampliar el búfer de reproducción en RAM (25-40 segundos) para tolerar microcortes de red de hasta 3 segundos sin que el usuario note ningún parpadeo.
-  2. **Bucle de Auto-Reconexión Silenciosa (Silent Auto-Retry en `PlayerActivity`)**: Ante `onPlayerError`, retener la pantalla de error y ejecutar hasta 3 reintentos automáticos progresivos (500ms, 2s, 4s) con spinner discreto.
-  3. **Revalidación Fresca Puntual**: Si tras 3 intentos el flujo no engancha, re-resolver únicamente el `StreamOption` del canal actual antes de dar la señal por no disponible.
+### 7.2. Implementación Quirúrgica en 4 Capas (PlayerActivity.kt)
+* **Directiva de Eficiencia**: Queda estrictamente prohibido descargar toda la lista de canales (`/api/channels`, 470+ señales) ante un corte; la solución opera a nivel quirúrgico de flujo:
+  1. **Capa 1 (Búfer de absorción con `DefaultLoadControl`)**: Se configuró en ExoPlayer un búfer de anticipación en RAM (`minBufferMs = 25s`, `maxBufferMs = 40s`, `bufferForPlaybackAfterRebufferMs = 1500ms`, `prioritizeTimeOverSizeThresholds = true`). Micro-cortes de 2 o 3 segundos en el CDN son absorbidos sin pausar el video ni alterar la experiencia.
+  2. **Capa 2 (Reconexión silenciosa progresiva)**: Al capturarse `onPlayerError` o timeouts transitorios, no se muestra el mensaje de error inmediatamente. Se activa el `ProgressBar` de carga y se ejecutan hasta 3 reintentos automáticos progresivos en segundo plano (con backoff a los 500ms, 2s y 4s). Al reenganchar la señal, el spinner se oculta y el video continúa fluidamente.
+  3. **Capa 3 (Revalidación puntual de enlace)**: Si tras los 3 reintentos no reengancha, se consulta de forma puntual el resolver del canal actual (`ApiClient.resolveStreamUrl`) para verificar si se renovó el enlace o token sin sobrecargar la red.
+  4. **Capa 4 (Fallo definitivo)**: Solo si tras los 3 reintentos y la revalidación el flujo sigue sin responder, recién se marca la señal como no disponible en `StreamCache` y se despliega el mensaje de error en pantalla.
+

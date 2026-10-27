@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "462ab3bc4ac06f0b67803d043cf424cdbfdb38ab7f010fcf9f126db4ce488feaffe8dbee23c0c9f79f382c19611cfb63ba333ab6c6e88472ce178480923528ba3578d2acb286ab14cc8a9b149b0c17ac",
-  "latest_version_code": 51,
-  "latest_version_name": "1.7.2",
-  "release_timestamp": 1793107841317,
+  "active_key_enc": "bac73dbf0dd782143ddef09043259e9061461b897285f89e48df5b2376c2a16d68c7bf0f4edb46af3b6072518ca8d95aadfd752c58c4fde4b48f509fdf0e23b596b5d4920f32439a387e69565a73ee43",
+  "latest_version_code": 52,
+  "latest_version_name": "1.7.3",
+  "release_timestamp": 1793114546368,
   "release_date": "2026-10-27",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Desvanecimiento automático forzado de controles multimedia y banner en TV"
+  "changelog": "GarecaTV: Arquitectura de auto-recuperación transparente en 4 capas y búfer resiliente ante micro-cortes HLS"
 }

@@ -18,12 +18,15 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.bumptech.glide.Glide
 import com.gareca.tv.api.ApiClient
+import com.gareca.tv.model.StreamOption
 import com.gareca.tv.telemetry.SupabaseLogger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -55,7 +58,17 @@ class PlayerActivity : AppCompatActivity() {
     private var currentStreamTitle = ""
     private var currentSubtitle: String? = null
     private var currentImageUrl: String? = null
+    private var currentDrmLicenseUrl: String? = null
+    private var currentCustomUserAgent: String? = null
+    private var currentOriginalStream: StreamOption? = null
     private var zapJob: Job? = null
+
+    // Resiliencia y Auto-Recuperación HLS ante micro-cortes transitorios
+    private var retryCount = 0
+    private val retryDelaysMs = longArrayOf(500L, 2000L, 4000L)
+    private var retryRunnable: Runnable? = null
+    private var recoveryJob: Job? = null
+    private var isRevalidating = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,6 +95,8 @@ class PlayerActivity : AppCompatActivity() {
         val streamTitle = intent.getStringExtra("EXTRA_TITLE") ?: ""
         val drmLicenseUrl = intent.getStringExtra("EXTRA_DRM_LICENSE")
         val customUserAgent = intent.getStringExtra("EXTRA_USER_AGENT")
+        val originalUrl = intent.getStringExtra("EXTRA_ORIGINAL_URL") ?: streamUrl
+        val originalType = intent.getStringExtra("EXTRA_ORIGINAL_TYPE") ?: "exo"
         currentImageUrl = intent.getStringExtra("EXTRA_IMAGE_URL")
         currentSubtitle = intent.getStringExtra("EXTRA_SUBTITLE")
 
@@ -92,6 +107,15 @@ class PlayerActivity : AppCompatActivity() {
 
         currentStreamUrl = streamUrl
         currentStreamTitle = streamTitle
+        currentDrmLicenseUrl = drmLicenseUrl
+        currentCustomUserAgent = customUserAgent
+        currentOriginalStream = ChannelNavigationManager.current()?.stream ?: StreamOption(
+            title = streamTitle,
+            url = originalUrl,
+            type = originalType,
+            drmLicenseUrl = drmLicenseUrl,
+            userAgent = customUserAgent
+        )
 
         initializePlayer(streamUrl, drmLicenseUrl, customUserAgent, streamTitle)
         showChannelBanner()
@@ -113,8 +137,20 @@ class PlayerActivity : AppCompatActivity() {
                 )
             }
 
+            // Capa 1 (Búfer de absorción): DefaultLoadControl para tolerar micro-cortes HLS en RAM (25s a 40s)
+            val loadControl = DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                    25_000, // minBufferMs: 25s
+                    40_000, // maxBufferMs: 40s
+                    1_000,  // bufferForPlaybackMs: 1s para inicio veloz
+                    1_500   // bufferForPlaybackAfterRebufferMs: 1500ms
+                )
+                .setPrioritizeTimeOverSizeThresholds(true)
+                .build()
+
             val exoPlayer = ExoPlayer.Builder(this)
                 .setTrackSelector(trackSelector)
+                .setLoadControl(loadControl)
                 .build()
 
             player = exoPlayer
@@ -124,6 +160,7 @@ class PlayerActivity : AppCompatActivity() {
                 override fun onVideoSizeChanged(videoSize: VideoSize) {
                     if (videoSize.width > 0 && videoSize.height > 0) {
                         videoFrameReceived = true
+                        resetRecoveryState()
                         StreamCache.markAvailable(this@PlayerActivity, currentStreamUrl)
                         val label = "${videoSize.width}x${videoSize.height} (${getQualityLabel(videoSize.height)}) [MÁX]"
                         currentResolutionText = label
@@ -145,6 +182,7 @@ class PlayerActivity : AppCompatActivity() {
                             playerError.visibility = View.GONE
                         }
                         Player.STATE_READY -> {
+                            resetRecoveryState()
                             playerBuffering.visibility = View.GONE
                             playerError.visibility = View.GONE
                             StreamCache.markAvailable(this@PlayerActivity, currentStreamUrl)
@@ -158,98 +196,157 @@ class PlayerActivity : AppCompatActivity() {
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
-                    StreamCache.markUnavailable(
-                        this@PlayerActivity,
-                        currentStreamUrl,
-                        reason = "player_error: ${error.errorCodeName}",
-                        title = currentStreamTitle,
-                        broadcast = true
-                    )
-                    playerBuffering.visibility = View.GONE
-                    playerError.visibility = View.VISIBLE
-                    playerError.text = if (ChannelNavigationManager.totalCount > 1) {
-                        "⚠️ Señal temporalmente fuera del aire o finalizada.\nPresiona ◀ o ▶ para sintonizar otro canal."
-                    } else {
-                        "⚠️ Señal temporalmente fuera del aire o finalizada.\nPresiona la tecla ATRÁS en tu control remoto para elegir otro canal."
-                    }
-                    SupabaseLogger.error(
-                        "player_error",
-                        "Error de reproducción en ExoPlayer: ${error.message}",
-                        mapOf("url" to currentStreamUrl, "errorCode" to error.errorCode, "errorName" to error.errorCodeName, "title" to currentStreamTitle)
-                    )
+                    handlePlayerError(error)
                 }
             })
 
             loadAndPlayMedia(url, drmLicenseUrl, customUserAgent, title)
         } catch (t: Throwable) {
             t.printStackTrace()
-            StreamCache.markUnavailable(
-                this@PlayerActivity,
-                url,
-                reason = "player_init_exception: ${t.message}",
-                title = title,
-                broadcast = true
+            handleDefinitiveFailure(PlaybackException("Error inicializando reproductor: ${t.message}", t, PlaybackException.ERROR_CODE_IO_UNSPECIFIED))
+        }
+    }
+
+    private fun handlePlayerError(error: PlaybackException) {
+        if (isFinishing || isDestroyed) return
+
+        SupabaseLogger.warn(
+            "player_error_transient",
+            "Error en reproducción (${error.errorCodeName}, código ${error.errorCode}). Evaluando auto-recuperación (intento $retryCount de 3).",
+            mapOf("url" to currentStreamUrl, "errorCode" to error.errorCode, "errorName" to error.errorCodeName, "title" to currentStreamTitle)
+        )
+
+        // Capa 2 (Reconexión silenciosa progresiva): hasta 3 reintentos (500ms, 2s, 4s)
+        if (retryCount < retryDelaysMs.size) {
+            val delay = retryDelaysMs[retryCount]
+            retryCount++
+
+            playerBuffering.visibility = View.VISIBLE
+            playerError.visibility = View.GONE
+
+            retryRunnable?.let { handler.removeCallbacks(it) }
+            watchdogRunnable?.let { handler.removeCallbacks(it) }
+
+            val r = Runnable {
+                if (!isFinishing && !isDestroyed) {
+                    SupabaseLogger.info(
+                        "player_retry_execute",
+                        "Ejecutando auto-reintento #$retryCount tras ${delay}ms para $currentStreamTitle",
+                        mapOf("url" to currentStreamUrl)
+                    )
+                    retryPlayback()
+                }
+            }
+            retryRunnable = r
+            handler.postDelayed(r, delay)
+            return
+        }
+
+        // Capa 3 (Revalidación puntual): Si tras 3 reintentos no reengancha, consultar resolver puntual
+        if (!isRevalidating) {
+            isRevalidating = true
+            playerBuffering.visibility = View.VISIBLE
+            playerError.visibility = View.GONE
+            watchdogRunnable?.let { handler.removeCallbacks(it) }
+
+            recoveryJob?.cancel()
+            recoveryJob = lifecycleScope.launch {
+                try {
+                    SupabaseLogger.info(
+                        "player_revalidate_stream",
+                        "Iniciando revalidación puntual de enlace para: $currentStreamTitle",
+                        mapOf("url" to currentStreamUrl)
+                    )
+                    val targetStream = currentOriginalStream ?: ChannelNavigationManager.current()?.stream ?: StreamOption(
+                        title = currentStreamTitle,
+                        url = currentStreamUrl,
+                        type = "exo",
+                        drmLicenseUrl = currentDrmLicenseUrl,
+                        userAgent = currentCustomUserAgent
+                    )
+
+                    val reResolved = ApiClient.resolveStreamUrl(targetStream)
+                    if (isFinishing || isDestroyed) return@launch
+
+                    currentStreamUrl = reResolved.url
+                    currentDrmLicenseUrl = reResolved.drmLicenseUrl
+                    currentCustomUserAgent = reResolved.userAgent
+
+                    retryPlayback()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    handleDefinitiveFailure(error)
+                }
+            }
+            return
+        }
+
+        // Capa 4 (Fallo definitivo): Solo si tras reintentos y revalidación sigue sin responder
+        handleDefinitiveFailure(error)
+    }
+
+    private fun resetRecoveryState() {
+        retryCount = 0
+        isRevalidating = false
+        retryRunnable?.let { handler.removeCallbacks(it) }
+        retryRunnable = null
+        recoveryJob?.cancel()
+        recoveryJob = null
+    }
+
+    private fun buildMediaSource(url: String, drmLicenseUrl: String? = null, customUserAgent: String? = null): MediaSource {
+        val defaultUa = customUserAgent ?: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        val httpDataSourceFactory = OkHttpDataSource.Factory(ApiClient.httpClient)
+            .setUserAgent(defaultUa)
+
+        if (url.contains("teveplay.net")) {
+            val channelId = url.substringAfter("/api/stream/").substringBefore("/index.m3u8")
+            val referer = if (channelId.isNotEmpty() && channelId != url) {
+                "https://teveplay.net/watch/$channelId"
+            } else {
+                "https://teveplay.net/"
+            }
+            httpDataSourceFactory.setDefaultRequestProperties(
+                mapOf(
+                    "Referer" to referer,
+                    "Origin" to "https://teveplay.net"
+                )
             )
-            playerBuffering.visibility = View.GONE
-            playerError.visibility = View.VISIBLE
-            playerError.text = "⚠️ Error al iniciar la reproducción.\nEsta señal no está disponible en este momento.\nPresione VOLVER en su control para elegir otra opción."
-            SupabaseLogger.warn(
-                "player_init_error",
-                "Error inicializando reproductor: ${t.message}",
-                mapOf("url" to url, "error" to (t.message ?: ""), "title" to title)
+        } else if (url.contains("fawanews") || url.contains("193.47.62")) {
+            httpDataSourceFactory.setDefaultRequestProperties(
+                mapOf(
+                    "Referer" to "http://www.fawanews.sc/",
+                    "Origin" to "http://www.fawanews.sc"
+                )
             )
         }
+
+        val mediaSourceFactory = DefaultMediaSourceFactory(this)
+            .setDataSourceFactory(httpDataSourceFactory)
+
+        val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(url))
+        if (url.contains(".mpd")) {
+            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MPD)
+        } else if (url.contains(".m3u8")) {
+            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+        }
+
+        if (!drmLicenseUrl.isNullOrEmpty()) {
+            mediaItemBuilder.setDrmConfiguration(
+                MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID)
+                    .setLicenseUri(Uri.parse(drmLicenseUrl))
+                    .build()
+            )
+        }
+
+        val mediaItem = mediaItemBuilder.build()
+        return mediaSourceFactory.createMediaSource(mediaItem)
     }
 
     private fun loadAndPlayMedia(url: String, drmLicenseUrl: String? = null, customUserAgent: String? = null, title: String = "") {
         val exoPlayer = player ?: return
         try {
-            val defaultUa = customUserAgent ?: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            val httpDataSourceFactory = OkHttpDataSource.Factory(ApiClient.httpClient)
-                .setUserAgent(defaultUa)
-
-            if (url.contains("teveplay.net")) {
-                val channelId = url.substringAfter("/api/stream/").substringBefore("/index.m3u8")
-                val referer = if (channelId.isNotEmpty() && channelId != url) {
-                    "https://teveplay.net/watch/$channelId"
-                } else {
-                    "https://teveplay.net/"
-                }
-                httpDataSourceFactory.setDefaultRequestProperties(
-                    mapOf(
-                        "Referer" to referer,
-                        "Origin" to "https://teveplay.net"
-                    )
-                )
-            } else if (url.contains("fawanews") || url.contains("193.47.62")) {
-                httpDataSourceFactory.setDefaultRequestProperties(
-                    mapOf(
-                        "Referer" to "http://www.fawanews.sc/",
-                        "Origin" to "http://www.fawanews.sc"
-                    )
-                )
-            }
-
-            val mediaSourceFactory = DefaultMediaSourceFactory(this)
-                .setDataSourceFactory(httpDataSourceFactory)
-
-            val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(url))
-            if (url.contains(".mpd")) {
-                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MPD)
-            } else if (url.contains(".m3u8")) {
-                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
-            }
-
-            if (!drmLicenseUrl.isNullOrEmpty()) {
-                mediaItemBuilder.setDrmConfiguration(
-                    MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID)
-                        .setLicenseUri(Uri.parse(drmLicenseUrl))
-                        .build()
-                )
-            }
-
-            val mediaItem = mediaItemBuilder.build()
-            val mediaSource = mediaSourceFactory.createMediaSource(mediaItem)
+            val mediaSource = buildMediaSource(url, drmLicenseUrl, customUserAgent)
             exoPlayer.setMediaSource(mediaSource)
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true
@@ -257,21 +354,52 @@ class PlayerActivity : AppCompatActivity() {
             armWatchdog(url, title)
         } catch (t: Throwable) {
             t.printStackTrace()
-            StreamCache.markUnavailable(
-                this@PlayerActivity,
-                url,
-                reason = "player_load_exception: ${t.message}",
-                title = title,
-                broadcast = true
-            )
-            playerBuffering.visibility = View.GONE
-            playerError.visibility = View.VISIBLE
-            playerError.text = if (ChannelNavigationManager.totalCount > 1) {
-                "⚠️ Error al sintonizar esta señal.\nPresiona ◀ o ▶ para sintonizar otro canal."
-            } else {
-                "⚠️ Error al iniciar la reproducción.\nPresione VOLVER en su control para elegir otra opción."
-            }
+            handleDefinitiveFailure(PlaybackException("Error cargando media: ${t.message}", t, PlaybackException.ERROR_CODE_IO_UNSPECIFIED))
         }
+    }
+
+    private fun retryPlayback() {
+        val exoPlayer = player ?: return
+        try {
+            val mediaSource = buildMediaSource(currentStreamUrl, currentDrmLicenseUrl, currentCustomUserAgent)
+            exoPlayer.setMediaSource(mediaSource)
+            exoPlayer.prepare()
+            exoPlayer.playWhenReady = true
+            armWatchdog(currentStreamUrl, currentStreamTitle)
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            exoPlayer.playerError?.let { handlePlayerError(it) } ?: handleDefinitiveFailure()
+        }
+    }
+
+    private fun handleDefinitiveFailure(error: PlaybackException? = null) {
+        resetRecoveryState()
+        watchdogRunnable?.let { handler.removeCallbacks(it) }
+
+        StreamCache.markUnavailable(
+            this@PlayerActivity,
+            currentStreamUrl,
+            reason = "player_error_definitive: ${error?.errorCodeName ?: "reconnect_failed"}",
+            title = currentStreamTitle,
+            broadcast = true
+        )
+        playerBuffering.visibility = View.GONE
+        playerError.visibility = View.VISIBLE
+        playerError.text = if (ChannelNavigationManager.totalCount > 1) {
+            "⚠️ Señal temporalmente fuera del aire o finalizada.\nPresiona ◀ o ▶ para sintonizar otro canal."
+        } else {
+            "⚠️ Señal temporalmente fuera del aire o finalizada.\nPresiona la tecla ATRÁS en tu control remoto para elegir otro canal."
+        }
+        SupabaseLogger.error(
+            "player_error_definitive",
+            "Agotados reintentos y revalidación. Señal no disponible: ${error?.message ?: "sin respuesta"}",
+            mapOf(
+                "url" to currentStreamUrl,
+                "errorCode" to (error?.errorCode ?: -1),
+                "errorName" to (error?.errorCodeName ?: "UNKNOWN"),
+                "title" to currentStreamTitle
+            )
+        )
     }
 
     private fun armWatchdog(url: String, title: String) {
@@ -279,21 +407,14 @@ class PlayerActivity : AppCompatActivity() {
         watchdogRunnable?.let { handler.removeCallbacks(it) }
         val runnable = Runnable {
             if (!videoFrameReceived && !isFinishing && !isDestroyed && currentStreamUrl == url) {
-                StreamCache.markUnavailable(
-                    this@PlayerActivity,
-                    url,
-                    reason = "watchdog_timeout_no_video",
-                    title = title,
-                    broadcast = true
-                )
-                playerBuffering.visibility = View.GONE
-                playerError.visibility = View.VISIBLE
-                playerError.text = if (ChannelNavigationManager.totalCount > 1) {
-                    "⚠️ Esta transmisión no devolvió respuesta de video o la señal caducó.\nPresiona ◀ o ▶ para sintonizar otro canal."
+                if (retryCount < retryDelaysMs.size || !isRevalidating) {
+                    SupabaseLogger.warn("watchdog_timeout_retry", "Watchdog sin fotogramas tras 10s: activando auto-reintento", mapOf("url" to url, "title" to title))
+                    player?.let { p ->
+                        p.playerError?.let { handlePlayerError(it) } ?: handlePlayerError(PlaybackException("Watchdog sin fotogramas tras 10s", null, PlaybackException.ERROR_CODE_IO_UNSPECIFIED))
+                    } ?: handleDefinitiveFailure()
                 } else {
-                    "⚠️ Esta transmisión no devolvió respuesta de video o los archivos han caducado.\nPresione ATRÁS en su control remoto para elegir otro partido."
+                    handleDefinitiveFailure()
                 }
-                SupabaseLogger.warn("video_playback_timeout", "Video no produjo fotogramas válidos: $url", mapOf("title" to title))
             }
         }
         watchdogRunnable = runnable
@@ -363,8 +484,11 @@ class PlayerActivity : AppCompatActivity() {
         currentStreamTitle = channel.title
         currentSubtitle = channel.subtitle
         currentImageUrl = channel.imageUrl
+        currentOriginalStream = channel.stream
         currentResolutionText = ""
         tvResolutionBadge.visibility = View.GONE
+
+        resetRecoveryState()
 
         // Feedback visual inmediato en la TV con el nuevo canal
         showChannelBanner()
@@ -388,6 +512,9 @@ class PlayerActivity : AppCompatActivity() {
                 if (currentStreamTitle != channel.title) return@launch
 
                 currentStreamUrl = resolved.url
+                currentDrmLicenseUrl = resolved.drmLicenseUrl
+                currentCustomUserAgent = resolved.userAgent
+
                 loadAndPlayMedia(resolved.url, resolved.drmLicenseUrl, resolved.userAgent, channel.title)
 
                 SupabaseLogger.info(
@@ -397,9 +524,7 @@ class PlayerActivity : AppCompatActivity() {
                 )
             } catch (e: Exception) {
                 if (currentStreamTitle != channel.title) return@launch
-                playerBuffering.visibility = View.GONE
-                playerError.visibility = View.VISIBLE
-                playerError.text = "⚠️ No se pudo conectar a este canal.\nPresiona ◀ o ▶ para sintonizar otra señal."
+                handleDefinitiveFailure()
             }
         }
     }
@@ -494,6 +619,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        resetRecoveryState()
         hideBadgeRunnable?.let { handler.removeCallbacks(it) }
         hideBannerRunnable?.let { handler.removeCallbacks(it) }
         hideControlsRunnable?.let { handler.removeCallbacks(it) }
