@@ -159,3 +159,18 @@ Si en el futuro deseas cambiar el proveedor de DNS para todos los televisores in
   * Si no es JSON legítimo, se descarta de inmediato el resultado y se activa en caliente la clave de fábrica en RAM (`getFactoryKey()`), impidiendo caídas o que la lista de partidos quede reducida.
 * **Esquema de Clave Híbrida en `version.json`**:
   `version.json` soporta simultáneamente `active_key` (para versiones anteriores) y `active_key_enc` (para versiones 1.6.2+ con Cifrado de Sobre), garantizando compatibilidad retroactiva total.
+
+---
+
+## 7. Próxima Tarea Técnica: Resiliencia de Streaming HLS y Auto-Recuperación Transparente (Seamless Reconnect)
+
+### 7.1. Antecedentes y Telemetría Registrada
+* **Incidente Registrado**: Durante la reproducción de canales 24/7 (ej. Latina a las 11:55 / 14:55 UTC), se produjo un corte abrupto de señal con `player_error: Source error (ERROR_CODE_IO_UNSPECIFIED, code 2000)`. Al salir al menú y volver a pulsar el canal segundos después, reprodujo de inmediato con la **misma URL** (`https://teveplay.net/api/stream/75d2ab2e0c4f85d3/index.m3u8`).
+* **Diagnóstico**: No se trataba de un enlace caído ni de un cambio de ID en el CDN, sino de un microcorte transitorio de fragmentos HLS (`.ts`) o timeout de socket de 1 segundo. El reproductor actual trataba cualquier error de origen como fatal y mostraba el cartel de señal caída en vez de reconectar.
+
+### 7.2. Directiva de Diseño: No Sobrecargar, Optimizar Quirúrgicamente
+* **Prohibido**: Descargar la lista completa de canales (`/api/channels`, 312+ canales) ante un corte. Genera latencia, consumo de memoria y sobrecarga innecesaria de red.
+* **Aprobado**: Arquitectura de **Auto-Recuperación en 3 Capas**:
+  1. **Buffer de Absorción HLS (`DefaultLoadControl`)**: Ampliar el búfer de reproducción en RAM (25-40 segundos) para tolerar microcortes de red de hasta 3 segundos sin que el usuario note ningún parpadeo.
+  2. **Bucle de Auto-Reconexión Silenciosa (Silent Auto-Retry en `PlayerActivity`)**: Ante `onPlayerError`, retener la pantalla de error y ejecutar hasta 3 reintentos automáticos progresivos (500ms, 2s, 4s) con spinner discreto.
+  3. **Revalidación Fresca Puntual**: Si tras 3 intentos el flujo no engancha, re-resolver únicamente el `StreamOption` del canal actual antes de dar la señal por no disponible.

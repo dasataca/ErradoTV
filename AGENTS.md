@@ -36,6 +36,7 @@
    * **Zapping de Canales con D-Pad**: En categorías de canales de flujo único (`📺 Regionales`, `🏆 Deportes`, países, etc.), las teclas `◀ Izquierda` y `▶ Derecha` del control remoto ejecutan zapping directo entre canales (`ChannelNavigationManager`) reutilizando la instancia de ExoPlayer.
    * **Banner Informativo de Canal (`llChannelBanner`)**: Al ingresar a un canal o cambiar de señal, se despliega en la parte superior el logo, nombre del canal, subtítulo y contador de posición (ej. `Canal 5 de 42  [◀ ▶ Zapping]`), auto-ocultándose a los 3.5 segundos.
    * **Invocación Contextual con Teclas Arriba / Abajo**: Al presionar `▲ Arriba` o `▼ Abajo` durante la reproducción, se reactiva el banner informativo y se despliegan los controles multimedia nativos del reproductor.
+   * **Resiliencia ante Micro-Cortes HLS (Seamless Auto-Reconnect)**: Ante caídas transitorias de paquetes o timeouts HLS (`ERROR_CODE_IO_UNSPECIFIED`), está prohibido marcar la señal como caída al primer fallo. El reproductor debe ejecutar auto-reintentos silenciosos y absorción por búfer (`DefaultLoadControl`) antes de declarar un canal caído.
 6. **Resiliencia, Actualización OTA y Botones de Cabecera**:
    * Etiqueta de versión visible en cabecera junto a la fecha (`tvAppVersion`).
    * Botón de actualización inteligente: indica `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` abriendo el diálogo OTA si hay una versión superior.
