@@ -241,9 +241,9 @@ class MainActivity : AppCompatActivity() {
             if (hasFocus) {
                 val update = pendingUpdate
                 if (update != null) {
-                    tvHeaderButtonHint.text = "📲 Actualización de Software: Nueva versión v${update.versionName} lista para instalar"
+                    tvHeaderButtonHint.text = "Nueva versión v${update.versionName} lista para instalar"
                 } else {
-                    tvHeaderButtonHint.text = "📲 Actualización de Software: Comprueba o descarga la última versión de la app"
+                    tvHeaderButtonHint.text = "Comprueba o descarga la última versión de la app"
                 }
                 tvHeaderButtonHint.visibility = View.VISIBLE
             } else if (!tvRefresh.hasFocus()) {
@@ -254,7 +254,7 @@ class MainActivity : AppCompatActivity() {
         tvRefresh.setOnFocusChangeListener { _, hasFocus ->
             tvRefresh.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
             if (hasFocus) {
-                tvHeaderButtonHint.text = "🔄 Actualizar Partidos: Recarga la lista de eventos en vivo de hoy, canales y repeticiones"
+                tvHeaderButtonHint.text = "Recarga lista de eventos/canales"
                 tvHeaderButtonHint.visibility = View.VISIBLE
             } else if (!btnUpdate.hasFocus()) {
                 tvHeaderButtonHint.visibility = View.GONE
@@ -300,7 +300,7 @@ class MainActivity : AppCompatActivity() {
 
         btnRefresh.setOnClickListener {
             if (::tvHeaderButtonHint.isInitialized) {
-                tvHeaderButtonHint.text = "🔄 Actualizando lista de partidos desde el servidor..."
+                tvHeaderButtonHint.text = "Recargando lista de eventos/canales..."
                 tvHeaderButtonHint.visibility = View.VISIBLE
             }
             loadData(silent = false, force = true)
@@ -1305,7 +1305,7 @@ class MainActivity : AppCompatActivity() {
                 filterAndDisplayEvents(silent)
 
                 if (!silent && ::tvHeaderButtonHint.isInitialized && btnRefresh.hasFocus()) {
-                    tvHeaderButtonHint.text = "✅ Lista de partidos y canales actualizada"
+                    tvHeaderButtonHint.text = "Lista de eventos/canales actualizada"
                     tvHeaderButtonHint.visibility = View.VISIBLE
                 }
 
@@ -1549,6 +1549,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupChannelPlaylistIfApplicable(item: EventItem) {
+        if (currentCategory != "🔁 Repeticiones" && currentCategory != "⚽ Partidos del Día") {
+            val singleStreamItems = adapter.currentList.filter { it.streams.size == 1 }
+            val index = singleStreamItems.indexOfFirst { it.title == item.title && it.streams.first().url == item.streams.first().url }
+            if (index >= 0 && singleStreamItems.size > 1) {
+                val navItems = singleStreamItems.map { ev ->
+                    ChannelItem(
+                        title = ev.title,
+                        subtitle = ev.subtitle.ifEmpty { ev.category },
+                        stream = ev.streams.first(),
+                        imageUrl = ev.imageUrl
+                    )
+                }
+                ChannelNavigationManager.setPlaylist(navItems, index)
+                return
+            }
+        }
+        ChannelNavigationManager.clear()
+    }
+
     private fun handleEventClick(item: EventItem) {
         if (item.streams.isEmpty()) return
 
@@ -1559,8 +1579,10 @@ class MainActivity : AppCompatActivity() {
         )
 
         if (item.streams.size == 1) {
-            playStream(item.streams.first())
+            setupChannelPlaylistIfApplicable(item)
+            playStream(item.streams.first(), item)
         } else {
+            ChannelNavigationManager.clear()
             showStreamPickerDialog(item)
         }
     }
@@ -1631,7 +1653,7 @@ class MainActivity : AppCompatActivity() {
 
                 setOnClickListener {
                     dialog.dismiss()
-                    playStream(stream)
+                    playStream(stream, item)
                 }
             }
             container.addView(btn)
@@ -1669,7 +1691,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun playStream(stream: StreamOption) {
+    private fun playStream(stream: StreamOption, parentItem: EventItem? = null) {
         progressBar.visibility = View.VISIBLE
 
         lifecycleScope.launch {
@@ -1677,18 +1699,21 @@ class MainActivity : AppCompatActivity() {
                 val resolved = ApiClient.resolveStreamUrl(stream)
                 progressBar.visibility = View.GONE
 
+                val displayTitle = parentItem?.title ?: stream.title
                 SupabaseLogger.info(
                     "play_stream",
-                    "Abriendo reproducción: ${stream.title}",
+                    "Abriendo reproducción: $displayTitle",
                     mapOf("resolved_url" to resolved.url, "type" to resolved.type, "original_type" to stream.type)
                 )
 
                 if (resolved.type.equals("exo", ignoreCase = true) || resolved.url.contains(".m3u8") || resolved.url.contains(".mpd")) {
                     val intent = Intent(this@MainActivity, PlayerActivity::class.java).apply {
                         putExtra("EXTRA_URL", resolved.url)
-                        putExtra("EXTRA_TITLE", stream.title)
+                        putExtra("EXTRA_TITLE", displayTitle)
                         putExtra("EXTRA_DRM_LICENSE", resolved.drmLicenseUrl)
                         putExtra("EXTRA_USER_AGENT", resolved.userAgent)
+                        putExtra("EXTRA_IMAGE_URL", parentItem?.imageUrl)
+                        putExtra("EXTRA_SUBTITLE", parentItem?.subtitle)
                     }
                     startActivity(intent)
                 } else {

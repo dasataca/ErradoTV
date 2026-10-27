@@ -30,14 +30,17 @@
      * **Descarte de Sugerencias**: Si el usuario está enfocado en las sugerencias y pulsa Atrás, la lista se oculta y el foco regresa a la caja de texto.
      * **Resiliencia Touch Mode**: `rvSuggestions` y cada fila (`item_search_suggestion.xml`) implementan `android:focusableInTouchMode="true"` para garantizar que el foco sea aceptado tras cerrar el teclado en Android TV.
    * **Resiliencia de Disponibilidad**: Los partidos etiquetados como `NO DISPONIBLE` se desplazan siempre de forma automática al fondo de la lista (los canales 24/7 nunca se etiquetan como `NO DISPONIBLE`).
-5. **Reproducción de Video Nativa**:
+5. **Reproducción de Video Nativa y Zapping en TV**:
    * Prioridad absoluta a **AndroidX Media3 ExoPlayer** para reproducir flujos HLS (`.m3u8`).
    * Configuración de `DefaultTrackSelector` forzando siempre la máxima resolución (`setMaxVideoSize(3840, 2160)`) y bitrate disponible (`setForceHighestSupportedBitrate(true)`).
+   * **Zapping de Canales con D-Pad**: En categorías de canales de flujo único (`📺 Regionales`, `🏆 Deportes`, países, etc.), las teclas `◀ Izquierda` y `▶ Derecha` del control remoto ejecutan zapping directo entre canales (`ChannelNavigationManager`) reutilizando la instancia de ExoPlayer.
+   * **Banner Informativo de Canal (`llChannelBanner`)**: Al ingresar a un canal o cambiar de señal, se despliega en la parte superior el logo, nombre del canal, subtítulo y contador de posición (ej. `Canal 5 de 42  [◀ ▶ Zapping]`), auto-ocultándose a los 3.5 segundos.
+   * **Invocación Contextual con Teclas Arriba / Abajo**: Al presionar `▲ Arriba` o `▼ Abajo` durante la reproducción, se reactiva el banner informativo y se despliegan los controles multimedia nativos del reproductor.
 6. **Resiliencia, Actualización OTA y Botones de Cabecera**:
    * Etiqueta de versión visible en cabecera junto a la fecha (`tvAppVersion`).
    * Botón de actualización inteligente: indica `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` abriendo el diálogo OTA si hay una versión superior.
    * Botón `Recargar`: fuerza la descarga inmediata de la agenda deportiva y canales ignorando la caché.
-   * **Ayuda Contextual Dinámica (`tvHeaderButtonHint`)**: Al enfocar cualquiera de los dos botones superiores, se despliega debajo una etiqueta explicativa que clarifica si la acción es para actualizar el software de la app o para recargar la lista de partidos en vivo.
+   * **Ayuda Contextual Dinámica (`tvHeaderButtonHint`)**: Al enfocar cualquiera de los dos botones superiores, se despliega debajo una etiqueta explicativa (`11sp`, texto conciso sin prefijos redundantes) que clarifica la acción ("Comprueba o descarga la última versión de la app" o "Recarga lista de eventos/canales").
    * El sistema de actualización remota Over-The-Air se gestiona a través del archivo [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en el repositorio GitHub (`dasataca/ErradoTV`).
 
 ---

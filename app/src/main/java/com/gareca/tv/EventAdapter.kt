@@ -18,6 +18,9 @@ class EventAdapter(
 
     private val items = mutableListOf<EventItem>()
 
+    val currentList: List<EventItem>
+        get() = items
+
     fun submitList(newItems: List<EventItem>) {
         items.clear()
         items.addAll(newItems)

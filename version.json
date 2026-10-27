@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "21d2c5adf4168629b12ae84988d97475d296b45685f71b64366bb0b65d9614096f70cdea72672fac9213e25d9b8f25a02021ea443563ccd7124e7800c80dd9272d269ea1d1d0c9715eb4199d0311240e",
-  "latest_version_code": 49,
-  "latest_version_name": "1.7.0",
-  "release_timestamp": 1793102539624,
+  "active_key_enc": "3a635605fef2412fa050cdc2ba08b0bf07a5526e35179670c451c356ee5b30ac39597830ab8c6c439f966eebe51d30cec7483bccbbe648fa85bd8f259c43099adbc71afed3bd98e8788f9956a272be3a",
+  "latest_version_code": 50,
+  "latest_version_name": "1.7.1",
+  "release_timestamp": 1793106670794,
   "release_date": "2026-10-27",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Descripciones contextuales dinámicas bajo botones de cabecera al recibir foco (Software vs Partidos)"
+  "changelog": "GarecaTV: Zapping D-Pad izquierda/derecha entre canales, banner informativo con auto-ocultación y descripción concisa de botones superiores"
 }

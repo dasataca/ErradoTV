@@ -57,25 +57,26 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
 5. **Cabecera de Versión, Actualización Inteligente y Ayuda Contextual**:
    * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.7.0`).
    * Botón de actualización dinámico: muestra `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` si hay un release superior disponible en el repositorio.
-   * Botón `Recargar`: fuerza la descarga inmediata de la agenda deportiva y canales ignorando la caché.
-   * **Ayuda Contextual Dinámica (`tvHeaderButtonHint`)**: Al enfocar cualquiera de los dos botones superiores, se despliega debajo una etiqueta explicativa que clarifica si la acción es para actualizar el software de la app o para recargar la lista de partidos en vivo.
+    * Botón `Recargar`: fuerza la descarga inmediata de la agenda deportiva y canales ignorando la caché.
+    * **Ayuda Contextual Dinámica (`tvHeaderButtonHint`)**: Al enfocar cualquiera de los dos botones superiores, se despliega debajo una etiqueta explicativa (`11sp`, texto conciso sin prefijos redundantes) que clarifica la acción ("Comprueba o descarga la última versión de la app" o "Recarga lista de eventos/canales").
 
 ---
 
 ## 3. Arquitectura del Código Fuente (Android TV)
 
+* **`com.gareca.tv.ChannelNavigationManager`**: Administrador singleton en memoria para el playlist de canales de flujo único. Permite navegación secuencial (zapping circular con `next()` y `previous()`), conteo y formateo de posición (`Canal X de Y`) sin riesgo de desbordamiento de memoria ni excepciones IPC (`TransactionTooLargeException`).
 * **`com.gareca.tv.SearchEditText`**: Componente personalizado que hereda de `AppCompatAutoCompleteTextView` y sobreescribe `onKeyPreIme()` para capturar la tecla Atrás antes de que el teclado virtual la consuma, garantizando la transferencia de foco a sugerencias en Smart TVs.
 * **`com.gareca.tv.SuggestionAdapter`**: Adaptador para el `RecyclerView` de sugerencias (`rvSuggestions`). Implementa selectores visuales de alto contraste (`button_focus_selector.xml`), animación de escala (`1.02f`) al enfocar, callback de selección (`onItemClick`) y navegación vertical hacia la caja de texto (`onUpFromFirst`).
 * **`com.gareca.tv.api.CryptoUtils`**: Módulo criptográfico AES-256-CBC con clave blindada con máscara XOR (`getFactoryKey()`), soporte de Cifrado de Sobre (`decryptEnvelope`) para `"active_key_enc"`, almacenamiento en `SharedPreferences` y validación estricta de JSON en memoria RAM.
 * **`com.gareca.tv.network.SecureDns`**: Proveedor nativo de DNS sobre HTTPS (DoH) basado en `okhttp-dnsoverhttps` con servidores seguros de Cloudflare (`1.1.1.1`), Google (`8.8.8.8`) y conmutación automática de respaldo a DNS del sistema.
 * **`com.gareca.tv.api.ApiClient`**: Cliente HTTP basado en `OkHttpClient` y corrutinas, enrutado por `SecureDns`. Descarga, descifra y mapea `event.json`, `destacado.json` y los canales de `teveplay.net`. Extrae fechas y timestamps (`YYYY-MM-DD`) para ordenación.
 * **`com.gareca.tv.model.EventModel`**: Modelos de datos (`EventItem`, `StreamOption`, `EventStatus`). Soporta cálculo dinámico de estados (`● EN VIVO`, `POR EMPEZAR`, `PROGRAMADO`, `FINALIZADO`, `REPETICIÓN`, `NO DISPONIBLE`, `CANAL 24/7`), marcas de fecha (`rawDate`) y milisegundos (`timestamp`).
-* **`com.gareca.tv.MainActivity`**: Actividad principal Leanback. Gestiona el ciclo de vida, reloj en tiempo real (`TextClock`), control de frecuencia de refresco, buscador dinámico, botones de ordenación (`ReplaySortMode` y `GlobalSortMode`), gestión de sugerencias y navegación D-Pad.
+* **`com.gareca.tv.MainActivity`**: Actividad principal Leanback. Gestiona el ciclo de vida, reloj en tiempo real (`TextClock`), control de frecuencia de refresco, buscador dinámico, botones de ordenación (`ReplaySortMode` y `GlobalSortMode`), gestión de sugerencias, armado de playlist de canales y navegación D-Pad.
 * **`com.gareca.tv.CategoryAdapter`**: Barra de pestañas horizontal (`rvCategories`) con animación de escala (`1.06f`) y captura de evento de flecha abajo para transferir el foco al buscador o lista.
-* **`com.gareca.tv.EventAdapter`**: Adaptador para las tarjetas de partidos y canales con selector `card_selector.xml` y atenuación visual (`alpha = 0.5f`) para partidos finalizados o no disponibles.
+* **`com.gareca.tv.EventAdapter`**: Adaptador para las tarjetas de partidos y canales con selector `card_selector.xml`, propiedad `currentList` y atenuación visual (`alpha = 0.5f`) para partidos finalizados o no disponibles.
 * **`com.gareca.tv.CommunityStreamManager`**: Sincronizador con la base comunitaria de Supabase (`public.errado_community_streams`), permitiendo deduplicar enlaces caídos y compartirlos entre dispositivos.
-* **`com.gareca.tv.telemetry.SupabaseLogger`**: Telemetría en segundo plano para auditoría de inicio, clics y errores de reproducción.
-* **`com.gareca.tv.PlayerActivity`**: Reproductor nativo AndroidX Media3 ExoPlayer con `OkHttpDataSource.Factory` conectado a `SecureDns` en pantalla completa con soporte de mandos a distancia.
+* **`com.gareca.tv.telemetry.SupabaseLogger`**: Telemetría en segundo plano para auditoría de inicio, clics, zapping y errores de reproducción.
+* **`com.gareca.tv.PlayerActivity`**: Reproductor nativo AndroidX Media3 ExoPlayer con `OkHttpDataSource.Factory` conectado a `SecureDns`. Soporta zapping directo con `◀` y `▶` del D-Pad, banner flotante con logo y posición auto-ocultable a los 3.5s (`llChannelBanner`), y reapertura de controles multimedia y banner mediante `▲` y `▼`.
 * **`com.gareca.tv.WebStreamActivity`**: Visor WebView seguro con bloqueo de publicidad para señales externas web.
 
 ---

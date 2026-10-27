@@ -2,6 +2,20 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.7.1] - 2026-10-27
+### Añadido y Optimizado
+- **Zapping de Canales con Control Remoto (D-Pad Izquierda / Derecha)**:
+  - **Navegación Fluida entre Señales de un Solo Flujo**: En pestañas de canales (`📺 Regionales`, `🏆 Deportes`, países y señales 24/7), se activó el cambio secuencial directo de canal mediante las teclas `◀ Izquierda` y `▶ Derecha` del control remoto en `PlayerActivity`, sin necesidad de salir al menú principal.
+  - **Gestor Global de Navegación (`ChannelNavigationManager`)**: Administrador seguro en memoria que preserva la lista de canales activos y la posición actual, evitando sobrecargas de IPC (`TransactionTooLargeException`).
+  - **Reutilización Eficiente de ExoPlayer**: El cambio de señal detiene y reaprovisiona el reproductor reutilizando la instancia nativa, evitando parpadeos de pantalla y acelerando la conexión.
+- **Banner Informativo de Canal con Auto-Ocultación y Control Multimedia Contextual**:
+  - **Banner Superior Inteligente (`llChannelBanner`)**: Al ingresar a un canal o realizar zapping, se despliega en la parte superior el logo del canal, el nombre oficial en alta legibilidad, información adicional y el contador de posición (ej. `Canal 5 de 42  [◀ ▶ Zapping]`), desvaneciéndose automáticamente tras 3.5 segundos.
+  - **Invocación de Controles con Teclas Arriba / Abajo**: Al presionar `▲ Arriba` o `▼ Abajo` en el control remoto durante la transmisión, se reaparece de inmediato el banner con el nombre del canal junto con la barra de controles multimedia de ExoPlayer.
+- **Ajuste Ergonómico en Descripciones de Cabecera**:
+  - **Texto Más Compacto y Conciso**: Se redujo el tamaño de fuente a `11sp` en `tvHeaderButtonHint`.
+  - Se retiró el prefijo redundante `Actualización de Software:` del botón `Actualizado` (mostrando directamente `Comprueba o descarga la última versión de la app` o `Nueva versión vX.X.X lista para instalar`).
+  - Se cambió la descripción de `Recargar` a `Recarga lista de eventos/canales`.
+
 ## [1.7.0] - 2026-10-27
 ### Añadido y Optimizado
 - **Descripciones Explicativas Dinámicas en Botones de Cabecera al Recibir Foco**:
