@@ -46,6 +46,7 @@ class PlayerActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var hideBadgeRunnable: Runnable? = null
     private var hideBannerRunnable: Runnable? = null
+    private var hideControlsRunnable: Runnable? = null
     private var watchdogRunnable: Runnable? = null
 
     private var videoFrameReceived = false
@@ -64,6 +65,12 @@ class PlayerActivity : AppCompatActivity() {
         playerBuffering = findViewById(R.id.playerBuffering)
         playerError = findViewById(R.id.playerError)
         tvResolutionBadge = findViewById(R.id.tvResolutionBadge)
+
+        // Configurar PlayerView para que no mantenga los controles fijos en pantalla
+        playerView.controllerAutoShow = false
+        playerView.controllerHideOnTouch = true
+        playerView.controllerShowTimeoutMs = 3500
+        playerView.hideController()
 
         llChannelBanner = findViewById(R.id.llChannelBanner)
         ivChannelLogo = findViewById(R.id.ivChannelLogo)
@@ -362,6 +369,10 @@ class PlayerActivity : AppCompatActivity() {
         // Feedback visual inmediato en la TV con el nuevo canal
         showChannelBanner()
 
+        // Ocultar controles multimedia inmediatamente al hacer zapping para que no queden fijos
+        playerView.hideController()
+        hideControlsRunnable?.let { handler.removeCallbacks(it) }
+
         // Detener stream anterior y mostrar buffering
         player?.stop()
         player?.clearMediaItems()
@@ -391,6 +402,18 @@ class PlayerActivity : AppCompatActivity() {
                 playerError.text = "⚠️ No se pudo conectar a este canal.\nPresiona ◀ o ▶ para sintonizar otra señal."
             }
         }
+    }
+
+    private fun showControlsTemporarily() {
+        playerView.showController()
+        hideControlsRunnable?.let { handler.removeCallbacks(it) }
+        val r = Runnable {
+            if (!isFinishing && !isDestroyed) {
+                playerView.hideController()
+            }
+        }
+        hideControlsRunnable = r
+        handler.postDelayed(r, 3500)
     }
 
     private fun getQualityLabel(height: Int): String {
@@ -434,7 +457,7 @@ class PlayerActivity : AppCompatActivity() {
                 KeyEvent.KEYCODE_DPAD_UP,
                 KeyEvent.KEYCODE_DPAD_DOWN -> {
                     showChannelBanner()
-                    playerView.showController()
+                    showControlsTemporarily()
                     if (currentResolutionText.isNotEmpty()) {
                         showResolutionBadge(currentResolutionText)
                     }
@@ -442,6 +465,7 @@ class PlayerActivity : AppCompatActivity() {
                 }
                 KeyEvent.KEYCODE_INFO -> {
                     showChannelBanner()
+                    showControlsTemporarily()
                     if (currentResolutionText.isNotEmpty()) {
                         showResolutionBadge(currentResolutionText)
                     }
@@ -472,6 +496,7 @@ class PlayerActivity : AppCompatActivity() {
         super.onDestroy()
         hideBadgeRunnable?.let { handler.removeCallbacks(it) }
         hideBannerRunnable?.let { handler.removeCallbacks(it) }
+        hideControlsRunnable?.let { handler.removeCallbacks(it) }
         watchdogRunnable?.let { handler.removeCallbacks(it) }
         zapJob?.cancel()
         player?.release()

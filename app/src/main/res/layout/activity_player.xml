@@ -11,7 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:use_controller="true"
-        app:show_timeout="4000"
+        app:show_timeout="3500"
+        app:auto_show="false"
         app:resize_mode="fit" />
 
     <ProgressBar
@@ -45,6 +46,8 @@
         android:paddingEnd="28dp"
         android:paddingTop="16dp"
         android:paddingBottom="16dp"
+        android:focusable="false"
+        android:clickable="false"
         android:visibility="gone"
         android:elevation="15dp">
 

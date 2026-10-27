@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.7.2] - 2026-10-27
+### Corregido y Optimizado
+- **Corrección de Ocultación de Controles Multimedia y Banner en TV**:
+  - **Auto-Ocultación Forzada de Controles**: En Android TV / Leanback, cuando los controles multimedia de ExoPlayer tomaban el foco, el reproductor suspendía su temporizador interno de desvanecimiento, provocando que la barra multimedia no desapareciera tras sintonizar un canal. Se implementó `showControlsTemporarily()` con un temporizador programático estricto (`3500ms`) que ejecuta `playerView.hideController()` de forma infalible.
+  - **Desactivación de Auto-Show en Zapping**: Se configuró `app:auto_show="false"` y `playerView.controllerAutoShow = false`. Al cambiar de canal con `◀` o `▶`, los controles multimedia se ocultan de inmediato para evitar que bloqueen la vista del video, mostrando únicamente el banner de nombre del canal que se desvanece a los 3.5 segundos.
+  - **Aislamiento de Foco en Banner**: Se marcaron `focusable="false"` y `clickable="false"` en `llChannelBanner` para asegurar que el control remoto nunca quede atrapado en el banner superior.
+
 ## [1.7.1] - 2026-10-27
 ### Añadido y Optimizado
 - **Zapping de Canales con Control Remoto (D-Pad Izquierda / Derecha)**:
