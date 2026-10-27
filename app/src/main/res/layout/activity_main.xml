@@ -104,55 +104,84 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
+        <!-- Contenedor vertical para Botones de Cabecera y Descripción al Enfocar -->
         <LinearLayout
-            android:id="@+id/btnUpdate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:focusable="true"
-            android:clickable="true"
-            android:paddingStart="14dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:layout_marginEnd="12dp"
-            android:background="@drawable/button_focus_selector">
+            android:orientation="vertical"
+            android:gravity="end">
 
-            <ImageView
-                android:id="@+id/ivUpdateIcon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_cloud_download"
-                android:duplicateParentState="true"
-                app:tint="@color/button_text_selector"
-                android:contentDescription="Actualizar APK" />
-
-            <TextView
-                android:id="@+id/tvUpdateLabel"
+            <!-- Fila de Botones -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Actualizar"
-                android:textSize="16sp"
-                android:duplicateParentState="true"
-                android:textColor="@color/button_text_selector"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/btnRefresh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Recargar"
-            android:textSize="16sp"
-            android:textColor="@color/button_text_selector"
-            android:focusable="true"
-            android:clickable="true"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:background="@drawable/button_focus_selector" />
+                <LinearLayout
+                    android:id="@+id/btnUpdate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:focusable="true"
+                    android:clickable="true"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/button_focus_selector">
+
+                    <ImageView
+                        android:id="@+id/ivUpdateIcon"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_cloud_download"
+                        android:duplicateParentState="true"
+                        app:tint="@color/button_text_selector"
+                        android:contentDescription="Actualizar APK" />
+
+                    <TextView
+                        android:id="@+id/tvUpdateLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Actualizado"
+                        android:textSize="16sp"
+                        android:duplicateParentState="true"
+                        android:textColor="@color/button_text_selector"
+                        android:layout_marginStart="8dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/btnRefresh"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Recargar"
+                    android:textSize="16sp"
+                    android:textColor="@color/button_text_selector"
+                    android:focusable="true"
+                    android:clickable="true"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:background="@drawable/button_focus_selector" />
+            </LinearLayout>
+
+            <!-- Detalle explicativo contextual que aparece debajo de los botones al recibir el foco -->
+            <TextView
+                android:id="@+id/tvHeaderButtonHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginEnd="2dp"
+                android:textSize="12sp"
+                android:textColor="@color/accent"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:text="" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Category / Country Tabs for TV -->

@@ -54,6 +54,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvTimeZone: TextView
     private lateinit var tvAppVersion: TextView
     private lateinit var tvUpdateLabel: TextView
+    private lateinit var tvHeaderButtonHint: TextView
     private lateinit var btnRefresh: View
     private lateinit var btnUpdate: View
     private var pendingUpdate: com.gareca.tv.updater.UpdateInfo? = null
@@ -227,6 +228,7 @@ class MainActivity : AppCompatActivity() {
         setupGlobalSearchControls()
 
         tvUpdateLabel = findViewById(R.id.tvUpdateLabel)
+        tvHeaderButtonHint = findViewById(R.id.tvHeaderButtonHint)
         val ivUpdateIcon = findViewById<ImageView>(R.id.ivUpdateIcon)
         val tvRefresh = findViewById<TextView>(R.id.btnRefresh)
         val currentVersion = AppUpdater.getCurrentVersionName(this)
@@ -236,10 +238,27 @@ class MainActivity : AppCompatActivity() {
         btnUpdate.setOnFocusChangeListener { _, hasFocus ->
             tvUpdateLabel.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
             ivUpdateIcon.setColorFilter(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+            if (hasFocus) {
+                val update = pendingUpdate
+                if (update != null) {
+                    tvHeaderButtonHint.text = "📲 Actualización de Software: Nueva versión v${update.versionName} lista para instalar"
+                } else {
+                    tvHeaderButtonHint.text = "📲 Actualización de Software: Comprueba o descarga la última versión de la app"
+                }
+                tvHeaderButtonHint.visibility = View.VISIBLE
+            } else if (!tvRefresh.hasFocus()) {
+                tvHeaderButtonHint.visibility = View.GONE
+            }
         }
 
         tvRefresh.setOnFocusChangeListener { _, hasFocus ->
             tvRefresh.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+            if (hasFocus) {
+                tvHeaderButtonHint.text = "🔄 Actualizar Partidos: Recarga la lista de eventos en vivo de hoy, canales y repeticiones"
+                tvHeaderButtonHint.visibility = View.VISIBLE
+            } else if (!btnUpdate.hasFocus()) {
+                tvHeaderButtonHint.visibility = View.GONE
+            }
         }
 
         rvCategories.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
@@ -280,6 +299,10 @@ class MainActivity : AppCompatActivity() {
         SupabaseLogger.info("app_start", "GarecaTV iniciado en Smart TV")
 
         btnRefresh.setOnClickListener {
+            if (::tvHeaderButtonHint.isInitialized) {
+                tvHeaderButtonHint.text = "🔄 Actualizando lista de partidos desde el servidor..."
+                tvHeaderButtonHint.visibility = View.VISIBLE
+            }
             loadData(silent = false, force = true)
         }
 
@@ -1280,6 +1303,11 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 filterAndDisplayEvents(silent)
+
+                if (!silent && ::tvHeaderButtonHint.isInitialized && btnRefresh.hasFocus()) {
+                    tvHeaderButtonHint.text = "✅ Lista de partidos y canales actualizada"
+                    tvHeaderButtonHint.visibility = View.VISIBLE
+                }
 
                 // Verificación en segundo plano sin molestar si no hay actualización
                 checkAndPromptUpdate(userInitiated = false)

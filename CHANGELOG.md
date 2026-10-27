@@ -2,6 +2,15 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.7.0] - 2026-10-27
+### Añadido y Optimizado
+- **Descripciones Explicativas Dinámicas en Botones de Cabecera al Recibir Foco**:
+  - **Claridad de Software vs. Partidos**: Se implementó una etiqueta de ayuda contextual (`tvHeaderButtonHint`) debajo de los botones superiores que se activa únicamente cuando reciben el foco del control remoto, manteniendo los textos limpios en reposo:
+    - Al enfocar el botón **`Actualizado` / `Actualizar`**: Muestra `📲 Actualización de Software: Comprueba o descarga la última versión de la app`.
+    - Al enfocar el botón **`Recargar`**: Muestra `🔄 Actualizar Partidos: Recarga la lista de eventos en vivo de hoy, canales y repeticiones`.
+  - **Confirmación Visual al Recargar**: Al presionar el botón `Recargar`, se indica `🔄 Actualizando lista de partidos desde el servidor...` y al culminar la descarga se confirma con `✅ Lista de partidos y canales actualizada`.
+  - **Sin Desplazamientos Bruscos**: La descripción se oculta automáticamente al mover el foco hacia las categorías o lista de eventos, preservando el diseño Leanback ergonómico.
+
 ## [1.6.9] - 2026-10-26
 ### Corregido y Optimizado
 - **Filtrado Inmediato y Foco Directo en Resultados al Seleccionar Sugerencia**:

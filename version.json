@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "1c86fec406373105988e3a8889c6566c8b1401f76b3d420cddbe54c542a95d76ce3411caae7209b0a40a8444644eb3208a5f480c42a9b356ba89750c14e38c6c6dc1ebe2d7ab99d7011c526f75e6f4e4",
-  "latest_version_code": 48,
-  "latest_version_name": "1.6.9",
-  "release_timestamp": 1793056545213,
-  "release_date": "2026-10-26",
+  "active_key_enc": "21d2c5adf4168629b12ae84988d97475d296b45685f71b64366bb0b65d9614096f70cdea72672fac9213e25d9b8f25a02021ea443563ccd7124e7800c80dd9272d269ea1d1d0c9715eb4199d0311240e",
+  "latest_version_code": 49,
+  "latest_version_name": "1.7.0",
+  "release_timestamp": 1793102539624,
+  "release_date": "2026-10-27",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Filtrado inmediato y foco directo a los resultados al seleccionar una sugerencia"
+  "changelog": "GarecaTV: Descripciones contextuales dinámicas bajo botones de cabecera al recibir foco (Software vs Partidos)"
 }

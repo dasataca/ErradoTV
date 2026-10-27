@@ -54,9 +54,11 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
      4. Al pulsar **Atrás (BACK)** estando en la lista de sugerencias sin elegir nada, la lista se oculta y el foco regresa a la caja de búsqueda.
      5. Al pulsar **Arriba (DPAD_UP)** desde la primera sugerencia, el foco regresa a la caja de texto (`onUpFromFirst`).
      6. Al pulsar **Derecha (DPAD_RIGHT)** desde la caja de texto (cuando hay texto), el foco va al botón interno **"✕"**.
-5. **Cabecera de Versión y Actualización Inteligente**:
-   * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.6.9`).
+5. **Cabecera de Versión, Actualización Inteligente y Ayuda Contextual**:
+   * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.7.0`).
    * Botón de actualización dinámico: muestra `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` si hay un release superior disponible en el repositorio.
+   * Botón `Recargar`: fuerza la descarga inmediata de la agenda deportiva y canales ignorando la caché.
+   * **Ayuda Contextual Dinámica (`tvHeaderButtonHint`)**: Al enfocar cualquiera de los dos botones superiores, se despliega debajo una etiqueta explicativa que clarifica si la acción es para actualizar el software de la app o para recargar la lista de partidos en vivo.
 
 ---
 

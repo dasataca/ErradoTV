@@ -33,9 +33,11 @@
 5. **Reproducción de Video Nativa**:
    * Prioridad absoluta a **AndroidX Media3 ExoPlayer** para reproducir flujos HLS (`.m3u8`).
    * Configuración de `DefaultTrackSelector` forzando siempre la máxima resolución (`setMaxVideoSize(3840, 2160)`) y bitrate disponible (`setForceHighestSupportedBitrate(true)`).
-6. **Resiliencia y Actualización OTA Autónoma**:
+6. **Resiliencia, Actualización OTA y Botones de Cabecera**:
    * Etiqueta de versión visible en cabecera junto a la fecha (`tvAppVersion`).
    * Botón de actualización inteligente: indica `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` abriendo el diálogo OTA si hay una versión superior.
+   * Botón `Recargar`: fuerza la descarga inmediata de la agenda deportiva y canales ignorando la caché.
+   * **Ayuda Contextual Dinámica (`tvHeaderButtonHint`)**: Al enfocar cualquiera de los dos botones superiores, se despliega debajo una etiqueta explicativa que clarifica si la acción es para actualizar el software de la app o para recargar la lista de partidos en vivo.
    * El sistema de actualización remota Over-The-Air se gestiona a través del archivo [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en el repositorio GitHub (`dasataca/ErradoTV`).
 
 ---
