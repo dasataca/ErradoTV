@@ -151,19 +151,26 @@ Toda IA o desarrollador que trabaje en este repositorio debe cumplir estrictamen
    * **Televisión Mundial Abierta**: Reservada para **Televisión Abierta y Temática Mundial** (organizado por países sin discriminación de idioma, noticias, cine/series, infantil, música, etc.).
    * **Prohibición de Nombres Internos**: Queda terminantemente prohibido mostrar nombres de proveedores técnicos o internos (como "CXTv") en la interfaz de usuario, botones, hints de búsqueda, diálogos o changelogs. Para el usuario es simplemente "📺 TELEVISIÓN MUNDIAL".
 
-3. **Arquitectura Master-Detail (Estilo MagisTV / OTT Player) para TV Mundial**:
+3. **Arquitectura Master-Detail de 3 Columnas (Estilo MagisTV / OTT Player) para TV Mundial**:
    * En **⚽ Deportes y Partidos**: Se mantiene la barra horizontal superior de categorías con eventos a pantalla completa.
    * En **📺 Televisión Mundial**:
      * **Buscador Superior**: Con botón de micrófono por voz, caja de búsqueda unificada y botón interno "✕".
-     * **Columna Lateral Izquierda (Sidebar vertical, ancho 250dp)**: Listado vertical de categorías temáticas y países (`SidebarCategoryAdapter`) con estados visuales activos/inactivos (`mode_button_selector.xml`).
-     * **Panel Principal Derecho**: Listado de canales correspondientes a la categoría seleccionada a la izquierda (`rvEvents`).
-     * **Navegación D-Pad Fluida y Retención de Foco**:
-       - `▲` / `▼` en la columna izquierda: Cambia de categoría actualizando en tiempo real los canales de la derecha.
-       - **Selección de Categoría (`OK`, `Center`, Clic de Mouse o `▶ Derecha`)**: Desplaza y transfiere inmediatamente el foco al **primer canal de la lista de la derecha** (`focusFirstEventItem`).
-       - `◀ Izquierda` desde el panel derecho (o retroceso / flecha izquierda del mouse/air-mouse): Regresa el foco de forma exacta y persistente al **grupo o categoría consultado** en la columna izquierda (`focusSelectedSidebarCategory`), impidiendo que el foco se pierda o reinicie en la posición 0.
-       - `▲ Arriba` desde el primer elemento de la columna izquierda: Salta a la caja de búsqueda.
+     * **Columna 1 (Menú Principal / Rail Ligero, ancho 200dp)**: Listado vertical de diseño ligero (flat navigation rail) con categorías temáticas (`Cine`, `Cultura`, `Deportes`, `Noticias`, `Variedades`, etc.), `⭐ Todos los Canales` y una **única opción unificada: `🌍 Países`**. Cada opción muestra su contador numérico tipo pastilla (`sidebar_count_badge.xml`).
+     * **Columna 2 (Subcolumna de Países, ancho 200dp)**: Se despliega automáticamente al enfocarse o seleccionar `🌍 Países`. Muestra todos los países ordenados alfabéticamente A-Z (`dynamicCxtvCountries`) con su bandera y conteo individual de canales.
+     * **Panel 3 (Lista de Canales)**: Despliega los canales correspondientes a la categoría o país activo (`rvEvents`).
+     * **Indicador Ordinal de Posición en Tiempo Real (`tvChannelPositionIndicator`)**:
+       - Encabezado superior interactivo (*"Canal X de Y • Subgrupo/País"*).
+       - Asignación ordinal interna a cada canal (1 a N).
+       - Actualización en tiempo real conforme el usuario se desplaza con el D-Pad (`onItemFocus` en `EventAdapter`).
+     * **Navegación D-Pad Fluida, Retención y Retorno de Foco**:
+       - `▲` / `▼` en Columna 1 o Columna 2: Cambia de categoría o país actualizando en tiempo real la vista.
+       - En Columna 1 sobre `🌍 Países`: `OK`, `Center`, Clic de Mouse o `▶ Derecha` transfiere el foco a la **Columna 2 de Países** (`focusSelectedCountry`).
+       - En Columna 1 sobre categorías temáticas o en Columna 2 sobre cualquier país: `OK`, `Center`, Clic o `▶ Derecha` transfiere el foco al **primer canal de la lista de la derecha** (`focusFirstEventItem`).
+       - `◀ Izquierda` (o tecla Atrás) desde el panel de canales: Si se está en un país, regresa el foco al **país consultado en Columna 2**; si se está en una categoría temática, regresa a la **categoría en Columna 1**.
+       - `◀ Izquierda` (o tecla Atrás) desde la Columna 2: Regresa el foco a la opción `🌍 Países` en la Columna 1.
+       - `▲ Arriba` desde el primer elemento de las columnas laterales: Salta a la caja de búsqueda.
      * **Agrupamiento Alfabético Interno por Categoría y Nombre (A-Z)**:
-       - Los canales de cada selección (ej. Estados Unidos, España, etc.) se agrupan internamente por su categoría/agrupador temático (`Cine`, `Cultura`, `Deportes`, `Infantil`, `Música`, `Noticias`, `Público`, `Variedades`, etc.) en estricto orden alfabético A-Z.
+       - Los canales de cada selección se agrupan internamente por su categoría/agrupador temático en estricto orden alfabético A-Z.
        - Dentro de cada grupo temático, los canales se ordenan alfabéticamente por su nombre de la A a la Z.
        - En Deportes (`🌐 Todos los Canales` y señales 24/7), se aplica idéntica regla de agrupación por categoría A-Z y nombre A-Z.
        - Es un ordenamiento 100% interno en la lista de items, sin alterar la disposición ni crear columnas extra en la interfaz.

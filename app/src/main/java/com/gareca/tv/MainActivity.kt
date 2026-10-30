@@ -130,6 +130,10 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var rvSidebarCategories: RecyclerView
     private lateinit var sidebarCategoryAdapter: SidebarCategoryAdapter
+    private lateinit var rvSidebarCountries: RecyclerView
+    private lateinit var sidebarCountryAdapter: SidebarCategoryAdapter
+    private lateinit var tvChannelPositionIndicator: TextView
+    private var selectedCountry = ""
 
     private val categoryList = listOf(
         "🔍 Buscar Todo",
@@ -324,19 +328,35 @@ class MainActivity : AppCompatActivity() {
         rvSidebarCategories = findViewById(R.id.rvSidebarCategories)
         rvSidebarCategories.layoutManager = LinearLayoutManager(this)
         sidebarCategoryAdapter = SidebarCategoryAdapter(
-            initialCategories = emptyList(),
+            initialItems = emptyList(),
             selectedCategory = currentCategory,
             onCategorySelected = { selectedCat ->
                 currentCategory = selectedCat
                 if (::rvSuggestions.isInitialized) {
                     rvSuggestions.visibility = View.GONE
                 }
+                if (selectedCat == "🌍 Países") {
+                    rvSidebarCountries.visibility = View.VISIBLE
+                    val countryItems = buildCountryNavItems()
+                    if (selectedCountry.isEmpty() && countryItems.isNotEmpty()) {
+                        selectedCountry = countryItems[0].title
+                    }
+                    sidebarCountryAdapter.setItems(countryItems, selectedCountry)
+                } else {
+                    rvSidebarCountries.visibility = View.GONE
+                }
                 filterAndDisplayEvents(silent = false)
             },
             onRightPressed = {
-                focusFirstEventItem()
-                true
+                if (currentCategory == "🌍 Países" && rvSidebarCountries.visibility == View.VISIBLE) {
+                    focusSelectedCountry()
+                    true
+                } else {
+                    focusFirstEventItem()
+                    true
+                }
             },
+            onLeftPressed = null,
             onUpFromFirst = {
                 if (globalSearchContainer.visibility == View.VISIBLE) {
                     etGlobalSearch.requestFocus()
@@ -349,20 +369,61 @@ class MainActivity : AppCompatActivity() {
         )
         rvSidebarCategories.adapter = sidebarCategoryAdapter
 
+        rvSidebarCountries = findViewById(R.id.rvSidebarCountries)
+        rvSidebarCountries.layoutManager = LinearLayoutManager(this)
+        sidebarCountryAdapter = SidebarCategoryAdapter(
+            initialItems = emptyList(),
+            selectedCategory = selectedCountry,
+            onCategorySelected = { country ->
+                selectedCountry = country
+                filterAndDisplayEvents(silent = false)
+            },
+            onRightPressed = {
+                focusFirstEventItem()
+                true
+            },
+            onLeftPressed = {
+                focusSelectedSidebarCategory()
+                true
+            },
+            onUpFromFirst = {
+                if (globalSearchContainer.visibility == View.VISIBLE) {
+                    etGlobalSearch.requestFocus()
+                    true
+                } else {
+                    btnModeWorldTv.requestFocus()
+                    true
+                }
+            }
+        )
+        rvSidebarCountries.adapter = sidebarCountryAdapter
+
+        tvChannelPositionIndicator = findViewById(R.id.tvChannelPositionIndicator)
+
         adapter = EventAdapter(
             onItemClick = { item ->
                 handleEventClick(item)
             },
             onLeftPressed = {
-                if (currentAppMode == AppMode.WORLD_TV && rvSidebarCategories.visibility == View.VISIBLE) {
-                    focusSelectedSidebarCategory()
-                    true
+                if (currentAppMode == AppMode.WORLD_TV) {
+                    if (currentCategory == "🌍 Países" && rvSidebarCountries.visibility == View.VISIBLE) {
+                        focusSelectedCountry()
+                        true
+                    } else if (rvSidebarCategories.visibility == View.VISIBLE) {
+                        focusSelectedSidebarCategory()
+                        true
+                    } else {
+                        false
+                    }
                 } else if (currentAppMode == AppMode.SPORTS && rvCategories.visibility == View.VISIBLE) {
                     focusSelectedSportsCategory()
                     true
                 } else {
                     false
                 }
+            },
+            onItemFocus = { pos, total ->
+                updateChannelPositionIndicator(pos, total)
             }
         )
 
@@ -1113,15 +1174,27 @@ class MainActivity : AppCompatActivity() {
         if (mode == AppMode.SPORTS) {
             rvCategories.visibility = View.VISIBLE
             rvSidebarCategories.visibility = View.GONE
+            rvSidebarCountries.visibility = View.GONE
+            tvChannelPositionIndicator.visibility = View.GONE
             currentCategory = "⚽ Partidos del Día"
             categoryAdapter.setCategories(categoryList, currentCategory)
             rvCategories.scrollToPosition(1)
         } else {
             rvCategories.visibility = View.GONE
             rvSidebarCategories.visibility = View.VISIBLE
-            val tvTabs = buildWorldTvTabs()
-            currentCategory = if (tvTabs.isNotEmpty()) tvTabs[0] else "⭐ Todos los Canales"
-            sidebarCategoryAdapter.setCategories(tvTabs, currentCategory)
+            val navItems = buildCategoryNavItems()
+            currentCategory = if (navItems.isNotEmpty()) navItems[0].title else "⭐ Todos los Canales"
+            sidebarCategoryAdapter.setItems(navItems, currentCategory)
+            if (currentCategory == "🌍 Países") {
+                rvSidebarCountries.visibility = View.VISIBLE
+                val countryItems = buildCountryNavItems()
+                if (selectedCountry.isEmpty() && countryItems.isNotEmpty()) {
+                    selectedCountry = countryItems[0].title
+                }
+                sidebarCountryAdapter.setItems(countryItems, selectedCountry)
+            } else {
+                rvSidebarCountries.visibility = View.GONE
+            }
             rvSidebarCategories.scrollToPosition(0)
         }
 
@@ -1135,16 +1208,29 @@ class MainActivity : AppCompatActivity() {
         btnModeWorldTv.isSelected = !isSports
     }
 
-    private fun buildWorldTvTabs(): List<String> {
-        val tabs = mutableListOf<String>()
-        tabs.add("⭐ Todos los Canales")
-        for (cat in dynamicCxtvCategories) {
-            tabs.add(getCategoryTabLabel(cat))
+    private fun buildCategoryNavItems(): List<NavItem> {
+        val items = mutableListOf<NavItem>()
+        items.add(NavItem("⭐ Todos los Canales", cachedCxtvChannels.size))
+        val sortedCategories = dynamicCxtvCategories.sortedWith(String.CASE_INSENSITIVE_ORDER)
+        for (cat in sortedCategories) {
+            val label = getCategoryTabLabel(cat)
+            val count = cachedCxtvChannels.count { it.category.equals(cat, ignoreCase = true) }
+            items.add(NavItem(label, count))
         }
-        for (country in dynamicCxtvCountries) {
-            tabs.add(getCountryTabLabel(country))
+        val totalCountryChannels = cachedCxtvChannels.count { !it.country.isNullOrBlank() }
+        items.add(NavItem("🌍 Países", totalCountryChannels))
+        return items
+    }
+
+    private fun buildCountryNavItems(): List<NavItem> {
+        val items = mutableListOf<NavItem>()
+        val sortedCountries = dynamicCxtvCountries.sortedWith(String.CASE_INSENSITIVE_ORDER)
+        for (country in sortedCountries) {
+            val label = getCountryTabLabel(country)
+            val count = cachedCxtvChannels.count { it.country.equals(country, ignoreCase = true) }
+            items.add(NavItem(label, count))
         }
-        return tabs
+        return items
     }
 
     private fun getCategoryTabLabel(category: String): String {
@@ -1232,16 +1318,57 @@ class MainActivity : AppCompatActivity() {
         }
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (rvEvents.hasFocus()) {
-                if (currentAppMode == AppMode.WORLD_TV && rvSidebarCategories.visibility == View.VISIBLE) {
-                    focusSelectedSidebarCategory()
-                    return true
+                if (currentAppMode == AppMode.WORLD_TV) {
+                    if (currentCategory == "🌍 Países" && rvSidebarCountries.visibility == View.VISIBLE) {
+                        focusSelectedCountry()
+                        return true
+                    } else if (rvSidebarCategories.visibility == View.VISIBLE) {
+                        focusSelectedSidebarCategory()
+                        return true
+                    }
                 } else if (currentAppMode == AppMode.SPORTS && rvCategories.visibility == View.VISIBLE) {
                     focusSelectedSportsCategory()
                     return true
                 }
+            } else if (::rvSidebarCountries.isInitialized && rvSidebarCountries.hasFocus()) {
+                focusSelectedSidebarCategory()
+                return true
             }
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    private fun focusSelectedCountry() {
+        val pos = sidebarCountryAdapter.getSelectedPosition()
+        val targetPos = if (pos >= 0) pos else 0
+        rvSidebarCountries.scrollToPosition(targetPos)
+        rvSidebarCountries.post {
+            val vh = rvSidebarCountries.findViewHolderForAdapterPosition(targetPos)
+            val view = vh?.itemView ?: rvSidebarCountries.layoutManager?.findViewByPosition(targetPos)
+            if (view != null) {
+                view.requestFocus()
+            } else {
+                rvSidebarCountries.postDelayed({
+                    val retryView = rvSidebarCountries.findViewHolderForAdapterPosition(targetPos)?.itemView
+                        ?: rvSidebarCountries.layoutManager?.findViewByPosition(targetPos)
+                    retryView?.requestFocus() ?: rvSidebarCountries.requestFocus()
+                }, 50)
+            }
+        }
+    }
+
+    private fun updateChannelPositionIndicator(pos: Int, total: Int) {
+        if (currentAppMode != AppMode.WORLD_TV || total <= 0) {
+            tvChannelPositionIndicator.visibility = View.GONE
+            return
+        }
+        val groupLabel = if (currentCategory == "🌍 Países") {
+            selectedCountry.ifEmpty { "Países" }
+        } else {
+            currentCategory
+        }
+        tvChannelPositionIndicator.text = "Canal ${pos + 1} de $total  •  $groupLabel"
+        tvChannelPositionIndicator.visibility = View.VISIBLE
     }
 
     private fun focusFirstEventItem() {
@@ -1573,8 +1700,15 @@ class MainActivity : AppCompatActivity() {
                 cachedLiveChannels = sortEventList(liveChannels)
 
                 if (currentAppMode == AppMode.WORLD_TV) {
-                    val tabs = buildWorldTvTabs()
-                    sidebarCategoryAdapter.setCategories(tabs, currentCategory)
+                    val navItems = buildCategoryNavItems()
+                    sidebarCategoryAdapter.setItems(navItems, currentCategory)
+                    if (currentCategory == "🌍 Países") {
+                        rvSidebarCountries.visibility = View.VISIBLE
+                        val countryItems = buildCountryNavItems()
+                        sidebarCountryAdapter.setItems(countryItems, selectedCountry)
+                    } else {
+                        rvSidebarCountries.visibility = View.GONE
+                    }
                 }
 
                 updateSearchSuggestions()
@@ -1677,6 +1811,7 @@ class MainActivity : AppCompatActivity() {
             val hasSearch = globalSearchQuery.isNotEmpty()
 
             val displayList: List<EventItem> = if (hasSearch) {
+                rvSidebarCountries.visibility = View.GONE
                 val tokens = globalSearchQuery.trim().lowercase().split(Regex("""\s+""")).filter { it.isNotBlank() }
                 val filtered = cachedCxtvChannels.filter { item ->
                     val target = "${item.title} ${item.subtitle} ${item.category} ${item.country.orEmpty()}".lowercase()
@@ -1693,24 +1828,32 @@ class MainActivity : AppCompatActivity() {
                     )
                     GlobalSortMode.DEFAULT -> sortCxtvChannelList(filtered)
                 }
-            } else if (currentCategory == "⭐ Todos los Canales") {
-                sortCxtvChannelList(cachedCxtvChannels)
-            } else {
-                val matchingCategory = dynamicCxtvCategories.firstOrNull { getCategoryTabLabel(it) == currentCategory }
-                val matchingCountry = dynamicCxtvCountries.firstOrNull { getCountryTabLabel(it) == currentCategory }
-
-                val filtered = when {
-                    matchingCategory != null -> cachedCxtvChannels.filter { it.category.equals(matchingCategory, ignoreCase = true) }
-                    matchingCountry != null -> cachedCxtvChannels.filter { it.country.equals(matchingCountry, ignoreCase = true) }
-                    else -> cachedCxtvChannels.filter {
-                        currentCategory.contains(it.category, ignoreCase = true) ||
-                        (it.country != null && currentCategory.contains(it.country, ignoreCase = true))
-                    }
+            } else if (currentCategory == "🌍 Países") {
+                rvSidebarCountries.visibility = View.VISIBLE
+                val matchingCountry = dynamicCxtvCountries.firstOrNull { getCountryTabLabel(it) == selectedCountry }
+                val filtered = if (matchingCountry != null) {
+                    cachedCxtvChannels.filter { it.country.equals(matchingCountry, ignoreCase = true) }
+                } else {
+                    cachedCxtvChannels.filter { it.country != null && selectedCountry.contains(it.country, ignoreCase = true) }
                 }
                 sortCxtvChannelList(filtered)
+            } else {
+                rvSidebarCountries.visibility = View.GONE
+                if (currentCategory == "⭐ Todos los Canales") {
+                    sortCxtvChannelList(cachedCxtvChannels)
+                } else {
+                    val matchingCategory = dynamicCxtvCategories.firstOrNull { getCategoryTabLabel(it) == currentCategory }
+                    val filtered = if (matchingCategory != null) {
+                        cachedCxtvChannels.filter { it.category.equals(matchingCategory, ignoreCase = true) }
+                    } else {
+                        cachedCxtvChannels.filter { currentCategory.contains(it.category, ignoreCase = true) }
+                    }
+                    sortCxtvChannelList(filtered)
+                }
             }
 
             if (displayList.isEmpty()) {
+                tvChannelPositionIndicator.visibility = View.GONE
                 tvEmpty.visibility = View.VISIBLE
                 tvEmpty.text = if (hasSearch) {
                     "No se encontraron canales para \"$globalSearchQuery\"."
@@ -1721,7 +1864,9 @@ class MainActivity : AppCompatActivity() {
             } else {
                 tvEmpty.visibility = View.GONE
                 adapter.submitList(displayList)
-                if (!silent && !rvCategories.hasFocus() && !rvSidebarCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
+                updateChannelPositionIndicator(0, displayList.size)
+                if (!silent && !rvCategories.hasFocus() && !rvSidebarCategories.hasFocus() && (!::rvSidebarCountries.isInitialized || !rvSidebarCountries.hasFocus())
+                    && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
                     && !btnModeSports.hasFocus() && !btnModeWorldTv.hasFocus()
                     && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus() && !btnSortNameGlobal.hasFocus() && (!::btnClearGlobalText.isInitialized || !btnClearGlobalText.hasFocus())))
                     && (!::rvSuggestions.isInitialized || !rvSuggestions.hasFocus())
@@ -1730,6 +1875,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             return
+        }
+
+        if (::tvChannelPositionIndicator.isInitialized) {
+            tvChannelPositionIndicator.visibility = View.GONE
         }
 
         when (currentCategory) {

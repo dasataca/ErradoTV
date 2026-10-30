@@ -14,7 +14,8 @@ import com.gareca.tv.model.EventStatus
 
 class EventAdapter(
     private val onItemClick: (EventItem) -> Unit,
-    private val onLeftPressed: (() -> Boolean)? = null
+    private val onLeftPressed: (() -> Boolean)? = null,
+    private val onItemFocus: ((position: Int, total: Int) -> Unit)? = null
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
     private val items = mutableListOf<EventItem>()
@@ -30,11 +31,11 @@ class EventAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_event_card, parent, false)
-        return EventViewHolder(view, onItemClick, onLeftPressed)
+        return EventViewHolder(view, onItemClick, onLeftPressed, onItemFocus)
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
-        holder.bind(items[position])
+        holder.bind(items[position], position, items.size)
     }
 
     override fun getItemCount(): Int = items.size
@@ -42,7 +43,8 @@ class EventAdapter(
     class EventViewHolder(
         itemView: View,
         private val onItemClick: (EventItem) -> Unit,
-        private val onLeftPressed: (() -> Boolean)? = null
+        private val onLeftPressed: (() -> Boolean)? = null,
+        private val onItemFocus: ((position: Int, total: Int) -> Unit)? = null
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
@@ -52,11 +54,17 @@ class EventAdapter(
         private val tvStreamBadge: TextView = itemView.findViewById(R.id.tvStreamBadge)
         private val tvCountdown: TextView = itemView.findViewById(R.id.tvCountdown)
 
+        private var boundPosition: Int = -1
+        private var boundTotal: Int = -1
+
         init {
             // TV focus animation
             itemView.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
                     view.animate().scaleX(1.02f).scaleY(1.02f).setDuration(150).start()
+                    if (boundPosition >= 0 && boundTotal > 0) {
+                        onItemFocus?.invoke(boundPosition, boundTotal)
+                    }
                 } else {
                     view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start()
                 }
@@ -74,7 +82,9 @@ class EventAdapter(
             }
         }
 
-        fun bind(item: EventItem) {
+        fun bind(item: EventItem, position: Int, total: Int) {
+            boundPosition = position
+            boundTotal = total
             tvTitle.text = item.title
             tvSubtitle.text = item.subtitle
 

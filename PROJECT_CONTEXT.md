@@ -235,4 +235,16 @@ Para preservar la identidad deportiva de GarecaTV y expandir el catálogo sin sa
 * El menú superior se construye dinámicamente en tiempo de ejecución (`dynamic tabs`) según los datos entregados por los JSONs remotos.
 * Permite agregar países, canales y nuevas disciplinas deportivas en caliente desde el servidor sin necesidad de actualizar el APK en los televisores de los usuarios.
 
+### 9.3. Arquitectura Master-Detail de 3 Columnas, Contadores e Indicador Ordinal
+* **Estructura OTT de 3 Columnas en Televisión Mundial**:
+  - **Columna 1 (Menú Principal / Rail Ligero)**: Categorías temáticas dinámicas + `⭐ Todos los Canales` + opción unificada `🌍 Países`.
+  - **Columna 2 (Subcolumna de Países)**: Desplegada dinámicamente al seleccionar `🌍 Países`, ordenando los países alfabéticamente A-Z.
+  - **Panel 3 (Panel de Canales)**: Visualización de señales con insignias tecnológicas (`⚡ EXOPLAYER HLS`, `🔴 YOUTUBE LIVE`, etc.) y ordenamiento interno por categoría A-Z y nombre A-Z.
+* **Contadores de Canales y Posición Ordinal en Tiempo Real**:
+  - Insignia numérica pastilla en cada categoría y país reflejando la cantidad exacta de canales.
+  - Indicador ordinal interactivo en cabecera (`tvChannelPositionIndicator`): *"Canal X de Y • Subgrupo/País"*, asignando números de orden del 1 al N y actualizándose dinámicamente con el D-Pad (`onItemFocus`).
+* **Blindaje de Reproducción YouTube Live y Web Streams**:
+  - `WebStreamActivity.kt` implementa contenedor iframe `youtube-nocookie.com` con `loadDataWithBaseURL`, User-Agent Google Chrome Desktop y cookies de terceros habilitadas, resolviendo bloqueos en Android TV.
+
+
 

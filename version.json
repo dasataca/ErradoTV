@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "1a354f9933f919016f2d72f18cedfddba14b4e5a3479ea8cee2589f417430f81f1f6e0cbdf9d66ed045b91ea13870978b3fffc625eda39aaccc6a6efff4a10c08ef1e8fdb0fa8fe5bf970e592322667e",
-  "latest_version_code": 58,
-  "latest_version_name": "1.8.3",
-  "release_timestamp": 1793402742153,
+  "active_key_enc": "cc25e74f579898f2b5c04e495f42adad94e4e825785d31e8d24778aa7ea2ab9f2c7cbb1101aa5986dbe2126d867f2d6c5d7be6b5d9c67ed86927249e06b4877ec78b92c63356214d8c2a533f1a40e2d5",
+  "latest_version_code": 59,
+  "latest_version_name": "1.8.4",
+  "release_timestamp": 1793404579285,
   "release_date": "2026-10-30",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Actualizacion de America TV a senal directa HLS y optimizacion de reproductor YouTube"
+  "changelog": "GarecaTV: Arquitectura 3 columnas con subcolumna de paises, contadores por grupo, indicador ordinal y reproductor YouTube blindado"
 }

@@ -50,19 +50,75 @@ class WebStreamActivity : AppCompatActivity() {
             return
         }
 
-        setupWebView()
-        webView.loadUrl(url)
+        setupWebView(url)
+        loadStream(url)
     }
 
-    private fun setupWebView() {
+    private fun loadStream(url: String) {
+        val isYouTube = url.contains("youtube.com", ignoreCase = true) || url.contains("youtu.be", ignoreCase = true)
+        if (isYouTube) {
+            val embedSrc = if (url.contains("youtube.com/embed/")) {
+                url.replace("youtube.com", "youtube-nocookie.com")
+            } else if (url.contains("watch?v=")) {
+                val videoId = url.substringAfter("watch?v=").substringBefore("&")
+                "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
+            } else {
+                url.replace("youtube.com", "youtube-nocookie.com")
+            }
+            val sep = if (embedSrc.contains("?")) "&" else "?"
+            val finalEmbedSrc = if (!embedSrc.contains("enablejsapi=1")) {
+                "$embedSrc${sep}autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
+            } else {
+                embedSrc
+            }
+
+            val embedHtml = """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                <style>
+                  * { margin:0; padding:0; box-sizing:border-box; }
+                  html, body { width:100vw; height:100vh; overflow:hidden; background:#000; }
+                  #ytplayer { position:fixed; top:0; left:0; width:100vw !important; height:100vh !important; border:none; }
+                </style>
+                </head>
+                <body>
+                  <iframe id="ytplayer"
+                    src="$finalEmbedSrc"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    allowfullscreen>
+                  </iframe>
+                </body>
+                </html>
+            """.trimIndent()
+            webView.loadDataWithBaseURL("https://www.youtube-nocookie.com", embedHtml, "text/html", "UTF-8", null)
+        } else {
+            webView.loadUrl(url)
+        }
+    }
+
+    private fun setupWebView(url: String) {
         val settings = webView.settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
+        settings.databaseEnabled = true
         settings.mediaPlaybackRequiresUserGesture = false
         settings.useWideViewPort = true
         settings.loadWithOverviewMode = true
-        settings.userAgentString =
+
+        val isYouTube = url.contains("youtube.com", ignoreCase = true) || url.contains("youtu.be", ignoreCase = true)
+        settings.userAgentString = if (isYouTube) {
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        } else {
             "Mozilla/5.0 (Linux; Android 12; SMART TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+
+        try {
+            val cookieManager = android.webkit.CookieManager.getInstance()
+            cookieManager.setAcceptCookie(true)
+            cookieManager.setAcceptThirdPartyCookies(webView, true)
+        } catch (_: Exception) {}
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
@@ -80,8 +136,8 @@ class WebStreamActivity : AppCompatActivity() {
                 request: WebResourceRequest?
             ): WebResourceResponse? {
                 val reqUrl = request?.url?.toString()?.lowercase() ?: ""
-                val isYouTube = reqUrl.contains("youtube.com") || reqUrl.contains("googlevideo.com") || reqUrl.contains("ytimg.com")
-                if (!isYouTube) {
+                val isYtAsset = reqUrl.contains("youtube.com") || reqUrl.contains("youtube-nocookie.com") || reqUrl.contains("googlevideo.com") || reqUrl.contains("ytimg.com")
+                if (!isYtAsset) {
                     for (domain in adBlockDomains) {
                         if (reqUrl.contains(domain)) {
                             // Return empty response to drop ad
@@ -97,7 +153,7 @@ class WebStreamActivity : AppCompatActivity() {
                 request: WebResourceRequest?,
                 error: android.webkit.WebResourceError?
             ) {
-                if (request?.isForMainFrame == true) {
+                if (request?.isForMainFrame == true && !isYouTube) {
                     showWebError("No se pudo conectar con el sitio web externo (Error de conexión o bloqueo de red).")
                 }
             }
@@ -107,7 +163,7 @@ class WebStreamActivity : AppCompatActivity() {
                 request: WebResourceRequest?,
                 errorResponse: WebResourceResponse?
             ) {
-                if (request?.isForMainFrame == true) {
+                if (request?.isForMainFrame == true && !isYouTube) {
                     val code = errorResponse?.statusCode ?: 0
                     if (code in 400..599) {
                         showWebError("El servidor externo rechazó la conexión (Código HTTP $code).")

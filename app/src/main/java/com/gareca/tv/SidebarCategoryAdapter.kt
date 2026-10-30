@@ -7,34 +7,40 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+data class NavItem(
+    val title: String,
+    val count: Int = 0
+)
+
 class SidebarCategoryAdapter(
-    initialCategories: List<String>,
+    initialItems: List<NavItem>,
     private var selectedCategory: String,
     private val onCategorySelected: (String) -> Unit,
     private val onRightPressed: (() -> Boolean)? = null,
+    private val onLeftPressed: (() -> Boolean)? = null,
     private val onUpFromFirst: (() -> Boolean)? = null
 ) : RecyclerView.Adapter<SidebarCategoryAdapter.SidebarViewHolder>() {
 
-    private val categories = initialCategories.toMutableList()
+    private val items = initialItems.toMutableList()
 
-    fun setCategories(newCategories: List<String>, newSelected: String) {
-        categories.clear()
-        categories.addAll(newCategories)
+    fun setItems(newItems: List<NavItem>, newSelected: String) {
+        items.clear()
+        items.addAll(newItems)
         selectedCategory = newSelected
         notifyDataSetChanged()
     }
 
     fun setSelectedCategory(category: String) {
         if (selectedCategory != category) {
-            val oldIndex = categories.indexOf(selectedCategory)
-            val newIndex = categories.indexOf(category)
+            val oldIndex = items.indexOfFirst { it.title == selectedCategory }
+            val newIndex = items.indexOfFirst { it.title == category }
             selectedCategory = category
             if (oldIndex != -1) notifyItemChanged(oldIndex)
             if (newIndex != -1) notifyItemChanged(newIndex)
         }
     }
 
-    fun getSelectedPosition(): Int = categories.indexOf(selectedCategory)
+    fun getSelectedPosition(): Int = items.indexOfFirst { it.title == selectedCategory }
 
     fun getSelectedCategory(): String = selectedCategory
 
@@ -44,34 +50,46 @@ class SidebarCategoryAdapter(
     }
 
     override fun onBindViewHolder(holder: SidebarViewHolder, position: Int) {
-        holder.bind(categories[position], position)
+        holder.bind(items[position], position)
     }
 
-    override fun getItemCount(): Int = categories.size
+    override fun getItemCount(): Int = items.size
 
     inner class SidebarViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTitle: TextView = itemView.findViewById(R.id.tvSidebarCategoryTitle)
+        private val tvCount: TextView = itemView.findViewById(R.id.tvSidebarCategoryCount)
+        private val viewAccentBar: View = itemView.findViewById(R.id.viewAccentBar)
 
-        fun bind(category: String, position: Int) {
-            tvTitle.text = category
-            val isSelected = category == selectedCategory
+        fun bind(item: NavItem, position: Int) {
+            tvTitle.text = item.title
+            if (item.count > 0) {
+                tvCount.visibility = View.VISIBLE
+                tvCount.text = item.count.toString()
+            } else {
+                tvCount.visibility = View.GONE
+            }
+
+            val isSelected = item.title == selectedCategory
             itemView.isSelected = isSelected
+            viewAccentBar.visibility = if (isSelected) View.VISIBLE else View.INVISIBLE
 
             itemView.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
-                    view.animate().scaleX(1.03f).scaleY(1.03f).setDuration(120).start()
-                    if (selectedCategory != category) {
-                        setSelectedCategory(category)
-                        onCategorySelected(category)
+                    view.animate().scaleX(1.02f).scaleY(1.02f).setDuration(120).start()
+                    viewAccentBar.visibility = View.VISIBLE
+                    if (selectedCategory != item.title) {
+                        setSelectedCategory(item.title)
+                        onCategorySelected(item.title)
                     }
                 } else {
                     view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+                    viewAccentBar.visibility = if (item.title == selectedCategory) View.VISIBLE else View.INVISIBLE
                 }
             }
 
             itemView.setOnClickListener {
-                setSelectedCategory(category)
-                onCategorySelected(category)
+                setSelectedCategory(item.title)
+                onCategorySelected(item.title)
                 itemView.post {
                     onRightPressed?.invoke()
                 }
@@ -85,9 +103,14 @@ class SidebarCategoryAdapter(
                                 return@setOnKeyListener onRightPressed.invoke()
                             }
                         }
+                        KeyEvent.KEYCODE_DPAD_LEFT -> {
+                            if (onLeftPressed != null) {
+                                return@setOnKeyListener onLeftPressed.invoke()
+                            }
+                        }
                         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                            setSelectedCategory(category)
-                            onCategorySelected(category)
+                            setSelectedCategory(item.title)
+                            onCategorySelected(item.title)
                             itemView.post {
                                 onRightPressed?.invoke()
                             }

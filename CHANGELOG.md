@@ -2,6 +2,29 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.8.4] - 2026-10-30
+### Añadido y Optimizado
+- **Arquitectura de 3 Columnas (Master-Detail Avanzado) para Televisión Mundial**:
+  - **Columna 1 (Menú Principal / Rail Ligero)**: Agrupa `⭐ Todos los Canales`, las categorías temáticas dinámicas (`Cine`, `Cultura`, `Deportes`, `Noticias`, `Variedades`, etc.) y una **única opción unificada: `🌍 Países`**.
+  - **Columna 2 (Subcolumna de Países)**: Se despliega de forma dinámica al seleccionar o enfocarse en `🌍 Países`. Lista todos los países ordenados alfabéticamente A-Z (`dynamicCxtvCountries`).
+  - **Panel 3 (Canales)**: Muestra los canales de la selección activa (categoría temática o país individual) agrupados internamente por orden alfabético A-Z de categoría y nombre.
+- **Presentación Visual Ligera (Flat Navigation Rail)**:
+  - Se eliminaron las cajas con bordes pesados en favor de una barra de navegación moderna y minimalista (`item_sidebar_category.xml`, `sidebar_nav_selector.xml`, `sidebar_nav_text_selector.xml`).
+  - Barra de acento vertical cian (`#00E5FF`) y píldora de foco translúcida.
+- **Contadores de Canales en Grupos y Subgrupos**:
+  - Distintivo tipo pastilla (`sidebar_count_badge.xml`) en cada categoría de Columna 1 (ej. `📺 Variedades [240]`, `🌍 Países [2.399]`) y en cada país de Columna 2 (ej. `🇦🇷 Argentina [120]`, `🇪🇸 España [95]`).
+- **Indicador Ordinal de Posición en Tiempo Real**:
+  - Encabezado interactivo sobre la lista de canales (`tvChannelPositionIndicator`): *"Canal X de Y • Grupo/País"*.
+  - Asignación ordinal interna del 1 al total de canales de la sección actual, actualizándose dinámicamente con cada movimiento del D-Pad (`onItemFocus` en `EventAdapter`).
+- **Navegación Fluida D-Pad, Tecla Atrás y Air-Mouse**:
+  - Columna 1 a Columna 2 (`▶ Derecha`, `OK`, Clic) al estar en `🌍 Países`.
+  - Columna 2 a Panel 3 (`▶ Derecha`, `OK`, Clic) posicionando el foco en el primer canal.
+  - Panel 3 a Columna 2 (`◀ Izquierda`, Atrás) si se está consultando un país.
+  - Columna 2 a Columna 1 (`◀ Izquierda`, Atrás) regresando a `🌍 Países`.
+- **Reproducción Blindada de YouTube y Streams Web**:
+  - Adaptación de la arquitectura de reproducción probada en `proyectarAplicacion` (`TvYouTubeScreen.kt`) dentro de `WebStreamActivity.kt`.
+  - Uso de `youtube-nocookie.com` con `loadDataWithBaseURL`, User-Agent de Google Chrome Desktop, soporte de cookies de terceros y supresión de pantallas de error falsas en subrecursos analíticos de YouTube.
+
 ## [1.8.3] - 2026-10-30
 ### Corregido y Optimizado
 - **Restauración y Actualización de América TV (Variedades)**:
