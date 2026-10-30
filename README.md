@@ -6,7 +6,7 @@ Aplicación nativa para **Android TV, Google TV y Fire TV Stick** basada en las 
 
 ## 🚀 Archivos y Versión Actual
 
-* 📱 **[`release/GarecaTV.apk`](file:///home/sataca/Descargas/APLICACIONES/errado/release/GarecaTV.apk)**: APK instalable directa (versión actual **v1.8.2 - código 57**).
+* 📱 **[`release/GarecaTV.apk`](file:///home/sataca/Descargas/APLICACIONES/errado/release/GarecaTV.apk)**: APK instalable directa (versión actual **v1.8.3 - código 58**).
 * 📺 **[`gareca_tv.m3u8`](file:///home/sataca/Descargas/APLICACIONES/errado/errado_tv.m3u8)**: Lista de reproducción IPTV directa para TiviMate, OTT Navigator o VLC.
 * 🏷️ **Versión en Pantalla y Botón de Actualización Inteligente**:
   * Etiqueta de versión visible en cabecera junto a la fecha (`tvAppVersion`).

@@ -80,10 +80,13 @@ class WebStreamActivity : AppCompatActivity() {
                 request: WebResourceRequest?
             ): WebResourceResponse? {
                 val reqUrl = request?.url?.toString()?.lowercase() ?: ""
-                for (domain in adBlockDomains) {
-                    if (reqUrl.contains(domain)) {
-                        // Return empty response to drop ad
-                        return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream("".toByteArray()))
+                val isYouTube = reqUrl.contains("youtube.com") || reqUrl.contains("googlevideo.com") || reqUrl.contains("ytimg.com")
+                if (!isYouTube) {
+                    for (domain in adBlockDomains) {
+                        if (reqUrl.contains(domain)) {
+                            // Return empty response to drop ad
+                            return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream("".toByteArray()))
+                        }
                     }
                 }
                 return super.shouldInterceptRequest(view, request)

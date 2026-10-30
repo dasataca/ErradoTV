@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.8.3] - 2026-10-30
+### Corregido y Optimizado
+- **Restauración y Actualización de América TV (Variedades)**:
+  - **Diagnóstico**: La señal original proveniente de CXTv enlazaba a un video estático de YouTube (`zcWXboTnous`) que finalizó su emisión y fue dado de baja por YouTube (`Video no disponible / UNPLAYABLE`).
+  - **Transición a ExoPlayer HLS Nativo**: Se reemplazó el stream por la señal directa oficial HLS en 720p 60fps (`https://prepublish.f.qaotic.net/a07/americahls-100056/playlist_720p.m3u8`), clasificándola como `⚡ EXOPLAYER HLS`. Ahora se reproduce de forma fluida y nativa en ExoPlayer con zapping (`◀` / `▶`) y soporte completo de Zoom.
+  - **Optimización de WebStreamActivity**: Se exoneraron los dominios esenciales de YouTube (`youtube.com`, `googlevideo.com`, `ytimg.com`) del interceptor de bloqueo de anuncios para asegurar que los canales web de YouTube Live carguen sin bloqueos ni pantallas en negro.
+
 ## [1.8.2] - 2026-10-30
 ### Añadido y Optimizado
 - **Agrupamiento Alfabético Interno por Categoría y Nombre (A-Z)**:

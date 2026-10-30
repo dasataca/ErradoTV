@@ -3204,8 +3204,8 @@
       "country": "Argentina",
       "language": "Español",
       "logo": "https://www.cxtv.com.br/img/Tvs/Logo/webp-l/b8f40b871cace756f3680b2c5f01ad77.webp",
-      "stream_url": "https://www.youtube.com/embed/zcWXboTnous?autoplay=true",
-      "stream_type": "youtube",
+      "stream_url": "https://prepublish.f.qaotic.net/a07/americahls-100056/playlist_720p.m3u8",
+      "stream_type": "exo",
       "is_available": true
     },
     {
