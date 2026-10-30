@@ -98,7 +98,40 @@
             android:textSize="14sp"
             android:textStyle="bold"
             android:layout_marginStart="16dp" />
+
+        <Button
+            android:id="@+id/btnZoomMode"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="18dp"
+            android:background="@drawable/button_focus_selector"
+            android:text="🔍 Zoom: Ajuste"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:visibility="gone" />
     </LinearLayout>
+
+    <!-- Indicador HUD Flotante de Zoom / Relación de Aspecto -->
+    <TextView
+        android:id="@+id/tvZoomHud"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="#D90B0E14"
+        android:textColor="@color/accent"
+        android:textStyle="bold"
+        android:textSize="17sp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:visibility="gone"
+        android:elevation="20dp" />
 
     <TextView
         android:id="@+id/tvResolutionBadge"

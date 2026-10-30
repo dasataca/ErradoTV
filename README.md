@@ -30,6 +30,16 @@ Aplicación nativa para **Android TV, Google TV y Fire TV Stick** basada en las 
   * Icono circular e insignia de alto contraste con cabeza de tigre en perfil, garras rojas y rótulos atléticos sobre fondo negro.
   * Suite completa de iconos adaptativos Android (`res/mipmap-*`).
   * Visualización limpia: Icono exclusivo en la cabecera superior principal de la app.
+* 🎬 **Control de Zoom y Relación de Aspecto en Pantalla (ExoPlayer)**:
+  * Ajuste dinámico de pantalla para canales antiguos (4:3) o transmisiones con barras negras:
+    1. **Ajuste Original (Fit)**: Relación nativa del canal.
+    2. **Rellenar Pantalla (Fill 16:9)**: Estira la imagen para ocupar todo el televisor.
+    3. **Zoom / Recorte (Zoom)**: Llena la pantalla recortando proporcionalmente sin deformar la imagen.
+  * Botón interactivo en el banner (`btnZoomMode`) accesible con `▲ Arriba` y atajos directos en el control remoto (`MENU`, `BUTTON_Y`, `ZOOM`, `PROG_BLUE`) con indicador visual flotante (`tvZoomHud`).
+* 📺 **Arquitectura Dual Core (Deportes vs Televisión Mundial)**:
+  * **Motor Deportes (Teleplay)**: Partidos del día con cuenta regresiva, huso horario local y repeticiones.
+  * **Motor TV Mundial (CXTv)**: Televisión abierta y temática de 98 países sin restricciones de idioma.
+  * **Menús 100% Autogenerados (Data-Driven)**: Menús dinámicos y canales caídos desplazados al fondo con etiqueta `NO DISPONIBLE`.
 * 🌐 **Inteligencia Comunitaria (Supabase)**:
   * Registro y sincronización automática de señales caídas con la base de datos comunitaria (`errado_community_streams`), reordenando partidos `NO DISPONIBLE` al final de la lista.
 

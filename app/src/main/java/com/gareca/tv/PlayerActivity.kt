@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -23,6 +24,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.bumptech.glide.Glide
 import com.gareca.tv.api.ApiClient
@@ -45,6 +47,18 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var tvChannelBannerTitle: TextView
     private lateinit var tvChannelBannerSub: TextView
     private lateinit var tvChannelBannerIndex: TextView
+
+    // Control y HUD de Zoom / Relación de Aspecto
+    private lateinit var btnZoomMode: Button
+    private lateinit var tvZoomHud: TextView
+    private var hideZoomHudRunnable: Runnable? = null
+
+    private enum class ZoomMode(val resizeMode: Int, val label: String, val shortLabel: String) {
+        FIT(AspectRatioFrameLayout.RESIZE_MODE_FIT, "Ajuste Original (Fit)", "Ajuste"),
+        FILL(AspectRatioFrameLayout.RESIZE_MODE_FILL, "Rellenar Pantalla (16:9)", "Rellenar"),
+        ZOOM(AspectRatioFrameLayout.RESIZE_MODE_ZOOM, "Zoom / Recorte Completo", "Zoom")
+    }
+    private var currentZoomMode = ZoomMode.FIT
 
     private val handler = Handler(Looper.getMainLooper())
     private var hideBadgeRunnable: Runnable? = null
@@ -90,6 +104,12 @@ class PlayerActivity : AppCompatActivity() {
         tvChannelBannerTitle = findViewById(R.id.tvChannelBannerTitle)
         tvChannelBannerSub = findViewById(R.id.tvChannelBannerSub)
         tvChannelBannerIndex = findViewById(R.id.tvChannelBannerIndex)
+        btnZoomMode = findViewById(R.id.btnZoomMode)
+        tvZoomHud = findViewById(R.id.tvZoomHud)
+
+        btnZoomMode.setOnClickListener {
+            cycleZoomMode()
+        }
 
         val streamUrl = intent.getStringExtra("EXTRA_URL") ?: ""
         val streamTitle = intent.getStringExtra("EXTRA_TITLE") ?: ""
@@ -160,6 +180,8 @@ class PlayerActivity : AppCompatActivity() {
                 override fun onVideoSizeChanged(videoSize: VideoSize) {
                     if (videoSize.width > 0 && videoSize.height > 0) {
                         videoFrameReceived = true
+                        btnZoomMode.visibility = View.VISIBLE
+                        btnZoomMode.text = "🔍 Zoom: ${currentZoomMode.shortLabel}"
                         resetRecoveryState()
                         StreamCache.markAvailable(this@PlayerActivity, currentStreamUrl)
                         val label = "${videoSize.width}x${videoSize.height} (${getQualityLabel(videoSize.height)}) [MÁX]"
@@ -465,6 +487,13 @@ class PlayerActivity : AppCompatActivity() {
             ivChannelLogo.setImageResource(R.mipmap.ic_launcher)
         }
 
+        if (videoFrameReceived) {
+            btnZoomMode.visibility = View.VISIBLE
+            btnZoomMode.text = "🔍 Zoom: ${currentZoomMode.shortLabel}"
+        } else {
+            btnZoomMode.visibility = View.GONE
+        }
+
         llChannelBanner.animate().cancel()
         llChannelBanner.alpha = 1f
         llChannelBanner.visibility = View.VISIBLE
@@ -499,6 +528,8 @@ class PlayerActivity : AppCompatActivity() {
         currentImageUrl = channel.imageUrl
         currentOriginalStream = channel.stream
         currentResolutionText = ""
+        videoFrameReceived = false
+        btnZoomMode.visibility = View.GONE
         tvResolutionBadge.visibility = View.GONE
 
         resetRecoveryState()
@@ -540,6 +571,42 @@ class PlayerActivity : AppCompatActivity() {
                 handleDefinitiveFailure()
             }
         }
+    }
+
+    private fun cycleZoomMode() {
+        if (!videoFrameReceived) return
+        currentZoomMode = when (currentZoomMode) {
+            ZoomMode.FIT -> ZoomMode.FILL
+            ZoomMode.FILL -> ZoomMode.ZOOM
+            ZoomMode.ZOOM -> ZoomMode.FIT
+        }
+        playerView.resizeMode = currentZoomMode.resizeMode
+        btnZoomMode.text = "🔍 Zoom: ${currentZoomMode.shortLabel}"
+
+        // Mostrar HUD informativo en pantalla
+        tvZoomHud.text = "🔍 Pantalla: ${currentZoomMode.label}"
+        tvZoomHud.animate().cancel()
+        tvZoomHud.alpha = 1f
+        tvZoomHud.visibility = View.VISIBLE
+
+        hideZoomHudRunnable?.let { handler.removeCallbacks(it) }
+        val r = Runnable {
+            tvZoomHud.animate()
+                .alpha(0f)
+                .setDuration(400)
+                .withEndAction { tvZoomHud.visibility = View.GONE }
+                .start()
+        }
+        hideZoomHudRunnable = r
+        handler.postDelayed(r, 2500)
+
+        SupabaseLogger.info(
+            "player_zoom_change",
+            "Relación de aspecto / Zoom cambiada a ${currentZoomMode.label}",
+            mapOf("url" to currentStreamUrl, "mode" to currentZoomMode.name)
+        )
+
+        showChannelBanner()
     }
 
     private fun showControlsTemporarily() {
@@ -592,7 +659,17 @@ class PlayerActivity : AppCompatActivity() {
                         return true
                     }
                 }
-                KeyEvent.KEYCODE_DPAD_UP,
+                KeyEvent.KEYCODE_DPAD_UP -> {
+                    showChannelBanner()
+                    showControlsTemporarily()
+                    if (currentResolutionText.isNotEmpty()) {
+                        showResolutionBadge(currentResolutionText)
+                    }
+                    if (videoFrameReceived && btnZoomMode.visibility == View.VISIBLE) {
+                        btnZoomMode.requestFocus()
+                    }
+                    return true
+                }
                 KeyEvent.KEYCODE_DPAD_DOWN -> {
                     showChannelBanner()
                     showControlsTemporarily()
@@ -600,6 +677,15 @@ class PlayerActivity : AppCompatActivity() {
                         showResolutionBadge(currentResolutionText)
                     }
                     return true
+                }
+                KeyEvent.KEYCODE_MENU,
+                KeyEvent.KEYCODE_BUTTON_Y,
+                168, // KEYCODE_ZOOM en mandos de Android TV
+                KeyEvent.KEYCODE_PROG_BLUE -> {
+                    if (videoFrameReceived) {
+                        cycleZoomMode()
+                        return true
+                    }
                 }
                 KeyEvent.KEYCODE_INFO -> {
                     showChannelBanner()
@@ -636,6 +722,7 @@ class PlayerActivity : AppCompatActivity() {
         hideBadgeRunnable?.let { handler.removeCallbacks(it) }
         hideBannerRunnable?.let { handler.removeCallbacks(it) }
         hideControlsRunnable?.let { handler.removeCallbacks(it) }
+        hideZoomHudRunnable?.let { handler.removeCallbacks(it) }
         watchdogRunnable?.let { handler.removeCallbacks(it) }
         zapJob?.cancel()
         player?.release()

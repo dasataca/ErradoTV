@@ -36,6 +36,15 @@
    * **Zapping de Canales con D-Pad**: En categorías de canales de flujo único (`📺 Regionales`, `🏆 Deportes`, países, etc.), las teclas `◀ Izquierda` y `▶ Derecha` del control remoto ejecutan zapping directo entre canales (`ChannelNavigationManager`) reutilizando la instancia de ExoPlayer.
    * **Banner Informativo de Canal (`llChannelBanner`)**: Al ingresar a un canal o cambiar de señal, se despliega en la parte superior el logo, nombre del canal, subtítulo y contador de posición (ej. `Canal 5 de 42  [◀ ▶ Zapping]`), auto-ocultándose a los 3.5 segundos.
    * **Invocación Contextual con Teclas Arriba / Abajo**: Al presionar `▲ Arriba` o `▼ Abajo` durante la reproducción, se reactiva el banner informativo y se despliegan los controles multimedia nativos del reproductor.
+   * **Control de Zoom y Relación de Aspecto en Pantalla (`AspectRatioFrameLayout`)**:
+     * **Disponibilidad Condicional**: La opción de zoom solo está disponible y visible cuando el reproductor ha recibido cuadros de video válidos (`videoFrameReceived = true` con `videoSize > 0`). Si el canal está cargando o es solo audio, el botón se oculta automáticamente.
+     * **Botón Interactivo en Banner (`btnZoomMode`)**: Embebido a la derecha del banner superior con selector visual Leanback (`button_focus_selector.xml`). Al presionar `▲ Arriba`, el banner se despliega y transfiere el foco al botón de Zoom para accionarlo con OK/Center.
+     * **Atajos de Control Remoto TV**: Las teclas `MENU`, `BUTTON_Y`, `KEYCODE_ZOOM (168)` y `PROG_BLUE` conmutan el modo de pantalla de forma inmediata sin necesidad de abrir menús.
+     * **Tres Modos Cíclicos de Pantalla**:
+       1. `RESIZE_MODE_FIT` (**Ajuste Original**): Mantiene la relación de aspecto nativa de la señal (ideal para emisiones estándar con formato original).
+       2. `RESIZE_MODE_FILL` (**Rellenar 16:9**): Estira la imagen horizontal y verticalmente cubriendo todo el panel del televisor sin franjas negras.
+       3. `RESIZE_MODE_ZOOM` (**Zoom / Recorte**): Llena completamente la pantalla recortando proporcionalmente los bordes superior/inferior o laterales sin deformar la imagen (ideal para señales 4:3 o transmisiones con barras embebidas).
+     * **Feedback Visual Inmediato (HUD Flotante `tvZoomHud`)**: Cada conmutación de zoom despliega un cartel informativo flotante en color de acento durante 2.5 segundos (*"🔍 Pantalla: Ajuste Original (Fit)"*, *"🔍 Pantalla: Rellenar Pantalla (16:9)"*, *"🔍 Pantalla: Zoom / Recorte Completo"*).
    * **Resiliencia ante Micro-Cortes HLS (Seamless Auto-Reconnect)**: Ante caídas transitorias de paquetes o timeouts HLS (`ERROR_CODE_IO_UNSPECIFIED`), está prohibido marcar la señal como caída al primer fallo. El reproductor debe ejecutar auto-reintentos silenciosos y absorción por búfer (`DefaultLoadControl`) antes de declarar un canal caído.
 6. **Resiliencia, Actualización OTA y Botones de Cabecera**:
    * Etiqueta de versión visible en cabecera junto a la fecha (`tvAppVersion`).
@@ -124,3 +133,29 @@ Para generar y subir una nueva versión del software:
 ./publish_release.sh 1.6.7 46 "GarecaTV: Captura Pre-IME de tecla Atrás y transferencia instantánea de foco a sugerencias en ambos buscadores"
 ```
 El script compila el APK, actualiza `version.json`, organiza los archivos en `release/` y realiza el `git push` a `origin main` de manera completamente autónoma.
+
+---
+
+## 7. Protocolo Obligatorio de Notificación (Mix Caliente vs. APK) y División de Fuentes
+
+Toda IA o desarrollador que trabaje en este repositorio debe cumplir estrictamente las siguientes directivas:
+
+1. **Notificación Explícita de Actualización de APK vs. Caliente**:
+   * **Cuando se modifica código nativo Kotlin / XML / Android**: La IA **DEBE** avisar explícitamente al usuario que se requiere compilar y actualizar el APK, indicando el comando exacto:
+     > *"He modificado el código nativo de la aplicación. Para aplicar estos cambios en la TV, ejecutamos `./publish_release.sh [versionName] [versionCode] "[changelog]"` y se compila e instala la nueva versión."*
+   * **Cuando se modifican catálogos, servidores, JSON, watchdogs o scripts de scraping**: La IA **DEBE** aclarar que se trata de una actualización en caliente:
+     > *"Este cambio fue en caliente en los datos. No necesitas compilar ni actualizar el APK; la TV lo refleja automáticamente."*
+
+2. **División Estricta de Fuentes (Teleplay vs. CXTv)**:
+   * **Teleplay (`teveplay.net`, `event.json`, `destacado.json`)**: Reservado exclusivamente para **Fútbol y Deportes en Vivo** (partidos del día con cuenta regresiva, repeticiones y canales deportivos).
+   * **CXTv (`cxtvenvivo.com`)**: Reservado para **Televisión Abierta y Temática Mundial** (organizado por países sin discriminación de idioma, noticias, cine/series, infantil, música, etc.).
+   * Ambas fuentes deben operar de manera desacoplada para que una caída o cambio en una no impacte a la otra.
+
+3. **Menús y Secciones 100% Autogenerados (Data-Driven)**:
+   * Queda terminantemente prohibido hardcodear listas estáticas de categorías o países en el código Kotlin.
+   * La interfaz de la app debe autodescubrir y construir dinámicamente las pestañas y secciones a partir de los datos recibidos del backend.
+
+4. **Tratamiento de Canales Caídos (`NO DISPONIBLE`)**:
+   * Todo canal que no responda o cuya señal esté caída debe recibir la etiqueta visual `NO DISPONIBLE` y ser desplazado **automáticamente al fondo de la lista** de su categoría o país.
+   * El monitor / watchdog en segundo plano debe reintentar la captura periódicamente; al recuperar la transmisión, el canal vuelve a su posición superior de forma autónoma.
+

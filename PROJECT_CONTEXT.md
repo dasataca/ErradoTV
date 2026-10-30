@@ -76,7 +76,7 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
 * **`com.gareca.tv.EventAdapter`**: Adaptador para las tarjetas de partidos y canales con selector `card_selector.xml`, propiedad `currentList` y atenuación visual (`alpha = 0.5f`) para partidos finalizados o no disponibles.
 * **`com.gareca.tv.CommunityStreamManager`**: Sincronizador con la base comunitaria de Supabase (`public.errado_community_streams`), permitiendo deduplicar enlaces caídos y compartirlos entre dispositivos.
 * **`com.gareca.tv.telemetry.SupabaseLogger`**: Telemetría en segundo plano para auditoría de inicio, clics, zapping y errores de reproducción.
-* **`com.gareca.tv.PlayerActivity`**: Reproductor nativo AndroidX Media3 ExoPlayer con `OkHttpDataSource.Factory` conectado a `SecureDns`. Soporta zapping directo con `◀` y `▶` del D-Pad, banner flotante con logo y posición auto-ocultable a los 3.5s (`llChannelBanner`), y reapertura de controles multimedia y banner mediante `▲` y `▼`.
+* **`com.gareca.tv.PlayerActivity`**: Reproductor nativo AndroidX Media3 ExoPlayer con `OkHttpDataSource.Factory` conectado a `SecureDns`. Soporta zapping directo con `◀` y `▶` del D-Pad, banner flotante con logo y posición auto-ocultable a los 3.5s (`llChannelBanner`), reapertura de controles multimedia y banner mediante `▲` y `▼`, control dinámico de Zoom y relación de aspecto (`AspectRatioFrameLayout`: Ajuste Fit, Rellenar Fill 16:9, Zoom Recorte) con botón interactivo enfocado y HUD flotante (`tvZoomHud`), y auto-reconexión ante micro-cortes.
 * **`com.gareca.tv.WebStreamActivity`**: Visor WebView seguro con bloqueo de publicidad para señales externas web.
 
 ---
@@ -183,4 +183,46 @@ Si en el futuro deseas cambiar el proveedor de DNS para todos los televisores in
     * `minOffsetMs = 6000L` y `maxOffsetMs = 20000L`.
     * `minPlaybackSpeed = 0.97f` y `maxPlaybackSpeed = 1.03f`.
   * **Efecto práctico**: El canal arranca en apenas 1 segundo, pero ExoPlayer se posiciona 12 segundos detrás del borde del CDN, reteniendo permanentemente en RAM 3 a 4 fragmentos (`.ts`) ya listos. Ante un micro-retraso o freeze transitorio del socket del servidor de 2 a 4 segundos, el televisor sigue reproduciendo del colchón sin pausar jamás el video.
+
+---
+
+## 8. Control de Zoom y Modos de Aspecto de Pantalla (`AspectRatioFrameLayout`)
+
+### 8.1. Necesidad y Contexto
+Al integrar canales regionales, transmisiones retro o señales internacionales que emiten en relación de aspecto 4:3 o con barras negras fijas (letterbox o pillarbox), los usuarios de televisores panorámicos 16:9 requieren una forma ágil de ajustar la imagen sin abandonar la reproducción ni navegar por complejos menús de configuración del televisor.
+
+### 8.2. Implementación en `PlayerActivity.kt`
+* **Disponibilidad Condicional ("En los casos que se pueda")**:
+  * La opción se encuentra habilitada exclusivamente cuando el reproductor ha procesado cuadros válidos (`videoFrameReceived = true` y dimensiones de video > 0 en `onVideoSizeChanged`). Si la señal es de solo audio o aún no ha cargado, la opción permanece oculta (`View.GONE`).
+* **Interacción D-Pad en Pantalla**:
+  * Botón interactivo `btnZoomMode` en el extremo derecho de `llChannelBanner` con animación de foco (`button_focus_selector.xml`).
+  * Al pulsar `▲ Arriba` durante la reproducción, se despliega el banner de canal y se transfiere el foco de inmediato a `btnZoomMode`, permitiendo ciclar el modo con **OK / Center**.
+* **Atajos de Control Remoto**:
+  * Conmutación directa sin menús mediante las teclas `KEYCODE_MENU`, `KEYCODE_BUTTON_Y`, `168 (KEYCODE_ZOOM)` y `KEYCODE_PROG_BLUE`.
+* **Tres Modos de Relación de Aspecto**:
+  1. `RESIZE_MODE_FIT` (**Ajuste Original**): Mantiene la relación de aspecto nativa del stream con bandas negras laterales o superiores si difiere de 16:9.
+  2. `RESIZE_MODE_FILL` (**Rellenar 16:9**): Estira la imagen para cubrir el 100% de la pantalla sin franjas negras.
+  3. `RESIZE_MODE_ZOOM` (**Zoom / Recorte**): Llena la pantalla recortando proporcionalmente los bordes sin deformar los objetos ni las personas.
+* **Feedback Visual Flotante (`tvZoomHud`)**:
+  * Notificación flotante centrada en pantalla con texto en color de acento y desvanecimiento suave a los 2.5 segundos (*"🔍 Pantalla: Ajuste Original (Fit)"*, *"🔍 Pantalla: Rellenar Pantalla (16:9)"*, *"🔍 Pantalla: Zoom / Recorte Completo"*).
+
+---
+
+## 9. Arquitectura Dual Core: Deportes (Teleplay) vs Televisión Mundial (CXTv)
+
+### 9.1. Separación Estricta de Motores
+Para preservar la identidad deportiva de GarecaTV y expandir el catálogo sin saturar la experiencia de usuario:
+1. **Motor 1 — Deportes y Fútbol (Teleplay)**:
+   * **Fuentes**: `event.json` + `destacado.json` + `teveplay.net/api/channels`.
+   * **Contenido**: Partidos del día con cuenta regresiva en vivo, cálculo de huso horario local, enlaces de streaming de contingencia y repeticiones históricas.
+2. **Motor 2 — Televisión Abierta y Temática Mundial (CXTv)**:
+   * **Fuentes**: Scraper heurístico multinivel de `cxtvenvivo.com` / `cxtv.com.br`.
+   * **Contenido**: Más de 2.500 canales organizados en 98 países (sin discriminación de idioma) y 23 géneros (Noticias, Cine, Series, Infantil, Música, etc.).
+   * **Monitor Autónomo**: Watchdog en segundo plano que valida la salud del flujo HLS, detecta caídas y re-captura de la página origen nuevas etiquetas o URLs. Canales caídos se etiquetan como `NO DISPONIBLE` y se desplazan automáticamente al fondo.
+
+### 9.2. Menús y Secciones 100% Autogenerados (Data-Driven)
+* Las categorías, secciones y países no están hardcodeados en el código Kotlin.
+* El menú superior se construye dinámicamente en tiempo de ejecución (`dynamic tabs`) según los datos entregados por los JSONs remotos.
+* Permite agregar países, canales y nuevas disciplinas deportivas en caliente desde el servidor sin necesidad de actualizar el APK en los televisores de los usuarios.
+
 

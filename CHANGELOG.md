@@ -2,6 +2,22 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.7.5] - 2026-10-30
+### Añadido y Optimizado
+- **Control de Zoom y Relación de Aspecto en Pantalla (`AspectRatioFrameLayout` en ExoPlayer)**:
+  - **Disponibilidad Condicional ("En los casos que se pueda")**: El botón de zoom solo se habilita y muestra cuando el reproductor ha recibido cuadros de video válidos (`videoFrameReceived = true` y dimensiones > 0). En transmisiones de audio o durante la carga, permanece oculto.
+  - **Botón Interactivo en Banner (`btnZoomMode`)**: Embebido a la derecha del banner superior con selector visual Leanback (`button_focus_selector.xml`). Al presionar `▲ Arriba` durante la reproducción, el banner se despliega y transfiere el foco al botón para operarlo con OK/Center.
+  - **Atajos Directos de Control Remoto**: Mapeo de teclas `KEYCODE_MENU`, `KEYCODE_BUTTON_Y`, `168 (KEYCODE_ZOOM)` y `KEYCODE_PROG_BLUE` para conmutar la pantalla inmediatamente sin necesidad de abrir menús.
+  - **Tres Modos Cíclicos de Pantalla**:
+    1. `RESIZE_MODE_FIT` (**Ajuste Original**): Mantiene la relación de aspecto nativa del stream con bandas negras si difiere de 16:9 (ideal para emisiones estándar).
+    2. `RESIZE_MODE_FILL` (**Rellenar 16:9**): Estira la imagen horizontal y verticalmente cubriendo todo el panel del televisor sin franjas negras.
+    3. `RESIZE_MODE_ZOOM` (**Zoom / Recorte**): Llena completamente la pantalla recortando proporcionalmente los bordes sin deformar los objetos ni las personas (ideal para emisiones 4:3 con barras embebidas).
+  - **HUD Flotante de Notificación en Pantalla (`tvZoomHud`)**: Cartel informativo flotante en color de acento centrado en pantalla que se desvanece suavemente a los 2.5 segundos informando el modo activo (*"🔍 Pantalla: Ajuste Original (Fit)"*, *"🔍 Pantalla: Rellenar Pantalla (16:9)"*, *"🔍 Pantalla: Zoom / Recorte Completo"*).
+- **Protocolo de Arquitectura Dual Core y Actualización en Caliente**:
+  - Separación estricta entre **Teleplay** (Fútbol y Deportes en vivo) y **CXTv** (Televisión mundial abierta y temática de 98 países).
+  - Directiva de menús y secciones 100% autogenerados (Data-Driven) sin listas estáticas hardcodeadas.
+  - Política de reordenamiento automático de señales caídas con etiqueta `NO DISPONIBLE` al fondo de cada categoría o país.
+
 ## [1.7.4] - 2026-10-27
 ### Añadido y Optimizado
 - **Colchón de Latencia Objetivo para Canales en Vivo (`MediaItem.LiveConfiguration`)**:

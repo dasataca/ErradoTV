@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "a66b55d4441eac11034cc3ab673df5e83aae0973e5773f54c04f6bb5d645bad1cc49fb914fb09e1c5187d86f5536bb7ce7840cfac54486ffdaa2fc58f2c23524c2e952c990b148438b81b913857e527e",
-  "latest_version_code": 53,
-  "latest_version_name": "1.7.4",
-  "release_timestamp": 1793116618775,
-  "release_date": "2026-10-27",
+  "active_key_enc": "4586c8adb6911b3b0e467c626b6876ce0143f12636f256ab9e3e851593e6847366603331eb433a96d6f56b8e7216924be66ee01d7d250f21d68b326b16fa0e9edd6d539780d806ed5457dfa06c3e76a4",
+  "latest_version_code": 54,
+  "latest_version_name": "1.7.5",
+  "release_timestamp": 1793395602119,
+  "release_date": "2026-10-30",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Colchón de latencia objetivo (LiveConfiguration 12s) para protección constante contra micro-cortes en canales en vivo"
+  "changelog": "GarecaTV: Control dinámico de Zoom y relación de aspecto en reproductor, y arquitectura Dual Core"
 }
