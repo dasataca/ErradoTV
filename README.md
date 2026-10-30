@@ -38,7 +38,8 @@ Aplicación nativa para **Android TV, Google TV y Fire TV Stick** basada en las 
   * Botón interactivo en el banner (`btnZoomMode`) accesible con `▲ Arriba` y atajos directos en el control remoto (`MENU`, `BUTTON_Y`, `ZOOM`, `PROG_BLUE`) con indicador visual flotante (`tvZoomHud`).
 * 📺 **Arquitectura Dual Core (Deportes vs Televisión Mundial)**:
   * **Motor Deportes (Teleplay)**: Partidos del día con cuenta regresiva, huso horario local y repeticiones.
-  * **Motor TV Mundial (CXTv)**: Televisión abierta y temática de 98 países sin restricciones de idioma.
+  * **Motor Televisión Mundial (Estilo MagisTV / IPTV)**: Dos columnas (sidebar lateral de categorías a la izquierda y panel de canales a la derecha) con 2.400 señales de 98 países sin restricciones de idioma.
+  * **Distintivos Tecnológicos en Canales**: `⚡ EXOPLAYER HLS`, `🔴 YOUTUBE LIVE`, `🔵 WEB HTML5`, `🌐 WEB EXTERNA`, `⚪ NO DISPONIBLE`.
   * **Menús 100% Autogenerados (Data-Driven)**: Menús dinámicos y canales caídos desplazados al fondo con etiqueta `NO DISPONIBLE`.
 * 🌐 **Inteligencia Comunitaria (Supabase)**:
   * Registro y sincronización automática de señales caídas con la base de datos comunitaria (`errado_community_streams`), reordenando partidos `NO DISPONIBLE` al final de la lista.

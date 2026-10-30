@@ -2,6 +2,27 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.8.1] - 2026-10-30
+### Añadido y Optimizado
+- **Interfaz Master-Detail Estilo MagisTV / IPTV para Televisión Mundial**:
+  - **Columna Lateral Izquierda (Sidebar vertical, ancho 250dp)**: Agrupación visual vertical de categorías y países (`⭐ Todos los Canales`, `📺 Variedades`, `📰 Noticias`, `🎵 Música`, `🎬 Cine`, `🏆 Deportes`, `👶 Niños`, `🇦🇷 Argentina`, `🇪🇸 España`, `🇨🇴 Colombia`, etc.).
+  - **Panel Principal Derecho**: Despliegue instantáneo de los canales correspondientes a la categoría seleccionada a la izquierda con actualización en tiempo real al navegar verticalmente con el D-Pad (`SidebarCategoryAdapter`).
+  - **Navegación Ergonómica con Control Remoto**:
+    - `▲` y `▼`: Recorren la columna lateral izquierda de categorías.
+    - `▶ Derecha`: Salta directamente de la columna de categorías a la primera tarjeta de canal del panel derecho.
+    - `◀ Izquierda`: Desde las tarjetas de canal del panel derecho, regresa fluidamente a la categoría activa en la columna izquierda.
+    - `▲ Arriba` (desde el primer elemento del menú): Sube el foco a la caja de búsqueda general.
+- **Distintivos Tecnológicos Explícitos en Cada Tarjeta**:
+  - Identificación visual clara del tipo de reproductor en cada canal:
+    - `⚡ EXOPLAYER HLS` (Verde Neón `#059669`): Transmisiones `.m3u8` nativas con zapping continuo (`◀` / `▶`) y Zoom.
+    - `🔴 YOUTUBE LIVE` (Rojo `#DC2626`): Transmisiones en vivo vía YouTube a pantalla completa.
+    - `🔵 WEB HTML5` (Azul Eléctrico `#2563EB`): Canales embebidos en reproductor web seguro.
+    - `🌐 WEB EXTERNA` (Púrpura `#7C3AED`): Señales abiertas enlazadas.
+    - `⚪ NO DISPONIBLE` (Gris `#6B7280`): Canales caídos con atenuación visual (`alpha = 0.5f`), desplazados al fondo de su categoría.
+- **Supresión Total de Marcas Internas ("CXTv")**:
+  - El botón de modo superior se estandariza como **`📺 TELEVISIÓN MUNDIAL`**.
+  - Se eliminan referencias técnicas de proveedores en la UI, changelogs y textos visibles para el usuario.
+
 ## [1.8.0] - 2026-10-30
 ### Añadido y Optimizado
 - **Selector Maestro Dual Core (Deportes vs TV Mundial)**:

@@ -13,7 +13,8 @@ import com.gareca.tv.model.EventItem
 import com.gareca.tv.model.EventStatus
 
 class EventAdapter(
-    private val onItemClick: (EventItem) -> Unit
+    private val onItemClick: (EventItem) -> Unit,
+    private val onLeftPressed: (() -> Boolean)? = null
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
     private val items = mutableListOf<EventItem>()
@@ -29,7 +30,7 @@ class EventAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_event_card, parent, false)
-        return EventViewHolder(view, onItemClick)
+        return EventViewHolder(view, onItemClick, onLeftPressed)
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
@@ -40,7 +41,8 @@ class EventAdapter(
 
     class EventViewHolder(
         itemView: View,
-        private val onItemClick: (EventItem) -> Unit
+        private val onItemClick: (EventItem) -> Unit,
+        private val onLeftPressed: (() -> Boolean)? = null
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
@@ -58,6 +60,17 @@ class EventAdapter(
                 } else {
                     view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start()
                 }
+            }
+
+            itemView.setOnKeyListener { _, keyCode, event ->
+                if (event.action == android.view.KeyEvent.ACTION_DOWN) {
+                    if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
+                        if (onLeftPressed != null) {
+                            return@setOnKeyListener onLeftPressed.invoke()
+                        }
+                    }
+                }
+                false
             }
         }
 
@@ -103,18 +116,33 @@ class EventAdapter(
                 item.status
             }
 
-            // Configurar insignia de estado dinámico (EN VIVO, YOUTUBE LIVE, WEB HTML5, NO DISPONIBLE)
+            // Distintivos explícitos para canales y eventos
+            val isChannel = item.country != null || item.status == EventStatus.CHANNEL_24_7 || item.category != "Partidos"
             val badgeText: String
             val badgeColor: String
+
             if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
-                badgeText = "NO DISPONIBLE"
+                badgeText = "⚪ NO DISPONIBLE"
                 badgeColor = "#6B7280"
-            } else if (item.streamType.equals("youtube", ignoreCase = true)) {
-                badgeText = "YOUTUBE LIVE"
-                badgeColor = "#EF4444"
-            } else if (item.streamType.equals("web", ignoreCase = true)) {
-                badgeText = "WEB HTML5"
-                badgeColor = "#2563EB"
+            } else if (isChannel) {
+                when (item.streamType.lowercase()) {
+                    "exo" -> {
+                        badgeText = "⚡ EXOPLAYER HLS"
+                        badgeColor = "#059669"
+                    }
+                    "youtube" -> {
+                        badgeText = "🔴 YOUTUBE LIVE"
+                        badgeColor = "#DC2626"
+                    }
+                    "web" -> {
+                        badgeText = "🔵 WEB HTML5"
+                        badgeColor = "#2563EB"
+                    }
+                    else -> {
+                        badgeText = "🌐 WEB EXTERNA"
+                        badgeColor = "#7C3AED"
+                    }
+                }
             } else {
                 badgeText = effectiveStatus.label
                 badgeColor = effectiveStatus.colorHex

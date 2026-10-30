@@ -146,16 +146,37 @@ Toda IA o desarrollador que trabaje en este repositorio debe cumplir estrictamen
    * **Cuando se modifican catálogos, servidores, JSON, watchdogs o scripts de scraping**: La IA **DEBE** aclarar que se trata de una actualización en caliente:
      > *"Este cambio fue en caliente en los datos. No necesitas compilar ni actualizar el APK; la TV lo refleja automáticamente."*
 
-2. **División Estricta de Fuentes (Teleplay vs. CXTv)**:
+2. **División Estricta de Fuentes y Supresión de Marcas Internas**:
    * **Teleplay (`teveplay.net`, `event.json`, `destacado.json`)**: Reservado exclusivamente para **Fútbol y Deportes en Vivo** (partidos del día con cuenta regresiva, repeticiones y canales deportivos).
-   * **CXTv (`cxtvenvivo.com`)**: Reservado para **Televisión Abierta y Temática Mundial** (organizado por países sin discriminación de idioma, noticias, cine/series, infantil, música, etc.).
-   * Ambas fuentes deben operar de manera desacoplada para que una caída o cambio en una no impacte a la otra.
+   * **Televisión Mundial Abierta**: Reservada para **Televisión Abierta y Temática Mundial** (organizado por países sin discriminación de idioma, noticias, cine/series, infantil, música, etc.).
+   * **Prohibición de Nombres Internos**: Queda terminantemente prohibido mostrar nombres de proveedores técnicos o internos (como "CXTv") en la interfaz de usuario, botones, hints de búsqueda, diálogos o changelogs. Para el usuario es simplemente "📺 TELEVISIÓN MUNDIAL".
 
-3. **Menús y Secciones 100% Autogenerados (Data-Driven)**:
+3. **Arquitectura Master-Detail (Estilo MagisTV / OTT Player) para TV Mundial**:
+   * En **⚽ Deportes y Partidos**: Se mantiene la barra horizontal superior de categorías con eventos a pantalla completa.
+   * En **📺 Televisión Mundial**:
+     * **Buscador Superior**: Con botón de micrófono por voz, caja de búsqueda unificada y botón interno "✕".
+     * **Columna Lateral Izquierda (Sidebar vertical, ancho 250dp)**: Listado vertical de categorías temáticas y países (`SidebarCategoryAdapter`) con estados visuales activos/inactivos (`mode_button_selector.xml`).
+     * **Panel Principal Derecho**: Listado de canales correspondientes a la categoría seleccionada a la izquierda (`rvEvents`).
+     * **Navegación D-Pad Fluida**:
+       - `▲` / `▼` en la columna izquierda: Cambia de categoría actualizando en tiempo real los canales de la derecha.
+       - `▶ Derecha` desde la columna izquierda: Salta directamente al primer canal del panel derecho.
+       - `◀ Izquierda` desde el panel derecho: Regresa al menú vertical de categorías.
+       - `▲ Arriba` desde el primer elemento de la columna izquierda: Salta a la caja de búsqueda.
+
+4. **Distintivos Tecnológicos Explícitos en Cada Canal**:
+   * Toda tarjeta de canal en Televisión Mundial debe portar obligatoriamente su insignia técnica:
+     - `⚡ EXOPLAYER HLS` (Verde `#059669`): Transmisiones nativas directas `.m3u8` con zapping continuo (`◀` / `▶`) y Zoom.
+     - `🔴 YOUTUBE LIVE` (Rojo `#DC2626`): Emisiones en directo vía YouTube sin bloqueos.
+     - `🔵 WEB HTML5` (Azul `#2563EB`): Streams web embebidos (Dailymotion/Twitch).
+     - `🌐 WEB EXTERNA` (Púrpura `#7C3AED`): Enlaces abiertos web.
+     - `⚪ NO DISPONIBLE` (Gris `#6B7280`): Señales caídas con transparencia al 50%, desplazadas al fondo.
+
+5. **Menús y Secciones 100% Autogenerados (Data-Driven)**:
    * Queda terminantemente prohibido hardcodear listas estáticas de categorías o países en el código Kotlin.
-   * La interfaz de la app debe autodescubrir y construir dinámicamente las pestañas y secciones a partir de los datos recibidos del backend.
+   * La interfaz de la app debe autodescubrir y construir dinámicamente las pestañas y secciones a partir de los datos recibidos del backend (`buildWorldTvTabs()`).
 
-4. **Tratamiento de Canales Caídos (`NO DISPONIBLE`)**:
-   * Todo canal que no responda o cuya señal esté caída debe recibir la etiqueta visual `NO DISPONIBLE` y ser desplazado **automáticamente al fondo de la lista** de su categoría o país.
+6. **Tratamiento de Canales Caídos (`NO DISPONIBLE`)**:
+   * Todo canal que no responda o cuya señal esté caída debe recibir la etiqueta visual `⚪ NO DISPONIBLE` y ser desplazado **automáticamente al fondo de la lista** de su categoría o país.
    * El monitor / watchdog en segundo plano debe reintentar la captura periódicamente; al recuperar la transmisión, el canal vuelve a su posición superior de forma autónoma.
+
 
