@@ -38,27 +38,27 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
 * `https://errado-app.pages.dev/data/home.json` → Carrusel principal.
 
 ### Separación de Catálogos y Búsqueda en TV
-1. **Partidos del Día (`⚽ Partidos del Día`)**: Muestra únicamente los partidos en vivo, por empezar o programados de la jornada actual (`cachedDailyEvents`). Se excluyen todas las repeticiones.
-2. **Pestaña Exclusiva de Repeticiones (`🔁 Repeticiones`)**: Situada justo antes de `📺 Regionales`, reúne el catálogo de partidos históricos (`cachedReplayEvents`).
-3. **Buscador Global (`🔍 Buscar Todo`)**: Pestaña inicial que consolida la búsqueda simultánea en partidos de hoy, canales lineales y repeticiones. Dispone de botón de ordenamiento por **`🔤 Nombre`** (`btnSortNameGlobal`), alternando entre orden por defecto, A-Z y Z-A.
-4. **Arquitectura de Búsqueda, Botón "✕" Interno y Búsqueda Tokenizada**:
+1. **Selector Maestro Dual Core (Deportes vs TV Mundial)**:
+   * Situado en la cabecera superior, permite alternar instantáneamente entre los dos núcleos de emisión:
+     - **⚽ DEPORTES Y PARTIDOS**: Teleplay (`teveplay.net`, `event.json`, `destacado.json`) enfocado 100% en fútbol en vivo, ligas mundiales, repeticiones y canales deportivos con cuenta regresiva.
+     - **📺 TELEVISIÓN MUNDIAL (CXTv)**: Televisión universal abierta y temática de `cxtvenvivo.com`, abarcando 2.399 canales de 98 países clasificados en 23 categorías dinámicas.
+2. **Partidos del Día (`⚽ Partidos del Día`)**: Muestra únicamente los partidos en vivo, por empezar o programados de la jornada actual (`cachedDailyEvents`). Se excluyen todas las repeticiones.
+3. **Pestaña Exclusiva de Repeticiones (`🔁 Repeticiones`)**: Situada justo antes de `📺 Regionales`, reúne el catálogo de partidos históricos (`cachedReplayEvents`).
+4. **Buscador Global (`🔍 Buscar Todo` / `🔍 Buscar TV`)**: Pestaña inicial que consolida la búsqueda por texto y por voz según el modo activo. Dispone de botón de ordenamiento por **`🔤 Nombre`** (`btnSortNameGlobal`).
+5. **Menús y Secciones 100% Autogenerados (Data-Driven)**:
+   * Prohibido hardcodear listas de categorías o países en código. La app construye las pestañas en caliente a partir de la respuesta JSON del servidor (`buildCxtvTabs`).
+   * Desplazamiento automático de canales `NO DISPONIBLE` al fondo de la lista en cada categoría o país.
+6. **Arquitectura de Búsqueda, Botón "✕" Interno y Búsqueda Tokenizada**:
    * **Disposición Visual**: Botón de micrófono a la izquierda (`btnVoiceSearchReplay` / `btnVoiceGlobalSearch`), campo de texto unificado con botón "✕" interno (`btnClearSearchText` / `btnClearGlobalText`) y botón Lupa dedicado a la derecha (`btnSearchReplay` / `btnSearchGlobal`).
    * **Botón "✕" Interno con Activación Inmediata de Teclado**: Ubicado en el extremo interior derecho del campo de texto, visible sólo cuando hay texto. Al seleccionarlo con el D-Pad y pulsar OK, limpia todo el texto del campo, refresca los eventos y levanta automáticamente el teclado virtual (`activateSearchInput()` / `activateGlobalSearchInput()`) con el cursor listo para escribir una nueva consulta.
    * **Búsqueda Tokenizada Multidisjuntiva**: Divide las consultas por espacios (`split(Regex("""\s+"""))`), evaluando que cada término o equipo coincida de forma independiente en título, subtítulo, fecha o categoría (`tokens.all { target.contains(it) }`). Esto soluciona búsquedas como "racing boca" o "boca racing" en repeticiones y catálogo global.
    * **Interceptación Pre-IME de Tecla Atrás (`SearchEditText`)**: En Android TV, el teclado virtual del sistema operativo consume el primer evento `KEYCODE_BACK` para ocultarse, evitando que llegue a la `Activity` y dejando el foco atrapado en el campo de texto. `SearchEditText.kt` sobreescribe `onKeyPreIme()` para capturar la tecla Atrás con prioridad, ocultar el teclado y transferir el foco al primer elemento del listado de sugerencias.
    * **Resiliencia en Touch Mode**: Tanto el contenedor `rvSuggestions` como cada elemento (`item_search_suggestion.xml`) tienen `android:focusableInTouchMode="true"`, asegurando que el foco sea aceptado por el control remoto de TV aún cuando el sistema permanezca momentáneamente en modo táctil tras el cierre del teclado.
-   * **Flujo de Navegación D-Pad**:
-     1. Al escribir 2 o más letras, `filterSuggestions()` despliega sugerencias tokenizadas en `rvSuggestions`.
-     2. Al pulsar **Atrás (BACK)**, el teclado desaparece y el foco salta de inmediato a la primera sugerencia.
-     3. Al presionar **OK / Center** sobre una sugerencia, el texto se escribe en la caja, la lista de sugerencias se cierra, se ejecuta el filtrado inmediato y el foco salta directamente a la primera tarjeta de resultado del catálogo (`focusFirstEventItem`).
-     4. Al pulsar **Atrás (BACK)** estando en la lista de sugerencias sin elegir nada, la lista se oculta y el foco regresa a la caja de búsqueda.
-     5. Al pulsar **Arriba (DPAD_UP)** desde la primera sugerencia, el foco regresa a la caja de texto (`onUpFromFirst`).
-     6. Al pulsar **Derecha (DPAD_RIGHT)** desde la caja de texto (cuando hay texto), el foco va al botón interno **"✕"**.
-5. **Cabecera de Versión, Actualización Inteligente y Ayuda Contextual**:
-   * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.7.0`).
+7. **Cabecera de Versión, Actualización Inteligente y Ayuda Contextual**:
+   * Indicador visual de versión instalada (`tvAppVersion`) junto a la fecha oficial (`• v1.8.0`).
    * Botón de actualización dinámico: muestra `Actualizado` si la versión local coincide con `version.json`, o `Actualizar (vX.X.X)` si hay un release superior disponible en el repositorio.
-    * Botón `Recargar`: fuerza la descarga inmediata de la agenda deportiva y canales ignorando la caché.
-    * **Ayuda Contextual Dinámica (`tvHeaderButtonHint`)**: Al enfocar cualquiera de los dos botones superiores, se despliega debajo una etiqueta explicativa (`11sp`, texto conciso sin prefijos redundantes) que clarifica la acción ("Comprueba o descarga la última versión de la app" o "Recarga lista de eventos/canales").
+   * Botón `Recargar`: fuerza la descarga inmediata de la agenda deportiva y canales ignorando la caché.
+   * **Ayuda Contextual Dinámica (`tvHeaderButtonHint`)**: Al enfocar cualquiera de los dos botones superiores, se despliega debajo una etiqueta explicativa (`11sp`, texto conciso sin prefijos redundantes) que clarifica la acción ("Comprueba o descarga la última versión de la app" o "Recarga lista de eventos/canales").
 
 ---
 
@@ -69,15 +69,15 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
 * **`com.gareca.tv.SuggestionAdapter`**: Adaptador para el `RecyclerView` de sugerencias (`rvSuggestions`). Implementa selectores visuales de alto contraste (`button_focus_selector.xml`), animación de escala (`1.02f`) al enfocar, callback de selección (`onItemClick`) y navegación vertical hacia la caja de texto (`onUpFromFirst`).
 * **`com.gareca.tv.api.CryptoUtils`**: Módulo criptográfico AES-256-CBC con clave blindada con máscara XOR (`getFactoryKey()`), soporte de Cifrado de Sobre (`decryptEnvelope`) para `"active_key_enc"`, almacenamiento en `SharedPreferences` y validación estricta de JSON en memoria RAM.
 * **`com.gareca.tv.network.SecureDns`**: Proveedor nativo de DNS sobre HTTPS (DoH) basado en `okhttp-dnsoverhttps` con servidores seguros de Cloudflare (`1.1.1.1`), Google (`8.8.8.8`) y conmutación automática de respaldo a DNS del sistema.
-* **`com.gareca.tv.api.ApiClient`**: Cliente HTTP basado en `OkHttpClient` y corrutinas, enrutado por `SecureDns`. Descarga, descifra y mapea `event.json`, `destacado.json` y los canales de `teveplay.net`. Extrae fechas y timestamps (`YYYY-MM-DD`) para ordenación.
-* **`com.gareca.tv.model.EventModel`**: Modelos de datos (`EventItem`, `StreamOption`, `EventStatus`). Soporta cálculo dinámico de estados (`● EN VIVO`, `POR EMPEZAR`, `PROGRAMADO`, `FINALIZADO`, `REPETICIÓN`, `NO DISPONIBLE`, `CANAL 24/7`), marcas de fecha (`rawDate`) y milisegundos (`timestamp`).
-* **`com.gareca.tv.MainActivity`**: Actividad principal Leanback. Gestiona el ciclo de vida, reloj en tiempo real (`TextClock`), control de frecuencia de refresco, buscador dinámico, botones de ordenación (`ReplaySortMode` y `GlobalSortMode`), gestión de sugerencias, armado de playlist de canales y navegación D-Pad.
-* **`com.gareca.tv.CategoryAdapter`**: Barra de pestañas horizontal (`rvCategories`) con animación de escala (`1.06f`) y captura de evento de flecha abajo para transferir el foco al buscador o lista.
-* **`com.gareca.tv.EventAdapter`**: Adaptador para las tarjetas de partidos y canales con selector `card_selector.xml`, propiedad `currentList` y atenuación visual (`alpha = 0.5f`) para partidos finalizados o no disponibles.
+* **`com.gareca.tv.api.ApiClient`**: Cliente HTTP basado en `OkHttpClient` y corrutinas, enrutado por `SecureDns`. Descarga, descifra y mapea `event.json`, `destacado.json`, `teveplay.net` y `cxtv_catalog.json` (desde assets o GitHub).
+* **`com.gareca.tv.model.EventModel`**: Modelos de datos (`EventItem`, `StreamOption`, `EventStatus`). Soporta cálculo dinámico de estados (`● EN VIVO`, `POR EMPEZAR`, `PROGRAMADO`, `FINALIZADO`, `REPETICIÓN`, `NO DISPONIBLE`, `CANAL 24/7`), marcas de fecha (`rawDate`), país (`country`) y tipo de stream (`streamType`: exo, youtube, web).
+* **`com.gareca.tv.MainActivity`**: Actividad principal Leanback. Gestiona el Selector Dual Core (`btnModeSports` y `btnModeWorldTv`), ciclo de vida, reloj en tiempo real (`TextClock`), control de frecuencia de refresco, buscador dinámico tokenizado, botones de ordenación, gestión de sugerencias, armado de playlist de canales y navegación D-Pad.
+* **`com.gareca.tv.CategoryAdapter`**: Barra de pestañas horizontal dinámica (`rvCategories`) con animación de escala (`1.06f`), mutación en caliente con `setCategories()` y captura de evento de flecha abajo para transferir el foco al buscador o lista.
+* **`com.gareca.tv.EventAdapter`**: Adaptador para las tarjetas de partidos y canales con selector `card_selector.xml`, distintivos visuales (`🟢 EN VIVO`, `🔴 YOUTUBE LIVE`, `🔵 WEB HTML5`, `⚪ NO DISPONIBLE`) y atenuación visual (`alpha = 0.5f`) para señales caídas.
 * **`com.gareca.tv.CommunityStreamManager`**: Sincronizador con la base comunitaria de Supabase (`public.errado_community_streams`), permitiendo deduplicar enlaces caídos y compartirlos entre dispositivos.
 * **`com.gareca.tv.telemetry.SupabaseLogger`**: Telemetría en segundo plano para auditoría de inicio, clics, zapping y errores de reproducción.
 * **`com.gareca.tv.PlayerActivity`**: Reproductor nativo AndroidX Media3 ExoPlayer con `OkHttpDataSource.Factory` conectado a `SecureDns`. Soporta zapping directo con `◀` y `▶` del D-Pad, banner flotante con logo y posición auto-ocultable a los 3.5s (`llChannelBanner`), reapertura de controles multimedia y banner mediante `▲` y `▼`, control dinámico de Zoom y relación de aspecto (`AspectRatioFrameLayout`: Ajuste Fit, Rellenar Fill 16:9, Zoom Recorte) con botón interactivo enfocado y HUD flotante (`tvZoomHud`), y auto-reconexión ante micro-cortes.
-* **`com.gareca.tv.WebStreamActivity`**: Visor WebView seguro con bloqueo de publicidad para señales externas web.
+* **`com.gareca.tv.WebStreamActivity`**: Visor WebView seguro con bloqueo de publicidad y soporte full screen para señales emitidas vía YouTube Live y web HTML5.
 
 ---
 

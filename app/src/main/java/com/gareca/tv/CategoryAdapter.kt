@@ -8,11 +8,20 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class CategoryAdapter(
-    private val categories: List<String>,
+    initialCategories: List<String>,
     private var selectedCategory: String,
     private val onCategoryClick: (String) -> Unit,
     private val onDownPressed: ((String) -> Boolean)? = null
 ) : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>() {
+
+    private val categories = initialCategories.toMutableList()
+
+    fun setCategories(newCategories: List<String>, newSelected: String) {
+        categories.clear()
+        categories.addAll(newCategories)
+        selectedCategory = newSelected
+        notifyDataSetChanged()
+    }
 
     fun setSelectedCategory(category: String) {
         if (selectedCategory != category) {

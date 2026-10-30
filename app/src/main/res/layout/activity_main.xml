@@ -184,6 +184,62 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Selector Maestro de Modo (Dual Core: Deportes vs TV Mundial) -->
+    <LinearLayout
+        android:id="@+id/llModeSelector"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="14dp">
+
+        <LinearLayout
+            android:id="@+id/btnModeSports"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:focusable="true"
+            android:clickable="true"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/mode_button_selector">
+
+            <TextView
+                android:id="@+id/tvModeSportsLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚽ DEPORTES Y PARTIDOS"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/mode_button_text_selector"
+                android:duplicateParentState="true" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btnModeWorldTv"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:focusable="true"
+            android:clickable="true"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/mode_button_selector">
+
+            <TextView
+                android:id="@+id/tvModeWorldTvLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📺 TELEVISIÓN MUNDIAL (CXTv)"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/mode_button_text_selector"
+                android:duplicateParentState="true" />
+        </LinearLayout>
+    </LinearLayout>
+
     <!-- Category / Country Tabs for TV -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvCategories"

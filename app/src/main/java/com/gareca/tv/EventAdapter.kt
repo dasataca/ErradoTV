@@ -103,17 +103,34 @@ class EventAdapter(
                 item.status
             }
 
-            // Configurar insignia de estado dinámico (EN VIVO, POR EMPEZAR, PROGRAMADO, FINALIZADO)
-            tvStreamBadge.text = effectiveStatus.label
+            // Configurar insignia de estado dinámico (EN VIVO, YOUTUBE LIVE, WEB HTML5, NO DISPONIBLE)
+            val badgeText: String
+            val badgeColor: String
+            if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                badgeText = "NO DISPONIBLE"
+                badgeColor = "#6B7280"
+            } else if (item.streamType.equals("youtube", ignoreCase = true)) {
+                badgeText = "YOUTUBE LIVE"
+                badgeColor = "#EF4444"
+            } else if (item.streamType.equals("web", ignoreCase = true)) {
+                badgeText = "WEB HTML5"
+                badgeColor = "#2563EB"
+            } else {
+                badgeText = effectiveStatus.label
+                badgeColor = effectiveStatus.colorHex
+            }
+
+            tvStreamBadge.text = badgeText
             val badgeDrawable = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 cornerRadius = 10f
-                setColor(Color.parseColor(effectiveStatus.colorHex))
+                setColor(Color.parseColor(badgeColor))
             }
             tvStreamBadge.background = badgeDrawable
 
-            // Si el partido ya finalizó o no está disponible, atenuar la tarjeta (canales 24/7 nunca se atenúan)
-            itemView.alpha = if (!is247 && (effectiveStatus == EventStatus.FINISHED || effectiveStatus == EventStatus.REPLAY_UNAVAILABLE)) 0.5f else 1.0f
+            // Si el canal/partido no está disponible o finalizó, atenuar visualmente
+            val isUnavailable = item.status == EventStatus.REPLAY_UNAVAILABLE || effectiveStatus == EventStatus.REPLAY_UNAVAILABLE
+            itemView.alpha = if (isUnavailable || (!is247 && effectiveStatus == EventStatus.FINISHED)) 0.5f else 1.0f
 
             itemView.setOnClickListener {
                 onItemClick(item)

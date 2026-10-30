@@ -43,6 +43,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
@@ -119,6 +120,14 @@ class MainActivity : AppCompatActivity() {
     private var currentSortMode = ReplaySortMode.DATE_DESC
     private var searchQuery = ""
 
+    enum class AppMode { SPORTS, WORLD_TV }
+    private var currentAppMode = AppMode.SPORTS
+
+    private lateinit var btnModeSports: View
+    private lateinit var btnModeWorldTv: View
+    private lateinit var tvModeSportsLabel: TextView
+    private lateinit var tvModeWorldTvLabel: TextView
+
     private val categoryList = listOf(
         "🔍 Buscar Todo",
         "⚽ Partidos del Día",
@@ -154,6 +163,11 @@ class MainActivity : AppCompatActivity() {
     private var cachedDailyEvents = listOf<EventItem>()
     private var cachedReplayEvents = listOf<EventItem>()
     private var cachedLiveChannels = listOf<EventItem>()
+
+    // Catálogo Dinámico de Televisión Mundial (CXTv)
+    private var cachedCxtvChannels = listOf<EventItem>()
+    private var dynamicCxtvCategories = listOf<String>()
+    private var dynamicCxtvCountries = listOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -214,7 +228,7 @@ class MainActivity : AppCompatActivity() {
                 onSuggestionSelected(selectedText)
             },
             onUpFromFirst = {
-                if (currentCategory == "🔍 Buscar Todo") {
+                if (currentCategory == "🔍 Buscar Todo" || currentCategory == "🔍 Buscar TV") {
                     etGlobalSearch.requestFocus()
                 } else {
                     etSearch.requestFocus()
@@ -222,6 +236,24 @@ class MainActivity : AppCompatActivity() {
             }
         )
         rvSuggestions.adapter = suggestionAdapter
+
+        btnModeSports = findViewById(R.id.btnModeSports)
+        btnModeWorldTv = findViewById(R.id.btnModeWorldTv)
+        tvModeSportsLabel = findViewById(R.id.tvModeSportsLabel)
+        tvModeWorldTvLabel = findViewById(R.id.tvModeWorldTvLabel)
+
+        btnModeSports.setOnClickListener {
+            if (currentAppMode != AppMode.SPORTS) {
+                switchAppMode(AppMode.SPORTS)
+            }
+        }
+
+        btnModeWorldTv.setOnClickListener {
+            if (currentAppMode != AppMode.WORLD_TV) {
+                switchAppMode(AppMode.WORLD_TV)
+            }
+        }
+        updateModeButtonStyles()
 
         updateTimeZoneHeader()
         setupSearchAndSortControls()
@@ -263,7 +295,7 @@ class MainActivity : AppCompatActivity() {
 
         rvCategories.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         categoryAdapter = CategoryAdapter(
-            categories = categoryList,
+            initialCategories = categoryList,
             selectedCategory = currentCategory,
             onCategoryClick = { selectedCat ->
                 currentCategory = selectedCat
@@ -273,7 +305,7 @@ class MainActivity : AppCompatActivity() {
                 filterAndDisplayEvents(silent = false)
             },
             onDownPressed = { category ->
-                if (category == "🔍 Buscar Todo" && globalSearchContainer.visibility == View.VISIBLE) {
+                if ((category == "🔍 Buscar Todo" || category == "🔍 Buscar TV") && globalSearchContainer.visibility == View.VISIBLE) {
                     etGlobalSearch.requestFocus()
                     true
                 } else if (category == "🔁 Repeticiones" && searchContainer.visibility == View.VISIBLE) {
@@ -317,6 +349,18 @@ class MainActivity : AppCompatActivity() {
 
         // Comprobación de versión en la web al iniciar
         checkAndPromptUpdate(userInitiated = false)
+
+        // Precargar catálogo CXTv de activos locales para disponibilidad inmediata al presionar Modo TV Mundial
+        lifecycleScope.launch(Dispatchers.IO) {
+            val localCatalog = ApiClient.fetchCxtvChannels(this@MainActivity)
+            withContext(Dispatchers.Main) {
+                if (cachedCxtvChannels.isEmpty()) {
+                    cachedCxtvChannels = localCatalog.channels
+                    dynamicCxtvCategories = localCatalog.categories
+                    dynamicCxtvCountries = localCatalog.countries
+                }
+            }
+        }
 
         // Carga al abrir la app con punto de control de 15 minutos
         loadData(silent = false, force = false)
@@ -427,14 +471,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        for (item in cachedReplayEvents) {
-            extractWords(item.title)
-        }
-        for (item in cachedDailyEvents) {
-            extractWords(item.title)
-        }
-        for (item in cachedLiveChannels) {
-            extractWords(item.title)
+        if (currentAppMode == AppMode.WORLD_TV) {
+            for (item in cachedCxtvChannels) {
+                extractWords(item.title)
+            }
+        } else {
+            for (item in cachedReplayEvents) {
+                extractWords(item.title)
+            }
+            for (item in cachedDailyEvents) {
+                extractWords(item.title)
+            }
+            for (item in cachedLiveChannels) {
+                extractWords(item.title)
+            }
         }
     }
 
@@ -1005,13 +1055,115 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun switchAppMode(mode: AppMode) {
+        if (currentAppMode == mode) return
+        currentAppMode = mode
+        updateModeButtonStyles()
+
+        if (mode == AppMode.SPORTS) {
+            currentCategory = "⚽ Partidos del Día"
+            categoryAdapter.setCategories(categoryList, currentCategory)
+            rvCategories.scrollToPosition(1)
+        } else {
+            val cxtvTabs = buildCxtvTabs()
+            currentCategory = if (cxtvTabs.size > 1) cxtvTabs[1] else "⭐ Todos los Canales"
+            categoryAdapter.setCategories(cxtvTabs, currentCategory)
+            rvCategories.scrollToPosition(1)
+        }
+
+        updateSearchSuggestions()
+        filterAndDisplayEvents(silent = false)
+    }
+
+    private fun updateModeButtonStyles() {
+        val isSports = currentAppMode == AppMode.SPORTS
+        btnModeSports.isSelected = isSports
+        btnModeWorldTv.isSelected = !isSports
+    }
+
+    private fun buildCxtvTabs(): List<String> {
+        val tabs = mutableListOf<String>()
+        tabs.add("🔍 Buscar TV")
+        tabs.add("⭐ Todos los Canales")
+        for (cat in dynamicCxtvCategories) {
+            tabs.add(getCategoryTabLabel(cat))
+        }
+        for (country in dynamicCxtvCountries) {
+            tabs.add(getCountryTabLabel(country))
+        }
+        return tabs
+    }
+
+    private fun getCategoryTabLabel(category: String): String {
+        val icon = when (category.lowercase()) {
+            "noticias" -> "📰"
+            "música", "musica" -> "🎵"
+            "cine" -> "🎬"
+            "deportes" -> "🏆"
+            "niños", "infantil" -> "👶"
+            "serie", "series" -> "🎞️"
+            "cultura" -> "🎨"
+            "educación", "educacion" -> "📚"
+            "documentales" -> "📽️"
+            "evangélico", "evangelico", "católico", "catolico" -> "🕊️"
+            "culinario" -> "🍳"
+            "coches" -> "🏎️"
+            "clima" -> "⛅"
+            else -> "📺"
+        }
+        return "$icon $category"
+    }
+
+    private fun getCountryTabLabel(country: String): String {
+        val flag = when (country.lowercase()) {
+            "argentina" -> "🇦🇷"
+            "brasil", "brazil" -> "🇧🇷"
+            "estados unidos", "usa" -> "🇺🇸"
+            "españa", "spain" -> "🇪🇸"
+            "méjico", "mexico" -> "🇲🇽"
+            "colombia" -> "🇨🇴"
+            "chile" -> "🇨🇱"
+            "perú", "peru" -> "🇵🇪"
+            "ecuador" -> "🇪🇨"
+            "uruguay" -> "🇺🇾"
+            "paraguay" -> "🇵🇾"
+            "venezuela" -> "🇻🇪"
+            "bolivia" -> "🇧🇴"
+            "italia", "italy" -> "🇮🇹"
+            "francia", "france" -> "🇫🇷"
+            "alemania", "germany" -> "🇩🇪"
+            "reino unido", "uk" -> "🇬🇧"
+            "portugal" -> "🇵🇹"
+            else -> "🌍"
+        }
+        return "$flag $country"
+    }
+
+    private fun sortCxtvChannelList(list: List<EventItem>): List<EventItem> {
+        return list.sortedWith(
+            compareBy<EventItem> { item ->
+                when {
+                    // Canales no disponibles SIEMPRE al final de la lista
+                    item.status == EventStatus.REPLAY_UNAVAILABLE -> 100
+                    item.status == EventStatus.FINISHED -> 90
+                    item.streamType == "exo" -> 10
+                    item.streamType == "youtube" -> 20
+                    item.streamType == "web" -> 30
+                    else -> 40
+                }
+            }.thenBy { it.title.lowercase() }
+        )
+    }
+
     private fun startVoiceSearch(isGlobal: Boolean) {
+        val promptText = if (isGlobal) {
+            if (currentAppMode == AppMode.WORLD_TV) "Di el canal o país a buscar..." else "Di el nombre del equipo o canal a buscar..."
+        } else {
+            "Di el partido a buscar en repeticiones..."
+        }
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(
-                RecognizerIntent.EXTRA_PROMPT,
-                if (isGlobal) "Di el nombre del equipo o canal a buscar..." else "Di el partido a buscar en repeticiones..."
-            )
+            putExtra(RecognizerIntent.EXTRA_PROMPT, promptText)
         }
         try {
             isVoiceForGlobal = isGlobal
@@ -1166,6 +1318,7 @@ class MainActivity : AppCompatActivity() {
         for (item in cachedDailyEvents) syncItemAvailability(item)
         for (item in cachedReplayEvents) syncItemAvailability(item)
         for (item in cachedLiveChannels) syncItemAvailability(item)
+        for (item in cachedCxtvChannels) syncItemAvailability(item)
 
         if (updated) {
             cachedDailyEvents = sortEventList(cachedDailyEvents)
@@ -1227,11 +1380,17 @@ class MainActivity : AppCompatActivity() {
                 val dailyJob = async { ApiClient.fetchDailyEvents() }
                 val featuredJob = async { ApiClient.fetchFeaturedEvents() }
                 val liveChannelsJob = async { ApiClient.fetchTeveplayChannels() }
+                val cxtvJob = async { ApiClient.fetchCxtvChannels(this@MainActivity) }
 
                 communityJob.await()
                 val dailyResponse = dailyJob.await()
                 val featuredList = featuredJob.await()
                 val liveChannels = liveChannelsJob.await()
+                val cxtvResult = cxtvJob.await()
+
+                cachedCxtvChannels = cxtvResult.channels
+                dynamicCxtvCategories = cxtvResult.categories
+                dynamicCxtvCountries = cxtvResult.countries
 
                 // Enriquecer canales de TevePlay que sean partidos cruzándolos con la agenda deportiva diaria
                 enrichTeveplayMatches(liveChannels, dailyResponse.events)
@@ -1286,6 +1445,7 @@ class MainActivity : AppCompatActivity() {
                 for (item in todayMatches) applyAvailability(item)
                 for (item in replayMatches) applyAvailability(item)
                 for (item in liveChannels) applyAvailability(item)
+                for (item in cachedCxtvChannels) applyAvailability(item)
 
                 // Ordenar según la regla estricta:
                 // 1. En vivo primero (LIVE y STARTING_SOON)
@@ -1295,6 +1455,12 @@ class MainActivity : AppCompatActivity() {
                 cachedDailyEvents = sortEventList(todayMatches)
                 cachedReplayEvents = replayMatches
                 cachedLiveChannels = sortEventList(liveChannels)
+
+                if (currentAppMode == AppMode.WORLD_TV) {
+                    val tabs = buildCxtvTabs()
+                    categoryAdapter.setCategories(tabs, currentCategory)
+                }
+
                 updateSearchSuggestions()
                 prefs.edit().putLong("last_sync_time", System.currentTimeMillis()).apply()
 
@@ -1384,6 +1550,78 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun filterAndDisplayEvents(silent: Boolean = false) {
+        if (currentAppMode == AppMode.WORLD_TV) {
+            val isSearchTv = currentCategory == "🔍 Buscar TV"
+            globalSearchContainer.visibility = if (isSearchTv) View.VISIBLE else View.GONE
+            searchContainer.visibility = View.GONE
+            if (!isSearchTv && ::etGlobalSearch.isInitialized) deactivateGlobalSearchInput()
+            if (::etSearch.isInitialized) deactivateSearchInput()
+
+            val displayList: List<EventItem> = if (isSearchTv) {
+                val q = globalSearchQuery.trim().lowercase()
+                if (q.isEmpty()) {
+                    sortCxtvChannelList(cachedCxtvChannels)
+                } else {
+                    val tokens = q.split(Regex("""\s+""")).filter { it.isNotBlank() }
+                    val filtered = cachedCxtvChannels.filter { item ->
+                        val target = "${item.title} ${item.subtitle} ${item.category} ${item.country.orEmpty()}".lowercase()
+                        tokens.all { target.contains(it) }
+                    }
+                    when (currentGlobalSortMode) {
+                        GlobalSortMode.NAME_ASC -> filtered.sortedWith(
+                            compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+                                .thenBy { it.title.lowercase() }
+                        )
+                        GlobalSortMode.NAME_DESC -> filtered.sortedWith(
+                            compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+                                .thenByDescending { it.title.lowercase() }
+                        )
+                        GlobalSortMode.DEFAULT -> sortCxtvChannelList(filtered)
+                    }
+                }
+            } else if (currentCategory == "⭐ Todos los Canales") {
+                sortCxtvChannelList(cachedCxtvChannels)
+            } else {
+                val matchingCategory = dynamicCxtvCategories.firstOrNull { getCategoryTabLabel(it) == currentCategory }
+                val matchingCountry = dynamicCxtvCountries.firstOrNull { getCountryTabLabel(it) == currentCategory }
+
+                val filtered = when {
+                    matchingCategory != null -> cachedCxtvChannels.filter { it.category.equals(matchingCategory, ignoreCase = true) }
+                    matchingCountry != null -> cachedCxtvChannels.filter { it.country.equals(matchingCountry, ignoreCase = true) }
+                    else -> cachedCxtvChannels.filter {
+                        currentCategory.contains(it.category, ignoreCase = true) ||
+                        (it.country != null && currentCategory.contains(it.country, ignoreCase = true))
+                    }
+                }
+                sortCxtvChannelList(filtered)
+            }
+
+            if (displayList.isEmpty()) {
+                tvEmpty.visibility = View.VISIBLE
+                tvEmpty.text = if (isSearchTv) {
+                    if (globalSearchQuery.isNotEmpty()) {
+                        "No se encontraron canales para \"$globalSearchQuery\"."
+                    } else {
+                        "Escribe el nombre de un canal, país o categoría para buscar en CXTv."
+                    }
+                } else {
+                    "No hay señales disponibles para esta sección."
+                }
+                adapter.submitList(emptyList())
+            } else {
+                tvEmpty.visibility = View.GONE
+                adapter.submitList(displayList)
+                if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
+                    && !btnModeSports.hasFocus() && !btnModeWorldTv.hasFocus()
+                    && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus() && !btnSortNameGlobal.hasFocus() && (!::btnClearGlobalText.isInitialized || !btnClearGlobalText.hasFocus())))
+                    && (!::rvSuggestions.isInitialized || !rvSuggestions.hasFocus())
+                ) {
+                    rvEvents.requestFocus()
+                }
+            }
+            return
+        }
+
         when (currentCategory) {
             "🔍 Buscar Todo" -> {
                 globalSearchContainer.visibility = View.VISIBLE
@@ -1445,6 +1683,7 @@ class MainActivity : AppCompatActivity() {
             tvEmpty.visibility = View.GONE
             adapter.submitList(displayList)
             if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
+                && !btnModeSports.hasFocus() && !btnModeWorldTv.hasFocus()
                 && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus() && !btnVoiceSearchReplay.hasFocus() && !btnSearchReplay.hasFocus() && (!::btnClearSearchText.isInitialized || !btnClearSearchText.hasFocus())))
                 && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus() && !btnSortNameGlobal.hasFocus() && (!::btnClearGlobalText.isInitialized || !btnClearGlobalText.hasFocus())))
                 && (!::rvSuggestions.isInitialized || !rvSuggestions.hasFocus())

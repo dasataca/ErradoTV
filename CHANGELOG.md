@@ -2,6 +2,23 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.8.0] - 2026-10-30
+### Añadido y Optimizado
+- **Selector Maestro Dual Core (Deportes vs TV Mundial)**:
+  - **Conmutación Inmediata con Control Remoto**: Barra selectora superior con botones de alto contraste (`btnModeSports` y `btnModeWorldTv`), selectores visuales Leanback (`mode_button_selector.xml`, `mode_button_text_selector.xml`) y estados activos/inactivos para operar 100% con D-Pad.
+  - **Separación Estricta de Fuentes (Teleplay vs CXTv)**:
+    - **⚽ Deportes y Partidos**: Teleplay reservado exclusivamente para la agenda deportiva del día con cuenta regresiva, canales deportivos y repeticiones.
+    - **📺 Televisión Mundial (CXTv)**: Más de 2.399 canales de televisión abierta, noticias, cine, música, series, infantil y variedades de 98 países sin restricciones de idioma ni fronteras.
+- **Catálogo Dinámico 100% Autogenerado (Data-Driven)**:
+  - Prohibición de listas hardcodeadas: La app autodescubre y construye dinámicamente las pestañas a partir del catálogo backend (`buildCxtvTabs`), organizando categorías temáticas (`📰 Noticias`, `🎵 Música`, `🎬 Cine`, `👶 Niños`, `🕊️ Fe`, `🎨 Cultura`, etc.) y agrupaciones geográficas con banderas (`🇦🇷 Argentina`, `🇧🇷 Brasil`, `🇨🇴 Colombia`, `🇪🇸 España`, `🇺🇸 USA`, `🇲🇽 México`, etc.).
+  - Precarga ultrarrápida desde `assets/cxtv_catalog.json` para acceso instantáneo al iniciar la app y sincronización asíncrona remota con GitHub.
+- **Clasificación Multireproductor Inteligente y Zapping**:
+  - **ExoPlayer HLS Nativo (72.6%)**: Reproducción fluida y directa de flujos `.m3u8` con búfer resiliente y zapping directo con `◀` y `▶` entre canales.
+  - **YouTube Live & WebView HTML5 (19.7%)**: Enrutamiento automático hacia `WebStreamActivity` a pantalla completa para señales emitidas en plataformas web.
+- **Buscador Tokenizado CXTv y Tratamiento de Canales Caídos**:
+  - Pestaña `🔍 Buscar TV` con soporte de búsqueda tokenizada multidisjuntiva, atajo de micrófono por voz Leanback y botón interno "✕" de limpieza.
+  - Desplazamiento automático de cualquier señal etiquetada como `NO DISPONIBLE` al fondo de su categoría o país.
+
 ## [1.7.5] - 2026-10-30
 ### Añadido y Optimizado
 - **Control de Zoom y Relación de Aspecto en Pantalla (`AspectRatioFrameLayout` en ExoPlayer)**:
