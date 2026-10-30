@@ -33,6 +33,10 @@ class CategoryAdapter(
         }
     }
 
+    fun getSelectedPosition(): Int = categories.indexOf(selectedCategory)
+
+    fun getSelectedCategory(): String = selectedCategory
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CategoryViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_category_tab, parent, false)
         return CategoryViewHolder(view)

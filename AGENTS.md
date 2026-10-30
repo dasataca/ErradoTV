@@ -157,11 +157,16 @@ Toda IA o desarrollador que trabaje en este repositorio debe cumplir estrictamen
      * **Buscador Superior**: Con botón de micrófono por voz, caja de búsqueda unificada y botón interno "✕".
      * **Columna Lateral Izquierda (Sidebar vertical, ancho 250dp)**: Listado vertical de categorías temáticas y países (`SidebarCategoryAdapter`) con estados visuales activos/inactivos (`mode_button_selector.xml`).
      * **Panel Principal Derecho**: Listado de canales correspondientes a la categoría seleccionada a la izquierda (`rvEvents`).
-     * **Navegación D-Pad Fluida**:
+     * **Navegación D-Pad Fluida y Retención de Foco**:
        - `▲` / `▼` en la columna izquierda: Cambia de categoría actualizando en tiempo real los canales de la derecha.
-       - `▶ Derecha` desde la columna izquierda: Salta directamente al primer canal del panel derecho.
-       - `◀ Izquierda` desde el panel derecho: Regresa al menú vertical de categorías.
+       - **Selección de Categoría (`OK`, `Center`, Clic de Mouse o `▶ Derecha`)**: Desplaza y transfiere inmediatamente el foco al **primer canal de la lista de la derecha** (`focusFirstEventItem`).
+       - `◀ Izquierda` desde el panel derecho (o retroceso / flecha izquierda del mouse/air-mouse): Regresa el foco de forma exacta y persistente al **grupo o categoría consultado** en la columna izquierda (`focusSelectedSidebarCategory`), impidiendo que el foco se pierda o reinicie en la posición 0.
        - `▲ Arriba` desde el primer elemento de la columna izquierda: Salta a la caja de búsqueda.
+     * **Agrupamiento Alfabético Interno por Categoría y Nombre (A-Z)**:
+       - Los canales de cada selección (ej. Estados Unidos, España, etc.) se agrupan internamente por su categoría/agrupador temático (`Cine`, `Cultura`, `Deportes`, `Infantil`, `Música`, `Noticias`, `Público`, `Variedades`, etc.) en estricto orden alfabético A-Z.
+       - Dentro de cada grupo temático, los canales se ordenan alfabéticamente por su nombre de la A a la Z.
+       - En Deportes (`🌐 Todos los Canales` y señales 24/7), se aplica idéntica regla de agrupación por categoría A-Z y nombre A-Z.
+       - Es un ordenamiento 100% interno en la lista de items, sin alterar la disposición ni crear columnas extra en la interfaz.
 
 4. **Distintivos Tecnológicos Explícitos en Cada Canal**:
    * Toda tarjeta de canal en Televisión Mundial debe portar obligatoriamente su insignia técnica:
@@ -178,5 +183,8 @@ Toda IA o desarrollador que trabaje en este repositorio debe cumplir estrictamen
 6. **Tratamiento de Canales Caídos (`NO DISPONIBLE`)**:
    * Todo canal que no responda o cuya señal esté caída debe recibir la etiqueta visual `⚪ NO DISPONIBLE` y ser desplazado **automáticamente al fondo de la lista** de su categoría o país.
    * El monitor / watchdog en segundo plano debe reintentar la captura periódicamente; al recuperar la transmisión, el canal vuelve a su posición superior de forma autónoma.
+
+7. **Resiliencia en Touch Mode (Mouse y Air-Mouse)**:
+   * Los elementos navegables de categorías (`item_sidebar_category.xml`, `item_category_tab.xml`) y tarjetas de canales (`item_event_card.xml`) deben incluir obligatoriamente `android:focusableInTouchMode="true"` para garantizar que el foco sea aceptado sin fricción tanto con controles remotos convencionales como con mouse o air-mouse.
 
 

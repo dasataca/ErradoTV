@@ -34,6 +34,10 @@ class SidebarCategoryAdapter(
         }
     }
 
+    fun getSelectedPosition(): Int = categories.indexOf(selectedCategory)
+
+    fun getSelectedCategory(): String = selectedCategory
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SidebarViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_sidebar_category, parent, false)
         return SidebarViewHolder(view)
@@ -68,7 +72,9 @@ class SidebarCategoryAdapter(
             itemView.setOnClickListener {
                 setSelectedCategory(category)
                 onCategorySelected(category)
-                onRightPressed?.invoke()
+                itemView.post {
+                    onRightPressed?.invoke()
+                }
             }
 
             itemView.setOnKeyListener { _, keyCode, event ->
@@ -78,6 +84,14 @@ class SidebarCategoryAdapter(
                             if (onRightPressed != null) {
                                 return@setOnKeyListener onRightPressed.invoke()
                             }
+                        }
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                            setSelectedCategory(category)
+                            onCategorySelected(category)
+                            itemView.post {
+                                onRightPressed?.invoke()
+                            }
+                            return@setOnKeyListener true
                         }
                         KeyEvent.KEYCODE_DPAD_UP -> {
                             if (position == 0 && onUpFromFirst != null) {

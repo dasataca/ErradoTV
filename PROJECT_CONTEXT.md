@@ -46,9 +46,18 @@ La aplicación consume archivos JSON cifrados alojados en el CDN estático **Clo
 3. **Pestaña Exclusiva de Repeticiones (`🔁 Repeticiones`)**: Situada justo antes de `📺 Regionales`, reúne el catálogo de partidos históricos (`cachedReplayEvents`).
 4. **Buscador Global (`🔍 Buscar Todo` / `🔍 Buscar TV`)**: Pestaña inicial que consolida la búsqueda por texto y por voz según el modo activo. Dispone de botón de ordenamiento por **`🔤 Nombre`** (`btnSortNameGlobal`).
 5. **Menús y Secciones 100% Autogenerados (Data-Driven)**:
-   * Prohibido hardcodear listas de categorías o países en código. La app construye las pestañas en caliente a partir de la respuesta JSON del servidor (`buildCxtvTabs`).
+   * Prohibido hardcodear listas de categorías o países en código. La app construye las pestañas en caliente a partir de la respuesta JSON del servidor (`buildWorldTvTabs`).
    * Desplazamiento automático de canales `NO DISPONIBLE` al fondo de la lista en cada categoría o país.
-6. **Arquitectura de Búsqueda, Botón "✕" Interno y Búsqueda Tokenizada**:
+6. **Arquitectura Master-Detail (Estilo MagisTV / OTT) y Navegación Ergonómica**:
+   * **Sidebar Izquierdo (250dp)**: Listado vertical de categorías y países dinámicos (`SidebarCategoryAdapter`).
+   * **Selección Inmediata y Transferencia de Foco**: Al seleccionar cualquier categoría (`Público`, `Cultura`, `Noticias`, etc.) con clic, touch o tecla OK/Center/Derecha, el panel derecho se actualiza y el foco se sitúa de inmediato en el **primer canal de la lista** (`focusFirstEventItem`).
+   * **Retención de Foco al Volver a la Izquierda**: Al navegar por los canales del panel derecho y presionar `◀ Izquierda` (o botón Atrás / flecha izquierda del mouse/air-mouse), el foco regresa de forma directa y exacta al **grupo consultado en la columna lateral** (`focusSelectedSidebarCategory`), conservando la posición exacta del usuario en el menú vertical.
+   * **Agrupamiento Alfabético Interno por Categoría y Nombre (A-Z)**:
+     - En Televisión Mundial, al seleccionar un país o grupo, los canales se agrupan internamente por categoría temática (`Cine`, `Cultura`, `Deportes`, `Infantil`, `Música`, `Noticias`, `Público`, `Variedades`, etc.) en orden alfabético A-Z.
+     - Dentro de cada grupo temático, los canales se ordenan alfabéticamente por nombre de la A a la Z.
+     - En Deportes, `🌐 Todos los Canales` y señales 24/7 aplican idéntica regla de agrupación por categoría A-Z y nombre A-Z.
+     - Este ordenamiento es 100% interno sin modificar columnas ni alterar la disposición de la interfaz visual.
+7. **Arquitectura de Búsqueda, Botón "✕" Interno y Búsqueda Tokenizada**:
    * **Disposición Visual**: Botón de micrófono a la izquierda (`btnVoiceSearchReplay` / `btnVoiceGlobalSearch`), campo de texto unificado con botón "✕" interno (`btnClearSearchText` / `btnClearGlobalText`) y botón Lupa dedicado a la derecha (`btnSearchReplay` / `btnSearchGlobal`).
    * **Botón "✕" Interno con Activación Inmediata de Teclado**: Ubicado en el extremo interior derecho del campo de texto, visible sólo cuando hay texto. Al seleccionarlo con el D-Pad y pulsar OK, limpia todo el texto del campo, refresca los eventos y levanta automáticamente el teclado virtual (`activateSearchInput()` / `activateGlobalSearchInput()`) con el cursor listo para escribir una nueva consulta.
    * **Búsqueda Tokenizada Multidisjuntiva**: Divide las consultas por espacios (`split(Regex("""\s+"""))`), evaluando que cada término o equipo coincida de forma independiente en título, subtítulo, fecha o categoría (`tokens.all { target.contains(it) }`). Esto soluciona búsquedas como "racing boca" o "boca racing" en repeticiones y catálogo global.

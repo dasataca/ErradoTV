@@ -355,7 +355,10 @@ class MainActivity : AppCompatActivity() {
             },
             onLeftPressed = {
                 if (currentAppMode == AppMode.WORLD_TV && rvSidebarCategories.visibility == View.VISIBLE) {
-                    rvSidebarCategories.requestFocus()
+                    focusSelectedSidebarCategory()
+                    true
+                } else if (currentAppMode == AppMode.SPORTS && rvCategories.visibility == View.VISIBLE) {
+                    focusSelectedSportsCategory()
                     true
                 } else {
                     false
@@ -1194,14 +1197,13 @@ class MainActivity : AppCompatActivity() {
             compareBy<EventItem> { item ->
                 when {
                     // Canales no disponibles SIEMPRE al final de la lista
-                    item.status == EventStatus.REPLAY_UNAVAILABLE -> 100
-                    item.status == EventStatus.FINISHED -> 90
-                    item.streamType == "exo" -> 10
-                    item.streamType == "youtube" -> 20
-                    item.streamType == "web" -> 30
-                    else -> 40
+                    item.status == EventStatus.REPLAY_UNAVAILABLE || item.status == EventStatus.FINISHED -> 100
+                    else -> 0
                 }
-            }.thenBy { it.title.lowercase() }
+            }
+            .thenBy { it.category.lowercase().trim() }
+            .thenBy { it.country.orEmpty().lowercase().trim() }
+            .thenBy { it.title.lowercase().trim() }
         )
     }
 
@@ -1228,21 +1230,85 @@ class MainActivity : AppCompatActivity() {
             startVoiceSearch(isGlobal = (currentCategory != "🔁 Repeticiones"))
             return true
         }
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (rvEvents.hasFocus()) {
+                if (currentAppMode == AppMode.WORLD_TV && rvSidebarCategories.visibility == View.VISIBLE) {
+                    focusSelectedSidebarCategory()
+                    return true
+                } else if (currentAppMode == AppMode.SPORTS && rvCategories.visibility == View.VISIBLE) {
+                    focusSelectedSportsCategory()
+                    return true
+                }
+            }
+        }
         return super.onKeyDown(keyCode, event)
     }
 
     private fun focusFirstEventItem() {
-        fun tryFocus(): Boolean {
-            val child = rvEvents.findViewHolderForAdapterPosition(0)?.itemView
-                ?: rvEvents.layoutManager?.findViewByPosition(0)
-                ?: rvEvents.getChildAt(0)
-            return child?.requestFocus() ?: false
-        }
-
-        if (!tryFocus()) {
-            rvEvents.post {
-                tryFocus()
+        rvEvents.post {
+            if (adapter.itemCount == 0) return@post
+            rvEvents.scrollToPosition(0)
+            fun tryFocus(): Boolean {
+                val child = rvEvents.findViewHolderForAdapterPosition(0)?.itemView
+                    ?: rvEvents.layoutManager?.findViewByPosition(0)
+                    ?: rvEvents.getChildAt(0)
+                return child?.requestFocus() ?: false
             }
+
+            if (!tryFocus()) {
+                rvEvents.postDelayed({
+                    val focused = tryFocus()
+                    if (!focused) {
+                        rvEvents.postDelayed({
+                            tryFocus()
+                        }, 50)
+                    }
+                }, 50)
+            }
+        }
+    }
+
+    private fun focusSelectedSidebarCategory() {
+        val pos = sidebarCategoryAdapter.getSelectedPosition()
+        if (pos >= 0) {
+            rvSidebarCategories.scrollToPosition(pos)
+            rvSidebarCategories.post {
+                val vh = rvSidebarCategories.findViewHolderForAdapterPosition(pos)
+                val view = vh?.itemView ?: rvSidebarCategories.layoutManager?.findViewByPosition(pos)
+                if (view != null) {
+                    view.requestFocus()
+                } else {
+                    rvSidebarCategories.postDelayed({
+                        val retryView = rvSidebarCategories.findViewHolderForAdapterPosition(pos)?.itemView
+                            ?: rvSidebarCategories.layoutManager?.findViewByPosition(pos)
+                        retryView?.requestFocus() ?: rvSidebarCategories.requestFocus()
+                    }, 50)
+                }
+            }
+        } else {
+            rvSidebarCategories.requestFocus()
+        }
+    }
+
+    private fun focusSelectedSportsCategory() {
+        val pos = categoryAdapter.getSelectedPosition()
+        if (pos >= 0) {
+            rvCategories.scrollToPosition(pos)
+            rvCategories.post {
+                val vh = rvCategories.findViewHolderForAdapterPosition(pos)
+                val view = vh?.itemView ?: rvCategories.layoutManager?.findViewByPosition(pos)
+                if (view != null) {
+                    view.requestFocus()
+                } else {
+                    rvCategories.postDelayed({
+                        val retryView = rvCategories.findViewHolderForAdapterPosition(pos)?.itemView
+                            ?: rvCategories.layoutManager?.findViewByPosition(pos)
+                        retryView?.requestFocus() ?: rvCategories.requestFocus()
+                    }, 50)
+                }
+            }
+        } else {
+            rvCategories.requestFocus()
         }
     }
 
@@ -1702,7 +1768,7 @@ class MainActivity : AppCompatActivity() {
             }
             "⚽ Partidos del Día" -> cachedDailyEvents
             "🔁 Repeticiones" -> getFilteredAndSortedReplays()
-            "🌐 Todos los Canales" -> cachedLiveChannels
+            "🌐 Todos los Canales" -> sortEventList(cachedLiveChannels)
             else -> sortEventList(cachedLiveChannels.filter { it.category == currentCategory })
         }
 
@@ -1806,6 +1872,8 @@ class MainActivity : AppCompatActivity() {
                 // Dentro de la misma prioridad, ordenar cronológicamente si tienen hora programada
                 if (item.startEpochMillis > 0L) item.startEpochMillis else Long.MAX_VALUE
             }
+            .thenBy { it.category.lowercase().trim() }
+            .thenBy { it.title.lowercase().trim() }
         )
     }
 

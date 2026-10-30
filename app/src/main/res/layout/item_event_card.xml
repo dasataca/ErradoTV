@@ -6,6 +6,7 @@
     android:orientation="horizontal"
     android:focusable="true"
     android:clickable="true"
+    android:focusableInTouchMode="true"
     android:background="@drawable/card_selector"
     android:padding="12dp"
     android:layout_marginBottom="12dp"

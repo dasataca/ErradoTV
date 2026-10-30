@@ -2,6 +2,21 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.8.2] - 2026-10-30
+### Añadido y Optimizado
+- **Agrupamiento Alfabético Interno por Categoría y Nombre (A-Z)**:
+  - **Televisión Mundial**: Al seleccionar cualquier país (ej. Estados Unidos, España, etc.) o sección, los canales se agrupan internamente por su categoría/agrupador temático (`Cine`, `Cultura`, `Deportes`, `Infantil`, `Música`, `Noticias`, `Público`, `Variedades`, etc.) en orden alfabético desde la A a la Z.
+  - Dentro de cada grupo temático, los canales se ordenan alfabéticamente por su nombre de la A a la Z.
+  - **Deportes y Canales 24/7**: Se aplica idéntica regla interna en `🌐 Todos los Canales` y señales deportivas, agrupando por categoría temática A-Z y ordenando por nombre de canal A-Z (respetando la prioridad de partidos en vivo y horarios cronológicos).
+  - Canales no disponibles (`⚪ NO DISPONIBLE` / `REPLAY_UNAVAILABLE`) o finalizados permanecen siempre al fondo de la lista.
+  - Ordenamiento 100% interno sin modificar columnas ni alterar la disposición de la interfaz visual Master-Detail.
+- **Selección Inmediata de Categoría con Foco en el Primer Canal**:
+  - Al seleccionar cualquier grupo o categoría de la izquierda (`Público`, `Cultura`, etc.) con clic de mouse, touch o tecla OK/Center/Derecha del control remoto, el foco se posiciona automáticamente en el **primer canal de la lista de la derecha** (`focusFirstEventItem`).
+- **Retención y Retorno de Foco al Grupo Consultado (Navegación Izquierda / Mouse / D-Pad)**:
+  - Al estar navegando por los canales del panel derecho y pulsar `◀ Izquierda` (o botón de retroceso / flecha izquierda del mouse/air-mouse), el foco vuelve de manera inmediata y precisa al **grupo que se estaba consultando** en la columna lateral (`focusSelectedSidebarCategory`), conservando la posición exacta del usuario en el menú vertical.
+  - Mismo comportamiento aplicado en Deportes (`focusSelectedSportsCategory`).
+  - Añadido `android:focusableInTouchMode="true"` en `item_sidebar_category.xml`, `item_event_card.xml` e `item_category_tab.xml` para garantizar que el foco y la navegación funcionen sin restricciones tanto en TV con D-Pad como con mouse o air-mouse.
+
 ## [1.8.1] - 2026-10-30
 ### Añadido y Optimizado
 - **Interfaz Master-Detail Estilo MagisTV / IPTV para Televisión Mundial**:
