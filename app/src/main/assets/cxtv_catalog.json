@@ -22872,8 +22872,8 @@
       "country": "Perú",
       "language": "Español",
       "logo": "https://www.cxtv.com.br/img/Tvs/Logo/webp-l/fafac93d600ed034ca44014304965dbe.webp",
-      "stream_url": "https://irtp-player.iblups.net/tvperuhd",
-      "stream_type": "web",
+      "stream_url": "http://187.102.210.46/TVPERU/index.m3u8",
+      "stream_type": "exo",
       "is_available": true
     },
     {

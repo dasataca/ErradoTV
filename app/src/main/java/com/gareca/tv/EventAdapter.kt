@@ -113,6 +113,8 @@ class EventAdapter(
                 ivThumbnail.visibility = View.VISIBLE
                 Glide.with(itemView.context)
                     .load(item.imageUrl)
+                    .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
+                    .override(160, 90)
                     .centerCrop()
                     .into(ivThumbnail)
             } else {

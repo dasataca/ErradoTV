@@ -54,23 +54,24 @@ class WebStreamActivity : AppCompatActivity() {
         loadStream(url)
     }
 
+    private val YOUTUBE_REGEX = Regex("(?:watch\\?v=|shorts/|youtu\\.be/|embed/|live/)([a-zA-Z0-9_-]{8,32})")
+    private val YOUTUBE_CHANNEL_REGEX = Regex("(?:channel=|channel/)([a-zA-Z0-9_-]+)")
+
+    private fun extractYouTubeId(url: String): String? {
+        if (url.startsWith("live_stream?channel=")) return url
+        if (!url.contains("youtube.com") && !url.contains("youtu.be")) return null
+        if (url.contains("channel=") || url.contains("channel/")) {
+            val chId = YOUTUBE_CHANNEL_REGEX.find(url)?.groupValues?.get(1)
+            if (!chId.isNullOrBlank()) return "live_stream?channel=$chId"
+        }
+        return YOUTUBE_REGEX.find(url)?.groupValues?.get(1)
+    }
+
     private fun loadStream(url: String) {
-        val isYouTube = url.contains("youtube.com", ignoreCase = true) || url.contains("youtu.be", ignoreCase = true)
-        if (isYouTube) {
-            val embedSrc = if (url.contains("youtube.com/embed/")) {
-                url.replace("youtube.com", "youtube-nocookie.com")
-            } else if (url.contains("watch?v=")) {
-                val videoId = url.substringAfter("watch?v=").substringBefore("&")
-                "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
-            } else {
-                url.replace("youtube.com", "youtube-nocookie.com")
-            }
-            val sep = if (embedSrc.contains("?")) "&" else "?"
-            val finalEmbedSrc = if (!embedSrc.contains("enablejsapi=1")) {
-                "$embedSrc${sep}autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
-            } else {
-                embedSrc
-            }
+        val ytId = extractYouTubeId(url)
+        if (ytId != null) {
+            val sep = if (ytId.contains("?")) "&" else "?"
+            val embedSrc = "https://www.youtube-nocookie.com/embed/$ytId${sep}autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
 
             val embedHtml = """
                 <!DOCTYPE html>
@@ -85,17 +86,69 @@ class WebStreamActivity : AppCompatActivity() {
                 </head>
                 <body>
                   <iframe id="ytplayer"
-                    src="$finalEmbedSrc"
+                    src="$embedSrc"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowfullscreen>
                   </iframe>
+                  <script>
+                    function sendYtCommand(func, args) {
+                      var iframe = document.getElementById('ytplayer');
+                      if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.postMessage(JSON.stringify({
+                          event: 'command',
+                          func: func,
+                          args: args || []
+                        }), '*');
+                      }
+                    }
+
+                    window.addEventListener('message', function(event) {
+                      try {
+                        var data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                        if (data && (data.event === 'initialDelivery' || data.event === 'onReady')) {
+                          sendYtCommand('playVideo');
+                        }
+                      } catch(e) {}
+                    });
+
+                    setTimeout(function() { sendYtCommand('playVideo'); }, 1000);
+                    setTimeout(function() { sendYtCommand('playVideo'); }, 2500);
+                    setTimeout(function() { sendYtCommand('playVideo'); }, 4500);
+                  </script>
                 </body>
                 </html>
             """.trimIndent()
+
+            webView.webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    progressBar.visibility = View.GONE
+                }
+            }
             webView.loadDataWithBaseURL("https://www.youtube-nocookie.com", embedHtml, "text/html", "UTF-8", null)
-        } else {
-            webView.loadUrl(url)
+            return
         }
+
+        webView.loadUrl(url)
+    }
+
+    private fun injectUnmuteScript() {
+        val js = """
+            (function() {
+                var media = document.querySelectorAll('video, audio');
+                for (var i = 0; i < media.length; i++) {
+                    try {
+                        media[i].muted = false;
+                        media[i].volume = 1.0;
+                        media[i].defaultMuted = false;
+                        if (media[i].paused) {
+                            media[i].play().catch(function(){});
+                        }
+                    } catch(_) {}
+                }
+            })();
+        """.trimIndent()
+        webView.evaluateJavascript(js, null)
     }
 
     private fun setupWebView(url: String) {
@@ -124,6 +177,7 @@ class WebStreamActivity : AppCompatActivity() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 if (newProgress >= 90) {
                     progressBar.visibility = View.GONE
+                    injectUnmuteScript()
                 } else {
                     progressBar.visibility = View.VISIBLE
                 }
@@ -140,7 +194,6 @@ class WebStreamActivity : AppCompatActivity() {
                 if (!isYtAsset) {
                     for (domain in adBlockDomains) {
                         if (reqUrl.contains(domain)) {
-                            // Return empty response to drop ad
                             return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream("".toByteArray()))
                         }
                     }
@@ -173,6 +226,10 @@ class WebStreamActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                injectUnmuteScript()
+                view?.postDelayed({ injectUnmuteScript() }, 1000)
+                view?.postDelayed({ injectUnmuteScript() }, 2500)
+
                 // Sniffer opcional: Si la página expone directamente un video HLS, lo enviamos a ExoPlayer
                 view?.evaluateJavascript(
                     "(function(){ var v = document.querySelector('video'); return (v && v.src) ? v.src : ''; })();"

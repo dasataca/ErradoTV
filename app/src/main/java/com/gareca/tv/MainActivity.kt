@@ -176,6 +176,13 @@ class MainActivity : AppCompatActivity() {
     private var dynamicCxtvCategories = listOf<String>()
     private var dynamicCxtvCountries = listOf<String>()
 
+    // Índices de Acceso Inmediato O(1) estilo Streamer TV Pro / TiviMate
+    private val cxtvCategoryMap = mutableMapOf<String, List<EventItem>>()
+    private val cxtvCountryMap = mutableMapOf<String, List<EventItem>>()
+    private var preSortedAllChannels = listOf<EventItem>()
+    private var cachedCategoryNavItems = listOf<NavItem>()
+    private var cachedCountryNavItems = listOf<NavItem>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -428,7 +435,14 @@ class MainActivity : AppCompatActivity() {
         )
 
         rvEvents.layoutManager = LinearLayoutManager(this)
+        rvEvents.setHasFixedSize(true)
+        rvEvents.setItemViewCacheSize(25)
         rvEvents.adapter = adapter
+
+        rvSidebarCategories.setHasFixedSize(true)
+        rvSidebarCategories.setItemViewCacheSize(25)
+        rvSidebarCountries.setHasFixedSize(true)
+        rvSidebarCountries.setItemViewCacheSize(25)
 
         CryptoUtils.init(this)
         StreamCache.init(this)
@@ -463,6 +477,7 @@ class MainActivity : AppCompatActivity() {
                     cachedCxtvChannels = localCatalog.channels
                     dynamicCxtvCategories = localCatalog.categories
                     dynamicCxtvCountries = localCatalog.countries
+                    indexCxtvCatalog()
                 }
             }
         }
@@ -1208,29 +1223,61 @@ class MainActivity : AppCompatActivity() {
         btnModeWorldTv.isSelected = !isSports
     }
 
-    private fun buildCategoryNavItems(): List<NavItem> {
-        val items = mutableListOf<NavItem>()
-        items.add(NavItem("⭐ Todos los Canales", cachedCxtvChannels.size))
-        val sortedCategories = dynamicCxtvCategories.sortedWith(String.CASE_INSENSITIVE_ORDER)
-        for (cat in sortedCategories) {
-            val label = getCategoryTabLabel(cat)
-            val count = cachedCxtvChannels.count { it.category.equals(cat, ignoreCase = true) }
-            items.add(NavItem(label, count))
+    private fun indexCxtvCatalog() {
+        if (cachedCxtvChannels.isEmpty()) return
+        val sortedAll = sortCxtvChannelList(cachedCxtvChannels)
+        preSortedAllChannels = sortedAll
+
+        val catMap = mutableMapOf<String, MutableList<EventItem>>()
+        val countMap = mutableMapOf<String, MutableList<EventItem>>()
+
+        for (item in sortedAll) {
+            val catLabel = getCategoryTabLabel(item.category)
+            catMap.getOrPut(catLabel) { mutableListOf() }.add(item)
+            catMap.getOrPut(item.category) { mutableListOf() }.add(item)
+
+            val country = item.country
+            if (!country.isNullOrBlank()) {
+                val countryLabel = getCountryTabLabel(country)
+                countMap.getOrPut(countryLabel) { mutableListOf() }.add(item)
+                countMap.getOrPut(country) { mutableListOf() }.add(item)
+            }
         }
-        val totalCountryChannels = cachedCxtvChannels.count { !it.country.isNullOrBlank() }
-        items.add(NavItem("🌍 Países", totalCountryChannels))
-        return items
+
+        cxtvCategoryMap.clear()
+        cxtvCategoryMap.putAll(catMap)
+
+        cxtvCountryMap.clear()
+        cxtvCountryMap.putAll(countMap)
+
+        val catNavs = mutableListOf<NavItem>()
+        catNavs.add(NavItem("⭐ Todos los Canales", sortedAll.size))
+        for (cat in dynamicCxtvCategories.sortedWith(String.CASE_INSENSITIVE_ORDER)) {
+            val label = getCategoryTabLabel(cat)
+            val count = catMap[label]?.size ?: 0
+            catNavs.add(NavItem(label, count))
+        }
+        val totalCountryChannels = sortedAll.count { !it.country.isNullOrBlank() }
+        catNavs.add(NavItem("🌍 Países", totalCountryChannels))
+        cachedCategoryNavItems = catNavs
+
+        val countryNavs = mutableListOf<NavItem>()
+        for (country in dynamicCxtvCountries.sortedWith(String.CASE_INSENSITIVE_ORDER)) {
+            val label = getCountryTabLabel(country)
+            val count = countMap[label]?.size ?: 0
+            countryNavs.add(NavItem(label, count))
+        }
+        cachedCountryNavItems = countryNavs
+    }
+
+    private fun buildCategoryNavItems(): List<NavItem> {
+        if (cachedCategoryNavItems.isEmpty()) indexCxtvCatalog()
+        return cachedCategoryNavItems
     }
 
     private fun buildCountryNavItems(): List<NavItem> {
-        val items = mutableListOf<NavItem>()
-        val sortedCountries = dynamicCxtvCountries.sortedWith(String.CASE_INSENSITIVE_ORDER)
-        for (country in sortedCountries) {
-            val label = getCountryTabLabel(country)
-            val count = cachedCxtvChannels.count { it.country.equals(country, ignoreCase = true) }
-            items.add(NavItem(label, count))
-        }
-        return items
+        if (cachedCountryNavItems.isEmpty()) indexCxtvCatalog()
+        return cachedCountryNavItems
     }
 
     private fun getCategoryTabLabel(category: String): String {
@@ -1689,6 +1736,7 @@ class MainActivity : AppCompatActivity() {
                 for (item in replayMatches) applyAvailability(item)
                 for (item in liveChannels) applyAvailability(item)
                 for (item in cachedCxtvChannels) applyAvailability(item)
+                indexCxtvCatalog()
 
                 // Ordenar según la regla estricta:
                 // 1. En vivo primero (LIVE y STARTING_SOON)
@@ -1810,6 +1858,10 @@ class MainActivity : AppCompatActivity() {
 
             val hasSearch = globalSearchQuery.isNotEmpty()
 
+            if (cxtvCategoryMap.isEmpty() && cachedCxtvChannels.isNotEmpty()) {
+                indexCxtvCatalog()
+            }
+
             val displayList: List<EventItem> = if (hasSearch) {
                 rvSidebarCountries.visibility = View.GONE
                 val tokens = globalSearchQuery.trim().lowercase().split(Regex("""\s+""")).filter { it.isNotBlank() }
@@ -1830,26 +1882,13 @@ class MainActivity : AppCompatActivity() {
                 }
             } else if (currentCategory == "🌍 Países") {
                 rvSidebarCountries.visibility = View.VISIBLE
-                val matchingCountry = dynamicCxtvCountries.firstOrNull { getCountryTabLabel(it) == selectedCountry }
-                val filtered = if (matchingCountry != null) {
-                    cachedCxtvChannels.filter { it.country.equals(matchingCountry, ignoreCase = true) }
-                } else {
-                    cachedCxtvChannels.filter { it.country != null && selectedCountry.contains(it.country, ignoreCase = true) }
-                }
-                sortCxtvChannelList(filtered)
+                cxtvCountryMap[selectedCountry] ?: emptyList()
+            } else if (currentCategory == "⭐ Todos los Canales") {
+                rvSidebarCountries.visibility = View.GONE
+                preSortedAllChannels
             } else {
                 rvSidebarCountries.visibility = View.GONE
-                if (currentCategory == "⭐ Todos los Canales") {
-                    sortCxtvChannelList(cachedCxtvChannels)
-                } else {
-                    val matchingCategory = dynamicCxtvCategories.firstOrNull { getCategoryTabLabel(it) == currentCategory }
-                    val filtered = if (matchingCategory != null) {
-                        cachedCxtvChannels.filter { it.category.equals(matchingCategory, ignoreCase = true) }
-                    } else {
-                        cachedCxtvChannels.filter { currentCategory.contains(it.category, ignoreCase = true) }
-                    }
-                    sortCxtvChannelList(filtered)
-                }
+                cxtvCategoryMap[currentCategory] ?: emptyList()
             }
 
             if (displayList.isEmpty()) {
