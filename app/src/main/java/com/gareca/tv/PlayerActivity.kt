@@ -187,7 +187,12 @@ class PlayerActivity : AppCompatActivity() {
                         val label = "${videoSize.width}x${videoSize.height} (${getQualityLabel(videoSize.height)}) [MÁX]"
                         currentResolutionText = label
                         showResolutionBadge(label)
-                        StreamCache.setResolution(currentStreamUrl, getQualityLabel(videoSize.height))
+                        val quality = getQualityLabel(videoSize.height)
+                        StreamCache.setResolution(currentStreamUrl, quality)
+                        val origUrl = intent.getStringExtra("EXTRA_ORIGINAL_URL")
+                        if (!origUrl.isNullOrEmpty()) {
+                            StreamCache.setResolution(origUrl, quality)
+                        }
 
                         SupabaseLogger.info(
                             "stream_resolution",

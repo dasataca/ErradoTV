@@ -2,6 +2,17 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.8.6] - 2026-10-31
+### Añadido y Corregido
+- **Detección y Persistencia Real de Resoluciones en Selector de Partidos**:
+  - **Corrección de Clave Asíncrona en StreamCache**: Antes, `ApiClient` y `PlayerActivity` indexaban la resolución bajo la URL resuelta (`resolved.url`, ej. `.m3u8`), pero el diálogo de partidos consultaba por la URL origen (`stream.url`, ej. `teveplay-*.json`). Se unificó el guardado bidireccional para ambas URLs.
+  - **Persistencia en Almacenamiento Local (`stream_resolutions_prefs`)**: Las resoluciones detectadas o verificadas por hardware en ExoPlayer ahora se guardan permanentemente en `SharedPreferences` y se cargan al iniciar la app. Al abrir cualquier partido verificado previamente, las opciones muestran de inmediato `[1080p FHD - VERIFICADO]` o `[720p HD - VERIFICADO]` sin demoras.
+  - **Detección de Calidad Máxima en Master Playlists HLS y DASH**: En lugar de tomar únicamente la primera resolución del manifiesto (que solía ser la más baja, ej. 360p o 480p), ahora se analizan todas las variantes (`RESOLUTION=` y `height=`) seleccionando la máxima calidad real emitida (`1080p FHD`, `720p HD`).
+  - **Soporte para Streams Directos y YouTube**: Detección inteligente para flujos individuales sin manifiesto maestro y etiquetado automático para transmisiones de YouTube.
+- **Blindaje Total de YouTube contra Error 153 y Soporte de Playlists**:
+  - **Resolución Definitiva de Error 153**: Inyección de cabecera `<meta name="referrer" content="strict-origin-when-cross-origin">`, atributo `referrerpolicy="strict-origin-when-cross-origin"` en el `<iframe>` y parámetro `&origin=https://www.youtube-nocookie.com`.
+  - **Soporte Completo de Listas de Reproducción (`list=UU...` / `list=PL...`)**: Detección de identificadores de playlist y carga del reproductor de listas oficial `embed/videoseries?list=...`.
+
 ## [1.8.5] - 2026-10-30
 ### Añadido y Optimizado
 - **Optimización de Rendimiento Extremo $O(1)$ Estilo Streamer TV Pro / TiviMate**:

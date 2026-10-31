@@ -2216,6 +2216,10 @@ class MainActivity : AppCompatActivity() {
                             btn.text = "🟢 ${stream.title}$resLabel  [EN LÍNEA]"
                             btn.alpha = 1.0f
                             StreamCache.markAvailable(this@MainActivity, stream.url)
+                            health.resolution?.let { res ->
+                                StreamCache.setResolution(stream.url, res)
+                                StreamCache.setResolution(health.stream.url, res)
+                            }
                             if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
                                 item.status = item.originalStatus
                                 adapter.notifyDataSetChanged()

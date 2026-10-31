@@ -6,16 +6,34 @@ import java.util.concurrent.ConcurrentHashMap
 object StreamCache {
     private val resolutionMap = ConcurrentHashMap<String, String>()
     private val unavailableUrls = ConcurrentHashMap.newKeySet<String>()
+    private var appContext: Context? = null
 
     fun init(context: Context) {
-        val prefs = context.getSharedPreferences("stream_cache_prefs", Context.MODE_PRIVATE)
+        val appCtx = context.applicationContext ?: context
+        appContext = appCtx
+
+        val prefs = appCtx.getSharedPreferences("stream_cache_prefs", Context.MODE_PRIVATE)
         val savedDead = prefs.getStringSet("dead_urls", emptySet()) ?: emptySet()
         unavailableUrls.addAll(savedDead)
+
+        val resPrefs = appCtx.getSharedPreferences("stream_resolutions_prefs", Context.MODE_PRIVATE)
+        resPrefs.all.forEach { (url, res) ->
+            if (res is String && url.isNotEmpty() && res.isNotEmpty()) {
+                resolutionMap[url] = res
+            }
+        }
     }
 
-    fun setResolution(url: String, resolution: String) {
+    fun setResolution(url: String, resolution: String, context: Context? = null) {
         if (url.isNotEmpty() && resolution.isNotEmpty()) {
             resolutionMap[url] = resolution
+            val targetCtx = context?.applicationContext ?: appContext
+            targetCtx?.let {
+                try {
+                    val resPrefs = it.getSharedPreferences("stream_resolutions_prefs", Context.MODE_PRIVATE)
+                    resPrefs.edit().putString(url, resolution).apply()
+                } catch (_: Exception) {}
+            }
         }
     }
 

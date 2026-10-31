@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "13f54d69c0fd96365bf4584749747151d78404950d45e38a97989ecad87241ae46ac7659f394090f259e40e187b3753fe91160dae5ffc672f0bc330ed0365af4271ffc36866c0c89a65c4a1af7184181",
-  "latest_version_code": 60,
-  "latest_version_name": "1.8.5",
-  "release_timestamp": 1793406445452,
-  "release_date": "2026-10-30",
+  "active_key_enc": "5e4a3e540b85fd6ac0f3edd0d5a3faba35c14b50be80daf6730e510504bc496011fa0f7c89330bb0ca7449bf9621c0bb1fd789827e0652394ce1a5a99da94660262097f65dcccc2fe49d7bea5c6539ca",
+  "latest_version_code": 61,
+  "latest_version_name": "1.8.6",
+  "release_timestamp": 1793458850292,
+  "release_date": "2026-10-31",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Optimizacion extrema O(1) Streamer TV Pro, reproductor YouTube blindado y TV Peru HLS nativo con audio"
+  "changelog": "GarecaTV: Deteccion y persistencia real de resoluciones en selector de partidos y blindaje total YouTube contra Error 153"
 }

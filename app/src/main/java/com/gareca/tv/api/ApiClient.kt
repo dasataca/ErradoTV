@@ -257,7 +257,7 @@ object ApiClient {
             return@withContext StreamHealth(resolved, isOnline = false)
         }
 
-        val cachedRes = com.gareca.tv.StreamCache.getResolution(url)
+        val cachedRes = com.gareca.tv.StreamCache.getResolution(stream.url) ?: com.gareca.tv.StreamCache.getResolution(url)
         if (cachedRes != null) {
             return@withContext StreamHealth(resolved, isOnline = true, resolution = cachedRes)
         }
@@ -281,33 +281,46 @@ object ApiClient {
             val res = call.execute()
             if (res.isSuccessful) {
                 var detectedRes: String? = null
-                val body = res.body?.string().orEmpty()
-                val resRegex = Regex("""RESOLUTION=(\d+x\d+)""")
-                val match = resRegex.find(body)
-                if (match != null) {
-                    val rawDims = match.groupValues[1]
-                    val h = rawDims.substringAfter("x").toIntOrNull() ?: 0
-                    detectedRes = when {
-                        h >= 1080 -> "1080p FHD"
-                        h >= 720 -> "720p HD"
-                        h >= 540 -> "${h}p"
-                        h >= 480 -> "480p"
-                        h > 0 -> "${h}p"
-                        else -> rawDims
-                    }
-                } else if (url.contains(".mpd")) {
-                    val hMatch = Regex("""height="(\d+)"""").find(body)
-                    if (hMatch != null) {
-                        val h = hMatch.groupValues[1].toIntOrNull() ?: 0
+                val isYouTube = url.contains("youtube.com") || url.contains("youtu.be") || stream.type.equals("youtube", ignoreCase = true)
+                if (isYouTube) {
+                    detectedRes = if (url.contains("live") || url.contains("channel")) "HD Directo" else "1080p FHD"
+                } else {
+                    val body = res.body?.string().orEmpty()
+                    val resRegex = Regex("""RESOLUTION=(\d+x\d+)""")
+                    val matches = resRegex.findAll(body).toList()
+                    if (matches.isNotEmpty()) {
+                        val maxH = matches.mapNotNull { it.groupValues[1].substringAfter("x").toIntOrNull() }.maxOrNull() ?: 0
                         detectedRes = when {
-                            h >= 1080 -> "1080p FHD"
-                            h >= 720 -> "720p HD"
-                            h >= 480 -> "480p"
-                            else -> "${h}p"
+                            maxH >= 1080 -> "1080p FHD"
+                            maxH >= 720 -> "720p HD"
+                            maxH >= 540 -> "${maxH}p"
+                            maxH >= 480 -> "480p"
+                            maxH > 0 -> "${maxH}p"
+                            else -> matches.first().groupValues[1]
+                        }
+                    } else if (url.contains(".mpd")) {
+                        val hMatches = Regex("""height="(\d+)"""").findAll(body).toList()
+                        val maxH = hMatches.mapNotNull { it.groupValues[1].toIntOrNull() }.maxOrNull() ?: 0
+                        detectedRes = when {
+                            maxH >= 1080 -> "1080p FHD"
+                            maxH >= 720 -> "720p HD"
+                            maxH >= 480 -> "480p"
+                            maxH > 0 -> "${maxH}p"
+                            else -> null
+                        }
+                    } else if (body.contains("#EXTINF") || body.contains(".ts")) {
+                        detectedRes = when {
+                            url.contains("1080", ignoreCase = true) || stream.title.contains("1080", ignoreCase = true) || stream.title.contains("FHD", ignoreCase = true) -> "1080p FHD"
+                            url.contains("720", ignoreCase = true) || stream.title.contains("720", ignoreCase = true) || stream.title.contains("HD", ignoreCase = true) -> "720p HD"
+                            url.contains("480", ignoreCase = true) || stream.title.contains("480", ignoreCase = true) -> "480p"
+                            else -> "HD Directo"
                         }
                     }
                 }
-                detectedRes?.let { com.gareca.tv.StreamCache.setResolution(url, it) }
+                detectedRes?.let {
+                    com.gareca.tv.StreamCache.setResolution(url, it)
+                    com.gareca.tv.StreamCache.setResolution(stream.url, it)
+                }
                 return@withContext StreamHealth(resolved, isOnline = true, resolution = detectedRes)
             } else {
                 return@withContext StreamHealth(resolved, isOnline = false)

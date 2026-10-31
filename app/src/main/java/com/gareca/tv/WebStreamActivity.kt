@@ -56,28 +56,45 @@ class WebStreamActivity : AppCompatActivity() {
 
     private val YOUTUBE_REGEX = Regex("(?:watch\\?v=|shorts/|youtu\\.be/|embed/|live/)([a-zA-Z0-9_-]{8,32})")
     private val YOUTUBE_CHANNEL_REGEX = Regex("(?:channel=|channel/)([a-zA-Z0-9_-]+)")
+    private val YOUTUBE_LIST_REGEX = Regex("[?&]list=([a-zA-Z0-9_-]+)")
 
-    private fun extractYouTubeId(url: String): String? {
-        if (url.startsWith("live_stream?channel=")) return url
+    private fun extractYouTubeEmbedSrc(url: String): String? {
         if (!url.contains("youtube.com") && !url.contains("youtu.be")) return null
+
+        val listMatch = YOUTUBE_LIST_REGEX.find(url)?.groupValues?.get(1)
+        if (!listMatch.isNullOrBlank()) {
+            return "https://www.youtube-nocookie.com/embed/videoseries?list=$listMatch&autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1&origin=https://www.youtube-nocookie.com"
+        }
+
+        if (url.startsWith("live_stream?channel=")) {
+            return "https://www.youtube-nocookie.com/embed/$url&autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1&origin=https://www.youtube-nocookie.com"
+        }
+
         if (url.contains("channel=") || url.contains("channel/")) {
             val chId = YOUTUBE_CHANNEL_REGEX.find(url)?.groupValues?.get(1)
-            if (!chId.isNullOrBlank()) return "live_stream?channel=$chId"
+            if (!chId.isNullOrBlank()) {
+                return "https://www.youtube-nocookie.com/embed/live_stream?channel=$chId&autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1&origin=https://www.youtube-nocookie.com"
+            }
         }
-        return YOUTUBE_REGEX.find(url)?.groupValues?.get(1)
+
+        val ytId = YOUTUBE_REGEX.find(url)?.groupValues?.get(1)
+        if (ytId != null) {
+            val sep = if (ytId.contains("?")) "&" else "?"
+            return "https://www.youtube-nocookie.com/embed/$ytId${sep}autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1&origin=https://www.youtube-nocookie.com"
+        }
+
+        return null
     }
 
     private fun loadStream(url: String) {
-        val ytId = extractYouTubeId(url)
-        if (ytId != null) {
-            val sep = if (ytId.contains("?")) "&" else "?"
-            val embedSrc = "https://www.youtube-nocookie.com/embed/$ytId${sep}autoplay=1&controls=1&fs=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
-
+        val embedSrc = extractYouTubeEmbedSrc(url)
+        if (embedSrc != null) {
             val embedHtml = """
                 <!DOCTYPE html>
                 <html>
                 <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                <meta name="referrer" content="strict-origin-when-cross-origin">
                 <style>
                   * { margin:0; padding:0; box-sizing:border-box; }
                   html, body { width:100vw; height:100vh; overflow:hidden; background:#000; }
@@ -87,6 +104,7 @@ class WebStreamActivity : AppCompatActivity() {
                 <body>
                   <iframe id="ytplayer"
                     src="$embedSrc"
+                    referrerpolicy="strict-origin-when-cross-origin"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowfullscreen>
                   </iframe>
