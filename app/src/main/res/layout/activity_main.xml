@@ -169,6 +169,24 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:background="@drawable/button_focus_selector" />
+
+                <TextView
+                    android:id="@+id/btnHelpBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="❓ Ayuda"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/button_text_selector"
+                    android:focusable="true"
+                    android:clickable="true"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/button_focus_selector"
+                    android:contentDescription="Guía de tipos de señal" />
             </LinearLayout>
 
             <!-- Detalle explicativo contextual que aparece debajo de los botones al recibir el foco -->

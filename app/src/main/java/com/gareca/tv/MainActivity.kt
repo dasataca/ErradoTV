@@ -345,8 +345,23 @@ class MainActivity : AppCompatActivity() {
             if (hasFocus) {
                 tvHeaderButtonHint.text = "Recarga lista de eventos/canales"
                 tvHeaderButtonHint.visibility = View.VISIBLE
-            } else if (!btnUpdate.hasFocus()) {
+            } else if (!btnUpdate.hasFocus() && findViewById<View>(R.id.btnHelpBadge)?.hasFocus() != true) {
                 tvHeaderButtonHint.visibility = View.GONE
+            }
+        }
+
+        findViewById<TextView>(R.id.btnHelpBadge)?.let { btnHelp ->
+            btnHelp.setOnFocusChangeListener { _, hasFocus ->
+                btnHelp.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                if (hasFocus) {
+                    tvHeaderButtonHint.text = "Guía técnica de señales (HLS 100%, YouTube, Web)"
+                    tvHeaderButtonHint.visibility = View.VISIBLE
+                } else if (!btnUpdate.hasFocus() && !tvRefresh.hasFocus()) {
+                    tvHeaderButtonHint.visibility = View.GONE
+                }
+            }
+            btnHelp.setOnClickListener {
+                showStreamHelpDialog()
             }
         }
 
@@ -659,6 +674,21 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        findViewById<TextView>(R.id.btnHelpBadge)?.let { btn ->
+            if (isPortrait) {
+                btn.text = "❓"
+                btn.textSize = 14f
+                val pad = (6 * density).toInt()
+                btn.setPadding(pad, pad, pad, pad)
+            } else {
+                btn.text = "❓ Ayuda"
+                btn.textSize = 14f
+                val padH = (12 * density).toInt()
+                val padV = (6 * density).toInt()
+                btn.setPadding(padH, padV, padH, padV)
+            }
+        }
+
         // Márgenes verticales compactados en celular para maximizar área de contenido
         findViewById<View>(R.id.llModeSelector)?.let { modeSelector ->
             (modeSelector.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.let { lp ->
@@ -681,6 +711,18 @@ class MainActivity : AppCompatActivity() {
                 headerRow.layoutParams = lp
             }
         }
+    }
+
+    private fun showStreamHelpDialog() {
+        val dialog = Dialog(this)
+        dialog.setContentView(R.layout.dialog_stream_help)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        val btnDismiss = dialog.findViewById<Button>(R.id.btnDismissHelp)
+        btnDismiss?.setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.show()
+        btnDismiss?.requestFocus()
     }
 
     private fun executeSearch(isGlobal: Boolean) {
@@ -1774,12 +1816,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun focusFirstEventItem() {
+        if (adapter.itemCount == 0) return
+        val lm = rvEvents.layoutManager as? LinearLayoutManager
+        lm?.scrollToPositionWithOffset(0, 0)
         rvEvents.post {
-            if (adapter.itemCount == 0) return@post
-            rvEvents.scrollToPosition(0)
             fun tryFocus(): Boolean {
                 val child = rvEvents.findViewHolderForAdapterPosition(0)?.itemView
-                    ?: rvEvents.layoutManager?.findViewByPosition(0)
+                    ?: lm?.findViewByPosition(0)
                     ?: rvEvents.getChildAt(0)
                 return child?.requestFocus() ?: false
             }
@@ -1792,7 +1835,7 @@ class MainActivity : AppCompatActivity() {
                             tryFocus()
                         }, 50)
                     }
-                }, 50)
+                }, 40)
             }
         }
     }

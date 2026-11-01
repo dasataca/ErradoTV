@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="500dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#1B202E"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="❓ Guía de Señales y Compatibilidad"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/accent" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Conoce qué significa cada etiqueta y su nivel de garantía de reproducción:"
+        android:textSize="13sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="16dp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Fila 1: HLS 100% -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#121622"
+                android:padding="12dp"
+                android:layout_marginBottom="10dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚡ HLS"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="#059669"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="100% GARANTIZADO • ExoPlayer Nativo"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#34D399"
+                        android:layout_marginStart="10dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Transmisión nativa directa (.m3u8). Es la señal más rápida y estable: permite zapping continuo con control remoto (◀ / ▶) y 3 modos de Zoom. Se reproduce el 100% de las veces."
+                    android:textSize="12sp"
+                    android:textColor="#CBD5E1"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+
+            <!-- Fila 2: YouTube Live -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#121622"
+                android:padding="12dp"
+                android:layout_marginBottom="10dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔴 YouTube"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="#DC2626"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="95% ALTA COMPATIBILIDAD • YouTube Live"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#F87171"
+                        android:layout_marginStart="10dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Emisiones oficiales en directo por YouTube. Reproducción directa y limpia sin interrupciones publicitarias."
+                    android:textSize="12sp"
+                    android:textColor="#CBD5E1"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+
+            <!-- Fila 3: Web HTML5 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#121622"
+                android:padding="12dp"
+                android:layout_marginBottom="10dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔵 Web"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="#2563EB"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="70% - 80% VARIABLE • Reproductor Web"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#60A5FA"
+                        android:layout_marginStart="10dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Emisión embebida de plataformas externas (Dailymotion, Twitch o páginas web de cadenas). Puede tardar unos segundos en cargar o tener bloqueos de región según tu operador."
+                    android:textSize="12sp"
+                    android:textColor="#CBD5E1"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+
+            <!-- Fila 4: No Disponible -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#121622"
+                android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚪ NO DISP."
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="#6B7280"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0% FUERA DE LÍNEA • Señal Caída"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#9CA3AF"
+                        android:layout_marginStart="10dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="El canal está fuera de servicio temporalmente. La aplicación lo traslada automáticamente al final de la lista y reintenta conectarse periódicamente."
+                    android:textSize="12sp"
+                    android:textColor="#CBD5E1"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/btnDismissHelp"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:text="Entendido"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/button_text_selector"
+        android:background="@drawable/button_focus_selector"
+        android:layout_marginTop="16dp"
+        android:focusable="true"
+        android:clickable="true" />
+
+</LinearLayout>

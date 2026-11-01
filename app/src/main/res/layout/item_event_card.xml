@@ -74,7 +74,7 @@
             android:layout_marginTop="4dp" />
     </LinearLayout>
 
-    <!-- Contenedor Derecho para Canales (Insignia Compacta + Botón Favorito + Botón Play) -->
+    <!-- Contenedor Derecho para Canales (Insignia Compacta + Botón Play + Botón Favorito) -->
     <LinearLayout
         android:id="@+id/llChannelActions"
         android:layout_width="wrap_content"
@@ -96,6 +96,23 @@
             android:paddingEnd="6dp"
             android:paddingTop="2dp"
             android:paddingBottom="2dp"
+            android:layout_marginEnd="6dp"
+            android:focusable="false"
+            android:clickable="false" />
+
+        <TextView
+            android:id="@+id/btnCardPlay"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:gravity="center"
+            android:text="▶"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:focusable="true"
+            android:clickable="true"
+            android:focusableInTouchMode="true"
+            android:background="@drawable/card_btn_play_selector"
             android:layout_marginEnd="6dp" />
 
         <TextView
@@ -109,25 +126,7 @@
             android:focusable="true"
             android:clickable="true"
             android:focusableInTouchMode="true"
-            android:background="@drawable/card_btn_fav_selector"
-            android:layout_marginEnd="6dp" />
-
-        <TextView
-            android:id="@+id/btnCardPlay"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="▶ Ver"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:paddingTop="5dp"
-            android:paddingBottom="5dp"
-            android:focusable="true"
-            android:clickable="true"
-            android:focusableInTouchMode="true"
-            android:background="@drawable/card_btn_play_selector" />
+            android:background="@drawable/card_btn_fav_selector" />
     </LinearLayout>
 
     <!-- Contenedor Derecho para Partidos de Deportes (Anterior Interfaz Limpia: Badge + Countdown) -->

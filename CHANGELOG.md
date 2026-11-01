@@ -2,6 +2,23 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.8] - 2026-11-01
+### Añadido y Optimizado (Distintivos Técnicos de Texto, Botón de Ayuda con Guía de Señales, Prioridad Play y Retorno Cíclico en Subgrupos)
+- **Distintivos Técnicos como Texto Estático (No Botones)**:
+  - Las etiquetas de tecnología (`⚡ HLS`, `🔴 YouTube`, `🔵 Web`, `⚪ NO DISP.`) se definen estrictamente como texto informativo no interactivo (`focusable="false"`, `clickable="false"`), eliminando cualquier confusión con botones de acción.
+- **Botón `❓ Ayuda` en Cabecera y Diálogo Técnico de Señales (`dialog_stream_help.xml`)**:
+  - Incorporado en la cabecera superior junto a los botones de actualización y recarga (`❓ Ayuda` en TV, icono compacto `❓` en celulares).
+  - Al presionarse, despliega una guía técnica completa que explica con exactitud el nivel de garantía de reproducción de cada tecnología:
+    - `⚡ HLS` (**100% Garantizado**): Reproducción nativa en ExoPlayer (.m3u8), sin cortes, con zapping continuo (`◀`/`▶`) y control total de Zoom.
+    - `🔴 YouTube` (**95% Alta Compatibilidad**): Directos oficiales por YouTube sin anuncios.
+    - `🔵 Web` (**70% - 80% Variable**): Emisiones embebidas desde plataformas externas (Dailymotion, Twitch o webs).
+    - `⚪ NO DISP.` (**0% Fuera de Línea**): Señal caída, desplazada automáticamente al final de la lista.
+- **Prioridad a Reproducir (`▶`) al Navegar en Fila**:
+  - Sustituido el texto `▶ Ver` por el icono limpio `▶` en un botón compacto de 34x34dp.
+  - Al pulsar `▶ Derecha` desde la tarjeta del canal, el foco se transfiere inmediatamente al botón de reproducción `▶` como acción primaria, y un segundo toque a la derecha pasa a la estrella de favoritos `★`.
+- **Navegación Cíclica en Subgrupos y Categorías Agrupadas**:
+  - Al navegar verticalmente en las señales de un subgrupo o categoría, si el usuario llega al final de la lista y presiona `▼ Abajo`, la navegación retorna de forma fluida e instantánea al primer canal de ese subgrupo (`focusFirstEventItem`).
+
 ## [1.9.7] - 2026-11-01
 ### Añadido y Optimizado (Estrella Limpia de Favoritos, Pestaña Favoritos en Deportes y Optimización Móvil Vertical/Horizontal)
 - **Botón de Favorito Exclusivo por Estrella (`★`) sin Texto "Fav"**:

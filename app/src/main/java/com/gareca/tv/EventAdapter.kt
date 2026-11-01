@@ -115,7 +115,7 @@ class EventAdapter(
                         }
                     } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT) {
                         if (llChannelActions?.visibility == View.VISIBLE) {
-                            btnCardFavorite?.let {
+                            btnCardPlay?.let {
                                 it.requestFocus()
                                 return@setOnKeyListener true
                             }
@@ -140,27 +140,45 @@ class EventAdapter(
                 false
             }
 
-            btnCardFavorite?.setOnKeyListener { _, keyCode, event ->
+            btnCardPlay?.setOnKeyListener { _, keyCode, event ->
                 if (event.action == android.view.KeyEvent.ACTION_DOWN) {
                     if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
                         itemView.requestFocus()
                         return@setOnKeyListener true
                     } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT) {
-                        btnCardPlay?.let {
+                        btnCardFavorite?.let {
                             it.requestFocus()
                             return@setOnKeyListener true
+                        }
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN && boundPosition == boundTotal - 1 && boundTotal > 1) {
+                        if (onDownAtEnd != null) {
+                            return@setOnKeyListener onDownAtEnd.invoke()
+                        }
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && boundPosition == 0) {
+                        if (onUpPressed != null) {
+                            return@setOnKeyListener onUpPressed.invoke()
                         }
                     }
                 }
                 false
             }
 
-            btnCardPlay?.setOnKeyListener { _, keyCode, event ->
+            btnCardFavorite?.setOnKeyListener { _, keyCode, event ->
                 if (event.action == android.view.KeyEvent.ACTION_DOWN) {
                     if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
-                        btnCardFavorite?.let {
+                        btnCardPlay?.let {
                             it.requestFocus()
                             return@setOnKeyListener true
+                        }
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT) {
+                        return@setOnKeyListener true
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN && boundPosition == boundTotal - 1 && boundTotal > 1) {
+                        if (onDownAtEnd != null) {
+                            return@setOnKeyListener onDownAtEnd.invoke()
+                        }
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && boundPosition == 0) {
+                        if (onUpPressed != null) {
+                            return@setOnKeyListener onUpPressed.invoke()
                         }
                     }
                 }

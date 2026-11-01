@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "ab382656ee5f9214f73a19eed90aec51df5085d5dddf236036f8d645e07a2760864a5dde462466b0141342baa4d77d583d10c371f99401ba06a734ab1020b706a97405aba0c082407890431d7ab20e40",
-  "latest_version_code": 72,
-  "latest_version_name": "1.9.7",
-  "release_timestamp": 1793542268010,
+  "active_key_enc": "868a37785efff266f573d8c183a89d9445d2c49352098e2a0c449fd1f553d19b555426cadd563282d89925c06587d19991bb159bdab58b7024d7a719ce98c99ac33a6a6a9886dde59b4d1f767af5f6db",
+  "latest_version_code": 73,
+  "latest_version_name": "1.9.8",
+  "release_timestamp": 1793543217269,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Estrella limpia de favoritos (gris/dorada), pestaña Favoritos en Deportes y diseño responsivo para celulares (vertical y horizontal)"
+  "changelog": "GarecaTV: Etiquetas tecnicas de texto, boton de ayuda sobre tipos de reproduccion, prioridad a boton Play y retorno ciclico al primer canal en subgrupos"
 }
