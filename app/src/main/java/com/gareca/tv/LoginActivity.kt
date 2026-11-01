@@ -47,6 +47,13 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Configurar orientación adaptativa: Fija landscape en TV, flexible en celular
+        if (com.gareca.tv.util.DeviceUtils.isTv(this)) {
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+
         // Si ya hay una sesión activa, saltamos directo a MainActivity
         if (AuthManager.isLoggedIn(this)) {
             startActivity(Intent(this, MainActivity::class.java))

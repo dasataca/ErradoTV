@@ -187,6 +187,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Configurar orientación adaptativa: Fija landscape en TV, flexible en celular
+        val isTvDevice = com.gareca.tv.util.DeviceUtils.isTv(this)
+        if (isTvDevice) {
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+
         // Verificar si el usuario ha iniciado sesión
         if (!AuthManager.isLoggedIn(this)) {
             startActivity(Intent(this, LoginActivity::class.java))
@@ -195,6 +203,28 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(R.layout.activity_main)
+
+        // En celular: Reducción del padding de sobreexploración (48dp overscan de TV) y respeto de recortes de pantalla (Notch/Insets)
+        val mainRootLayout = findViewById<View>(R.id.mainRootLayout)
+        if (!isTvDevice && mainRootLayout != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainRootLayout) { v, insets ->
+                val statusBar = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
+                val navBar = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())
+                val cutout = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.displayCutout())
+
+                val density = resources.displayMetrics.density
+                val basePadH = (14 * density).toInt()
+                val basePadV = (10 * density).toInt()
+
+                val padLeft = maxOf(basePadH, cutout.left, navBar.left)
+                val padTop = maxOf(basePadV, statusBar.top, cutout.top)
+                val padRight = maxOf(basePadH, cutout.right, navBar.right)
+                val padBottom = maxOf(basePadV, navBar.bottom, cutout.bottom)
+
+                v.setPadding(padLeft, padTop, padRight, padBottom)
+                insets
+            }
+        }
 
         findViewById<View>(R.id.ivLogo)?.setOnLongClickListener {
             val user = AuthManager.getUserEmail(this)

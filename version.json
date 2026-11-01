@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "48274920a9d4a54a38ca774b4d8db1c7b759d5e16bad62b9570e7c84624b46db91c944f4fef3eb4adc942624d7dc78c91b4f5a1f78f060018497f7291ac7fe3dd67d3de9e356b6c06a7a49fc3dceac38",
-  "latest_version_code": 63,
-  "latest_version_name": "1.8.8",
-  "release_timestamp": 1793532186012,
+  "active_key_enc": "0c93da5d73fa1a8a12d70d86359942d4cb7a44be385b7c48c4536371390e12de30c96f9bf46abbe01600b5d90b3607e5f12e87a6293a59164cb1794f43372905fb4aa2a68538396245f38760e8d5e257",
+  "latest_version_code": 64,
+  "latest_version_name": "1.8.9",
+  "release_timestamp": 1793533369825,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Fase 2 Modulo nativo C++20 NDK para descifrado criptografico y blindaje de claves"
+  "changelog": "GarecaTV: Fase A Deteccion hibrida TV y celular, orientacion dinamica y ajuste de safe area"
 }

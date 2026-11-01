@@ -35,7 +35,7 @@
             android:roundIcon="@mipmap/ic_launcher_v4_round"
             android:banner="@drawable/tv_banner_v4"
             android:exported="true"
-            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"
             android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -51,7 +51,7 @@
             android:roundIcon="@mipmap/ic_launcher_v4_round"
             android:banner="@drawable/tv_banner_v4"
             android:exported="false"
-            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"
             android:launchMode="singleTop" />
 
         <activity
@@ -61,7 +61,6 @@
             android:roundIcon="@mipmap/ic_launcher_v4_round"
             android:banner="@drawable/tv_banner_v4"
             android:exported="false"
-            android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden" />
 
         <activity
@@ -71,7 +70,6 @@
             android:roundIcon="@mipmap/ic_launcher_v4_round"
             android:banner="@drawable/tv_banner_v4"
             android:exported="false"
-            android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden" />
 
         <provider

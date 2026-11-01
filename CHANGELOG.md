@@ -2,6 +2,21 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.8.9] - 2026-11-01
+### Añadido y Optimizado (Fase A: Detección Híbrida TV/Móvil, Orientación Dinámica y Safe Area)
+- **Módulo de Detección de Dispositivo (`DeviceUtils.kt`)**:
+  - Detección precisa de hardware vía `UiModeManager (UI_MODE_TYPE_TELEVISION)`, características del sistema (`FEATURE_LEANBACK`, `FEATURE_TELEVISION`) y ausencia de pantalla táctil.
+  - Diferenciación en tiempo de ejecución entre Smart TVs / TV Boxes (D-Pad, 16:9 fijo) y Celulares / Tablets (Touch, rotación dinámica).
+- **Orientación Dinámica y ConfigChanges**:
+  - `AndroidManifest.xml` actualizado eliminando la orientación landscape rígida para teléfonos celulares.
+  - `LoginActivity` y `MainActivity`: Fijo en `SCREEN_ORIENTATION_LANDSCAPE` en televisores; `SCREEN_ORIENTATION_UNSPECIFIED` en celulares para permitir rotación fluida y uso vertical natural.
+  - `PlayerActivity` y `WebStreamActivity`: Fijo en `SCREEN_ORIENTATION_LANDSCAPE` en TV; `SCREEN_ORIENTATION_SENSOR_LANDSCAPE` en celulares para iniciar inmediatamente en pantalla completa horizontal siguiendo el sensor del dispositivo.
+- **Ajuste de Safe Area y Eliminación de Overscan en Celular (`WindowInsetsCompat`)**:
+  - En televisores se mantiene intacto el margen de 48dp de seguridad anti-overscan.
+  - En celulares se eliminan los 48dp de sobre-espacio y se aplica ajuste dinámico a 12-14dp respetando la barra de estado (`statusBars`), la barra de navegación gestual (`navigationBars`) y el recorte de cámara/notch (`displayCutout`).
+- **Diseño Vertical Adaptativo para Login (`layout-port/activity_login.xml`)**:
+  - Creación de layout optimizado con `ScrollView` vertical para celulares en orientación vertical, facilitando el ingreso de credenciales con teclado táctil en pantalla sin deformar la interfaz.
+
 ## [1.8.8] - 2026-11-01
 ### Añadido y Optimizado (Fase 2: Motor Nativo C++20 NDK para Criptografía y Blindaje)
 - **Motor Criptográfico Nativo C++20 (`libgareca_crypto.so`)**:
