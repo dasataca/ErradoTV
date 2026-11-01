@@ -191,8 +191,43 @@ class MainActivity : AppCompatActivity() {
     private var cachedCategoryNavItems = listOf<NavItem>()
     private var cachedCountryNavItems = listOf<NavItem>()
 
+    // Caché en memoria RAM de favoritos O(1) (Cero lecturas a disco SQLite durante el renderizado en TV)
+    private val cachedSportsFavorites = java.util.Collections.synchronizedSet(HashSet<String>())
+    private val cachedCxtvFavorites = java.util.Collections.synchronizedSet(HashSet<String>())
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Capturador global de caídas / excepciones no controladas con envío directo a Supabase
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                val sw = java.io.StringWriter()
+                throwable.printStackTrace(java.io.PrintWriter(sw))
+                val stackTrace = sw.toString()
+                SupabaseLogger.error(
+                    "app_crash",
+                    "Crash no controlado: ${throwable.message ?: throwable.javaClass.simpleName}",
+                    mapOf(
+                        "thread" to thread.name,
+                        "exception" to throwable.javaClass.name,
+                        "message" to (throwable.message ?: ""),
+                        "stacktrace" to stackTrace.take(3000)
+                    )
+                )
+                Thread.sleep(1200)
+            } catch (_: Exception) {}
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
+
+        // Carga inicial asíncrona de favoritos a memoria RAM
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val db = AppDatabase.getInstance(this@MainActivity)
+                cachedSportsFavorites.addAll(db.getAllFavorites("sports"))
+                cachedCxtvFavorites.addAll(db.getAllFavorites("cxtv"))
+            } catch (_: Exception) {}
+        }
 
         // Configurar orientación adaptativa: Fija landscape en TV, flexible en celular
         val isTvDevice = com.gareca.tv.util.DeviceUtils.isTv(this)
@@ -562,11 +597,8 @@ class MainActivity : AppCompatActivity() {
                 true
             },
             isFavorite = { item ->
-                try {
-                    AppDatabase.getInstance(this).isFavorite(item.title.trim().lowercase())
-                } catch (_: Exception) {
-                    false
-                }
+                val key = item.title.trim().lowercase()
+                cachedSportsFavorites.contains(key) || cachedCxtvFavorites.contains(key)
             },
             onItemLongClick = { item ->
                 handleToggleFavorite(item)
@@ -1894,25 +1926,22 @@ class MainActivity : AppCompatActivity() {
     private fun focusFirstEventItem() {
         if (adapter.itemCount == 0) return
         val lm = rvEvents.layoutManager as? LinearLayoutManager
-        lm?.scrollToPositionWithOffset(0, 0)
-        rvEvents.post {
-            fun tryFocus(): Boolean {
-                val child = rvEvents.findViewHolderForAdapterPosition(0)?.itemView
-                    ?: lm?.findViewByPosition(0)
-                    ?: rvEvents.getChildAt(0)
-                return child?.requestFocus() ?: false
-            }
+        val firstPos = lm?.findFirstVisibleItemPosition() ?: 0
+        val targetPos = if (firstPos in 0 until adapter.itemCount) firstPos else 0
 
-            if (!tryFocus()) {
-                rvEvents.postDelayed({
-                    val focused = tryFocus()
-                    if (!focused) {
-                        rvEvents.postDelayed({
-                            tryFocus()
-                        }, 50)
-                    }
-                }, 40)
-            }
+        // Si el elemento ya está visible en pantalla, enfocarlo inmediatamente sin mover el scroll
+        val directChild = rvEvents.findViewHolderForAdapterPosition(targetPos)?.itemView
+            ?: lm?.findViewByPosition(targetPos)
+        if (directChild != null && directChild.requestFocus()) {
+            return
+        }
+
+        lm?.scrollToPositionWithOffset(targetPos, 0)
+        rvEvents.post {
+            val child = rvEvents.findViewHolderForAdapterPosition(targetPos)?.itemView
+                ?: lm?.findViewByPosition(targetPos)
+                ?: rvEvents.getChildAt(0)
+            child?.requestFocus()
         }
     }
 
@@ -2460,7 +2489,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (displayList.isEmpty()) {
-                tvChannelPositionIndicator.visibility = View.GONE
+                tvChannelPositionIndicator.visibility = View.INVISIBLE
                 tvEmpty.visibility = View.VISIBLE
                 tvEmpty.text = if (hasSearch) {
                     "No se encontraron canales para \"$globalSearchQuery\"."
@@ -2491,7 +2520,7 @@ class MainActivity : AppCompatActivity() {
             rvSubcategories.visibility = View.GONE
         }
         if (::tvChannelPositionIndicator.isInitialized) {
-            tvChannelPositionIndicator.visibility = View.GONE
+            tvChannelPositionIndicator.visibility = View.INVISIBLE
         }
         if (::llMobileFilterBar.isInitialized) {
             llMobileFilterBar.visibility = View.GONE
@@ -2554,7 +2583,7 @@ class MainActivity : AppCompatActivity() {
         val focusedId = focusedChild?.id ?: -1
 
         if (displayList.isEmpty()) {
-            tvChannelPositionIndicator.visibility = View.GONE
+            tvChannelPositionIndicator.visibility = View.INVISIBLE
             tvEmpty.visibility = View.VISIBLE
             tvEmpty.text = when (currentCategory) {
                 "🔍 Buscar Todo" -> if (globalSearchQuery.isNotEmpty()) {
@@ -2747,6 +2776,11 @@ class MainActivity : AppCompatActivity() {
             AppDatabase.getInstance(this).toggleFavorite(channelKey, source = src)
         } catch (_: Exception) {
             false
+        }
+        if (src == "sports") {
+            if (isFav) cachedSportsFavorites.add(channelKey) else cachedSportsFavorites.remove(channelKey)
+        } else {
+            if (isFav) cachedCxtvFavorites.add(channelKey) else cachedCxtvFavorites.remove(channelKey)
         }
         val msg = if (isFav) "⭐ Agregado a Favoritos: ${item.title}" else "Removido de Favoritos: ${item.title}"
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()

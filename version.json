@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "4285037516b6ec6f5ec9f06ba1a7f692e7df81b6a70c1a490db363da82bed4e3a22107a1840f22b87d5bdc1ae7c8610340f7fb4f9e34ee4ea36743504583865a595733bb91fc7008630c9c78d901d733",
-  "latest_version_code": 78,
-  "latest_version_name": "1.9.13",
-  "release_timestamp": 1793545923591,
+  "active_key_enc": "9da9cdd77eeb609d6470864c264be8b487c257802793e153898030a4032333cc1ab8010613019fecc1770c77321af632b0a1c4994ca2cffb042f491b2495a0934517e6971c0b32a5c1c0992df431832a",
+  "latest_version_code": 79,
+  "latest_version_name": "1.9.14",
+  "release_timestamp": 1793547311613,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Sincronizacion estricta de En Vivo solo con senales activas (paridad con Errado) y horarios confirmados en hora argentina"
+  "changelog": "GarecaTV: Blindaje definitivo D-Pad, desacoplamiento de layout overlay y favoritos en RAM sin freezes"
 }

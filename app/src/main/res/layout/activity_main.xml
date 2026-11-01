@@ -133,7 +133,7 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:layout_marginEnd="12dp"
-                    android:nextFocusDown="@id/llModeSelector"
+                    android:nextFocusDown="@id/btnModeSports"
                     android:nextFocusRight="@id/btnRefresh"
                     android:background="@drawable/button_focus_selector">
 
@@ -170,7 +170,7 @@
                     android:paddingEnd="16dp"
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
-                    android:nextFocusDown="@id/llModeSelector"
+                    android:nextFocusDown="@id/btnModeSports"
                     android:nextFocusLeft="@id/btnUpdate"
                     android:nextFocusRight="@id/btnHelpBadge"
                     android:background="@drawable/button_focus_selector" />
@@ -190,7 +190,7 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:layout_marginStart="8dp"
-                    android:nextFocusDown="@id/llModeSelector"
+                    android:nextFocusDown="@id/btnModeSports"
                     android:nextFocusLeft="@id/btnRefresh"
                     android:background="@drawable/button_focus_selector"
                     android:contentDescription="Guía de tipos de señal" />
@@ -230,6 +230,7 @@
             android:focusable="true"
             android:clickable="true"
             android:layout_marginEnd="8dp"
+            android:nextFocusDown="@id/rvCategories"
             android:background="@drawable/mode_button_selector">
 
             <TextView
@@ -255,6 +256,7 @@
             android:focusable="true"
             android:clickable="true"
             android:layout_marginStart="8dp"
+            android:nextFocusDown="@id/rvCategories"
             android:background="@drawable/mode_button_selector">
 
             <TextView
@@ -278,7 +280,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:clipToPadding="false"
-        android:descendantFocusability="afterDescendants"
+        android:descendantFocusability="beforeDescendants"
         android:layout_marginBottom="16dp"
         android:focusable="false" />
 
@@ -648,21 +650,6 @@
                     android:visibility="gone" />
             </LinearLayout>
 
-            <!-- Indicador ordinal de posición en tiempo real (Canal X de Y) -->
-            <TextView
-                android:id="@+id/tvChannelPositionIndicator"
-                android:layout_width="match_parent"
-                android:layout_height="22dp"
-                android:gravity="center_vertical"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#38BDF8"
-                android:visibility="invisible"
-                android:singleLine="true"
-                android:ellipsize="end" />
-
             <!-- Barra horizontal de Subcategorías (visible si la lista supera los 20 canales) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvSubcategories"
@@ -671,7 +658,7 @@
                 android:orientation="horizontal"
                 android:paddingBottom="8dp"
                 android:clipToPadding="false"
-                android:descendantFocusability="afterDescendants"
+                android:descendantFocusability="beforeDescendants"
                 android:focusable="false"
                 android:visibility="gone" />
 
@@ -701,9 +688,27 @@
                     android:id="@+id/rvEvents"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:paddingTop="26dp"
                     android:clipToPadding="false"
-                    android:descendantFocusability="afterDescendants"
+                    android:descendantFocusability="beforeDescendants"
                     android:focusable="false" />
+
+                <!-- Indicador ordinal de posición en tiempo real (Canal X de Y) como overlay desacoplado (Cero re-layout en la lista) -->
+                <TextView
+                    android:id="@+id/tvChannelPositionIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="24dp"
+                    android:layout_gravity="top"
+                    android:gravity="center_vertical"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#38BDF8"
+                    android:background="#DD0E121E"
+                    android:visibility="invisible"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
             </FrameLayout>
         </LinearLayout>
     </LinearLayout>

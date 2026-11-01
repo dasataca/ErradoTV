@@ -2,6 +2,21 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.14] - 2026-11-01
+### Blindaje Definitivo D-Pad y Desacoplamiento de Layout (Fin de Cierres Inesperados y Freezes)
+- **Desacoplamiento del Indicador de Posición como Overlay en FrameLayout**:
+  - Antes, `tvChannelPositionIndicator` era hermano lineal del contenedor vertical con peso (`layout_weight="1"`), lo que provocaba que con cada pulsación del D-Pad se recalculasen las dimensiones de `rvEvents` (`requestLayout()` churn) mientras el motor de foco intentaba medir vistas, provocando una colisión de hilos y congelamiento (ANR).
+  - Ahora, el indicador vive como overlay superior dentro del `FrameLayout` (`layout_gravity="top"`) con fondo semi-transparente y `paddingTop="26dp"` en `rvEvents`. Las actualizaciones de texto del indicador jamás obligan al `RecyclerView` a re-medirse.
+- **Corrección de `descendantFocusability` a `beforeDescendants`**:
+  - `rvEvents` y `rvCategories` tenían configurado `afterDescendants`, lo que forzaba a Android TV a realizar búsquedas recursivas completas por todo el árbol de vistas al llegar al borde de un item. Se configuró `beforeDescendants` para enfocar de inmediato las tarjetas de partidos y canales sin búsqueda recursiva.
+- **Rutas Direccionales D-Pad Explícitas (`nextFocusDown`)**:
+  - Los botones de cabecera (`btnUpdate`, `btnRefresh`, `btnHelpBadge`) apuntaban a `@id/llModeSelector` (un contenedor lineal no enfocable), desencadenando escaneos recursivos ciegos. Ahora apuntan directamente a `@id/btnModeSports`.
+  - Los selectores de modo `btnModeSports` y `btnModeWorldTv` ahora cuentan con `nextFocusDown="@id/rvCategories"`, transfiriendo el foco al instante hacia abajo.
+- **Caché en Memoria RAM para Favoritos O(1)**:
+  - Eliminadas las lecturas síncronas a disco SQLite (`AppDatabase.isFavorite`) dentro del `onBindViewHolder` de cada tarjeta. Ahora se consultan conjuntos en RAM (`cachedSportsFavorites`, `cachedCxtvFavorites`) a velocidad nanométrica, eliminando el bloqueo del Choreographer.
+- **Capturador Global de Excepciones (`UncaughtExceptionHandler`) con Telemetría**:
+  - Instalado manejador global de excepciones en `MainActivity.onCreate` que captura cualquier error imprevisto y envía su stacktrace completo a Supabase (`errado_tv_logs` / `app_crash`), impidiendo cierres silenciosos.
+
 ## [1.9.13] - 2026-11-01
 ### Sincronización Estricta de En Vivo con Opciones Reales (Paridad Total con Errado) y Horarios Argentina
 - **Sincronización Estricta de Estado "● EN VIVO" con Señales Activas**:
