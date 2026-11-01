@@ -385,7 +385,8 @@ class MainActivity : AppCompatActivity() {
                     etSearch.requestFocus()
                     true
                 } else {
-                    false
+                    focusFirstEventItem()
+                    true
                 }
             }
         )
@@ -1807,7 +1808,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateChannelPositionIndicator(pos: Int, total: Int) {
         if (total <= 0) {
-            tvChannelPositionIndicator.visibility = View.GONE
+            tvChannelPositionIndicator.visibility = View.INVISIBLE
             return
         }
         val isMatchCategory = currentAppMode == AppMode.SPORTS && (currentCategory == "⚽ Partidos del Día" || currentCategory == "🔁 Repeticiones")

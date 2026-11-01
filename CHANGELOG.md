@@ -2,6 +2,17 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.11] - 2026-11-01
+### Optimizado y Adaptado (Presentación Móvil Responsiva Vertical y Horizontal para Celulares)
+- **Adaptación Integral del Modo Vertical (Portrait) en Celulares**:
+  - **Eliminación del Overscan de TV (48dp)**: En móviles, el padding horizontal del layout raíz se reduce dinámicamente a solo 10dp (`ViewCompat.setOnApplyWindowInsetsListener`), recuperando el 25% del ancho de pantalla que antes asfixiaba el contenido en celulares.
+  - **Textos de Botones de Modo Compactos**: Al detectar orientación vertical en celular, los botones se rotulan de forma limpia como `⚽ Deportes` y `📺 TV Mundial` (en vez del texto largo de TV `⚽ DEPORTES Y PARTIDOS` / `📺 TELEVISIÓN MUNDIAL`), eliminando truncamientos.
+  - **Cabecera Móvil Limpia y Compacta**:
+    - Ocultación del reloj digital duplicado (los celulares ya cuentan con el reloj nativo en la barra de estado).
+    - Botones de acción en icono puro: `🔄` para recargar, `❓` para guía de señales y descarga compacta para actualizar APK.
+    - Reducción del tamaño del logo a 40dp y compresión de márgenes a 8dp para dar el 85% de la pantalla vertical a los partidos y canales.
+  - **Detección Dinámica de Giro de Pantalla (`onConfigurationChanged`)**: Si el usuario gira el celular a formato horizontal (landscape), la interfaz expande automáticamente los botones y títulos al formato completo.
+
 ## [1.9.10] - 2026-11-01
 ### Añadido, Optimizado y Corregido (Partidos por Hora con Auto-Foco En Vivo, Contador en Deportes, Retención de Foco en Favoritos y Rendimiento 60 FPS en TV)
 - **Orden Cronológico Estricto de Partidos del Día con Auto-Posicionamiento en Directos**:

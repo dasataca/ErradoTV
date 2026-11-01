@@ -110,16 +110,10 @@ class EventAdapter(
         private var boundItem: EventItem? = null
 
         init {
-            // TV focus animation con cancelación previa para evitar sobrecarga en D-Pad rápido
-            itemView.setOnFocusChangeListener { view, hasFocus ->
-                view.animate().cancel()
-                if (hasFocus) {
-                    view.animate().scaleX(1.02f).scaleY(1.02f).setDuration(80).start()
-                    if (boundPosition >= 0 && boundTotal > 0) {
-                        onItemFocus?.invoke(boundPosition, boundTotal)
-                    }
-                } else {
-                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(80).start()
+            // Foco 100% acelerado por hardware GPU mediante card_selector.xml (cero animadores en CPU)
+            itemView.setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus && boundPosition >= 0 && boundTotal > 0) {
+                    onItemFocus?.invoke(boundPosition, boundTotal)
                 }
             }
 

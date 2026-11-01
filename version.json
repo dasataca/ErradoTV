@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "5e45e60bed46ffe102e000d8cddbb5de03a3c4ab43c77f8ae6ae92448cd8c6f62517a05107952c095e51f2a72ac3d293667226fe52f4ec72b5b192673d5456feff79458b9fe8bbf8bc4725ee0d0605e6",
-  "latest_version_code": 76,
-  "latest_version_name": "1.9.11",
-  "release_timestamp": 1793545012353,
+  "active_key_enc": "ca60f82cc2feedc7bdf0daf4105e1bb0543e6e0cd22a3e75256ea39fd99f4d70d67ecd09ec0e6d3af5d6e6ac0f751814582bf697acda775f8c5c0d6b451adb44801333971793983ce40a8b1fdf2dfbf4",
+  "latest_version_code": 77,
+  "latest_version_name": "1.9.12",
+  "release_timestamp": 1793545289605,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Optimizacion responsiva integral para celulares en modo vertical (rotacion adaptativa y titulos compactos)"
+  "changelog": "GarecaTV: Fin de congelamiento al pulsar tecla abajo, eliminacion de animadores CPU por selector GPU nativo y altura fija en indicador"
 }
