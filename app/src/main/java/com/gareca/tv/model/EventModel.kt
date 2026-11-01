@@ -50,7 +50,8 @@ data class EventItem(
 
         fun calculateTimesAndStatus(
             timeStr: String?,
-            dateStr: String? = null
+            dateStr: String? = null,
+            hasStreams: Boolean = true
         ): EventTimingInfo {
             if (timeStr == null || !timeStr.contains(":")) {
                 return EventTimingInfo(EventStatus.CHANNEL_24_7, null, null, 0L)
@@ -98,6 +99,33 @@ data class EventItem(
                 val diffMillis = startMillis - nowMillis
 
                 val (calculatedStatus, countdown) = when {
+                    // Si el partido NO tiene opciones de transmisión cargadas por el operador en el JSON,
+                    // NUNCA debe marcarse como EN VIVO (es un evento pendiente / programado)
+                    !hasStreams -> {
+                        when {
+                            diffMillis > 24 * 3600 * 1000L -> {
+                                val days = diffMillis / (24 * 3600 * 1000L)
+                                val hours = (diffMillis % (24 * 3600 * 1000L)) / (3600 * 1000L)
+                                EventStatus.SCHEDULED to "⏳ En ${days}d ${hours}h"
+                            }
+                            diffMillis in 30 * 60 * 1000L .. 24 * 3600 * 1000L -> {
+                                val hours = diffMillis / (3600 * 1000L)
+                                val mins = (diffMillis % (3600 * 1000L)) / (60 * 1000L)
+                                EventStatus.SCHEDULED to if (hours > 0) "⏳ En ${hours}h ${mins}m" else "⏳ En ${mins}m"
+                            }
+                            diffMillis in 0L until 30 * 60 * 1000L -> {
+                                val mins = Math.max(1L, diffMillis / (60 * 1000L))
+                                EventStatus.SCHEDULED to "⏳ ¡En $mins min!"
+                            }
+                            diffMillis < 0 && -diffMillis <= 180 * 60 * 1000L -> {
+                                EventStatus.SCHEDULED to "⏳ Señal al iniciar"
+                            }
+                            else -> {
+                                EventStatus.FINISHED to "FINALIZADO"
+                            }
+                        }
+                    }
+                    // Si el partido SÍ tiene opciones de transmisión cargadas activas
                     diffMillis > 24 * 3600 * 1000L -> {
                         val days = diffMillis / (24 * 3600 * 1000L)
                         val hours = (diffMillis % (24 * 3600 * 1000L)) / (3600 * 1000L)
@@ -112,11 +140,12 @@ data class EventItem(
                         val mins = Math.max(1L, diffMillis / (60 * 1000L))
                         EventStatus.STARTING_SOON to "⏳ ¡En $mins min!"
                     }
-                    diffMillis < 0 && -diffMillis <= 135 * 60 * 1000L -> {
+                    diffMillis < 0 && -diffMillis <= 180 * 60 * 1000L -> {
                         EventStatus.LIVE to "● EN JUEGO"
                     }
                     else -> {
-                        EventStatus.FINISHED to "FINALIZADO"
+                        // Si ya pasaron más de 3 horas pero el operador mantiene la señal activa en event.json
+                        EventStatus.LIVE to "● EN JUEGO"
                     }
                 }
 

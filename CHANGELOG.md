@@ -2,6 +2,19 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.13] - 2026-11-01
+### Sincronización Estricta de En Vivo con Opciones Reales (Paridad Total con Errado) y Horarios Argentina
+- **Sincronización Estricta de Estado "● EN VIVO" con Señales Activas**:
+  - En Errado, los partidos solo aparecen con opciones de reproducción activas cuando el operador sube los enlaces (aproximadamente 15-30 minutos antes del pitazo inicial).
+  - GarecaTV anteriormente marcaba un partido como `● EN VIVO` basándose únicamente en el reloj de inicio. Ahora, la función `calculateTimesAndStatus(..., hasStreams = streams.isNotEmpty())` exige obligatoriamente que el partido tenga transmisiones reales cargadas en el JSON (`streams.isNotEmpty()`).
+  - Si un partido llegó a su hora pero el operador aún no ha subido los links, se mantiene en estado `PROGRAMADO` con la etiqueta `"⏳ Señal al iniciar"`.
+  - Con esto, la lista de partidos en vivo coincide con precisión matemática con Errado (mostrando exactamente los 3 partidos con transmisión activa en este horario: *Como vs Venezia*, *Progreso vs Defensor Sporting* y *Getafe vs Sevilla*).
+- **Orden Cronológico y Priorización de Directos Reales**:
+  - Los partidos con señales activas en vivo (`LIVE` + `streams.isNotEmpty()`) se posicionan de inmediato en la cima de la lista.
+  - A continuación, los partidos programados se ordenan de forma estrictamente cronológica por su hora de inicio (hora de Argentina UTC-3) para facilitar la exploración a lo largo del día.
+- **Confirmación de Zona Horaria**:
+  - Verificado que los horarios provistos en `event.json` están 100% en hora de Argentina (`America/Argentina/Buenos_Aires`, UTC-3), coincidiendo con las emisiones de TV de la región.
+
 ## [1.9.12] - 2026-11-01
 ### Rendimiento y Fluidez Estilo TiviMate / IPTV Smarters Pro (Fin de Congelamientos y Trabas en TV)
 - **Eliminación del Congelamiento al Presionar Tecla `▼ Abajo` desde Pestañas de Categoría**:

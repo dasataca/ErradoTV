@@ -1861,6 +1861,16 @@ class MainActivity : AppCompatActivity() {
     private fun sortDailyMatchesChronologically(list: List<EventItem>): List<EventItem> {
         return list.sortedWith(
             compareBy<EventItem> { item ->
+                when {
+                    // Partidos con señal en vivo activa van arriba de todo (exactamente los que tienen streams en Errado)
+                    item.status == EventStatus.LIVE && item.streams.isNotEmpty() -> 10
+                    item.status == EventStatus.STARTING_SOON && item.streams.isNotEmpty() -> 20
+                    // Partidos programados van después en orden cronológico por hora
+                    item.status == EventStatus.SCHEDULED -> 30
+                    item.status == EventStatus.FINISHED -> 90
+                    else -> 40
+                }
+            }.thenBy { item ->
                 if (item.startEpochMillis > 0L) item.startEpochMillis else Long.MAX_VALUE
             }.thenBy { it.time.orEmpty() }
             .thenBy { it.title.lowercase().trim() }
@@ -1871,7 +1881,7 @@ class MainActivity : AppCompatActivity() {
         for (item in list) {
             val extractedTime = item.time
             if (!extractedTime.isNullOrBlank()) {
-                val timing = EventItem.calculateTimesAndStatus(extractedTime, item.rawDate)
+                val timing = EventItem.calculateTimesAndStatus(extractedTime, item.rawDate, item.streams.isNotEmpty())
                 item.status = timing.status
                 item.localTime = timing.localTime
                 item.countdownText = timing.countdown
@@ -2567,10 +2577,10 @@ class MainActivity : AppCompatActivity() {
             adapter.submitList(displayList)
 
             if (currentCategory == "⚽ Partidos del Día" && !rvHadFocus && (focusedPos == -1)) {
-                // Auto-posicionamiento y foco inicial en los partidos EN VIVO (o por empezar)
-                val firstLiveIndex = displayList.indexOfFirst { it.status == EventStatus.LIVE }.let { liveIdx ->
+                // Auto-posicionamiento y foco inicial en los partidos EN VIVO (con opciones de transmisión reales)
+                val firstLiveIndex = displayList.indexOfFirst { it.status == EventStatus.LIVE && it.streams.isNotEmpty() }.let { liveIdx ->
                     if (liveIdx != -1) liveIdx
-                    else displayList.indexOfFirst { it.status == EventStatus.STARTING_SOON }.let { soonIdx ->
+                    else displayList.indexOfFirst { it.status == EventStatus.STARTING_SOON && it.streams.isNotEmpty() }.let { soonIdx ->
                         if (soonIdx != -1) soonIdx
                         else displayList.indexOfFirst { it.status == EventStatus.SCHEDULED }.let { schedIdx ->
                             if (schedIdx != -1) schedIdx else 0

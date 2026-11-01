@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "ca60f82cc2feedc7bdf0daf4105e1bb0543e6e0cd22a3e75256ea39fd99f4d70d67ecd09ec0e6d3af5d6e6ac0f751814582bf697acda775f8c5c0d6b451adb44801333971793983ce40a8b1fdf2dfbf4",
-  "latest_version_code": 77,
-  "latest_version_name": "1.9.12",
-  "release_timestamp": 1793545289605,
+  "active_key_enc": "4285037516b6ec6f5ec9f06ba1a7f692e7df81b6a70c1a490db363da82bed4e3a22107a1840f22b87d5bdc1ae7c8610340f7fb4f9e34ee4ea36743504583865a595733bb91fc7008630c9c78d901d733",
+  "latest_version_code": 78,
+  "latest_version_name": "1.9.13",
+  "release_timestamp": 1793545923591,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Fin de congelamiento al pulsar tecla abajo, eliminacion de animadores CPU por selector GPU nativo y altura fija en indicador"
+  "changelog": "GarecaTV: Sincronizacion estricta de En Vivo solo con senales activas (paridad con Errado) y horarios confirmados en hora argentina"
 }

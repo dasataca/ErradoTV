@@ -80,7 +80,7 @@ object ApiClient {
                             }
                         }
 
-                        val (eventStatus, localTime, countdown, startMillis) = EventItem.calculateTimesAndStatus(extractedTime, eventDate)
+                        val (eventStatus, localTime, countdown, startMillis) = EventItem.calculateTimesAndStatus(extractedTime, eventDate, streams.isNotEmpty())
                         val subtitleText = if (streams.isNotEmpty()) {
                             if (localTime != null && localTime != extractedTime) {
                                 "${streams.size} opciones • Tu hora: $localTime (Arg: $extractedTime)"
