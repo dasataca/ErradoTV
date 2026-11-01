@@ -2,6 +2,13 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.9] - 2026-11-01
+### Añadido y Corregido (Sincronización Total de la Agenda Completa de Errado: 43 Partidos del Día)
+- **Desbloqueo de Partidos Programados de la Agenda Diaria de Errado**:
+  - Descubierto y eliminado el filtro restrictivo en `ApiClient.kt` (`streams.isNotEmpty()`) que descartaba todos los partidos de la tarde y noche porque sus enlaces de transmisión aún no habían sido colocados en el archivo por el operador.
+  - Ahora se cargan y muestran los **43 partidos del día** completos que contiene el archivo `event.json` de Errado (`Juventus vs Napoli`, `Athletic Bilbao vs Real Sociedad`, `Belgrano vs Barracas`, `Newells vs Union`, `Lanus vs Gimnasia`, etc.).
+  - Los partidos con enlaces pendientes de inicio se muestran con su hora local exacta, distintivo `PROGRAMADO` y cuenta regresiva (`⏳ En Xh Ym`), con aviso informativo al pulsar de que los enlaces se activan minutos antes del pitazo inicial.
+
 ## [1.9.8] - 2026-11-01
 ### Añadido y Optimizado (Distintivos Técnicos de Texto, Botón de Ayuda con Guía de Señales, Prioridad Play y Retorno Cíclico en Subgrupos)
 - **Distintivos Técnicos como Texto Estático (No Botones)**:

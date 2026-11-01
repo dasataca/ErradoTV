@@ -80,27 +80,34 @@ object ApiClient {
                             }
                         }
 
-                        if (streams.isNotEmpty()) {
-                            val (eventStatus, localTime, countdown, startMillis) = EventItem.calculateTimesAndStatus(extractedTime, eventDate)
-                            val subtitleText = if (localTime != null && localTime != extractedTime) {
+                        val (eventStatus, localTime, countdown, startMillis) = EventItem.calculateTimesAndStatus(extractedTime, eventDate)
+                        val subtitleText = if (streams.isNotEmpty()) {
+                            if (localTime != null && localTime != extractedTime) {
                                 "${streams.size} opciones • Tu hora: $localTime (Arg: $extractedTime)"
                             } else {
                                 "${streams.size} opciones disponibles"
                             }
-                            list.add(
-                                EventItem(
-                                    title = cleanTitle,
-                                    time = extractedTime,
-                                    subtitle = subtitleText,
-                                    imageUrl = null,
-                                    streams = streams,
-                                    status = eventStatus,
-                                    localTime = localTime,
-                                    startEpochMillis = startMillis,
-                                    countdownText = countdown
-                                )
-                            )
+                        } else {
+                            if (localTime != null && localTime != extractedTime) {
+                                "Opciones al iniciar • Tu hora: $localTime (Arg: $extractedTime)"
+                            } else {
+                                "Opciones disponibles al iniciar"
+                            }
                         }
+
+                        list.add(
+                            EventItem(
+                                title = cleanTitle,
+                                time = extractedTime,
+                                subtitle = subtitleText,
+                                imageUrl = null,
+                                streams = streams,
+                                status = eventStatus,
+                                localTime = localTime,
+                                startEpochMillis = startMillis,
+                                countdownText = countdown
+                            )
+                        )
                     }
                 }
                 SupabaseLogger.info(

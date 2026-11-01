@@ -2639,7 +2639,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleEventClick(item: EventItem) {
-        if (item.streams.isEmpty()) return
+        if (item.streams.isEmpty()) {
+            Toast.makeText(this, "⏳ Las opciones de transmisión se activan unos minutos antes del partido", Toast.LENGTH_LONG).show()
+            return
+        }
 
         SupabaseLogger.info(
             "event_click",
