@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "ad4829cba88708198224653f791b922c35d318732dc609bae42ab3e1226d2d17d98107eaf156a9d86906ecc6f728a2893e8401b347c206bc37d057b370802aad80e9ad541fdf04a4a1c807cb5db630b2",
-  "latest_version_code": 75,
-  "latest_version_name": "1.9.10",
-  "release_timestamp": 1793544767338,
+  "active_key_enc": "5e45e60bed46ffe102e000d8cddbb5de03a3c4ab43c77f8ae6ae92448cd8c6f62517a05107952c095e51f2a72ac3d293667226fe52f4ec72b5b192673d5456feff79458b9fe8bbf8bc4725ee0d0605e6",
+  "latest_version_code": 76,
+  "latest_version_name": "1.9.11",
+  "release_timestamp": 1793545012353,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Partidos del dia ordenados por hora con auto-posicionamiento en vivo, contador para deportes, retencion de foco en favoritos y optimizacion fluida D-Pad a 60fps"
+  "changelog": "GarecaTV: Optimizacion responsiva integral para celulares en modo vertical (rotacion adaptativa y titulos compactos)"
 }

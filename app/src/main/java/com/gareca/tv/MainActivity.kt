@@ -700,6 +700,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Títulos adaptables del selector de modo en celular para evitar desborde en vertical
+        findViewById<TextView>(R.id.tvModeSportsLabel)?.let { label ->
+            label.text = if (isPortrait) "⚽ Deportes" else "⚽ DEPORTES Y PARTIDOS"
+            label.textSize = if (isPortrait) 12f else 13f
+        }
+        findViewById<TextView>(R.id.tvModeWorldTvLabel)?.let { label ->
+            label.text = if (isPortrait) "📺 TV Mundial" else "📺 TELEVISIÓN MUNDIAL"
+            label.textSize = if (isPortrait) 12f else 13f
+        }
+
         findViewById<View>(R.id.rvCategories)?.let { catBar ->
             (catBar.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.let { lp ->
                 lp.bottomMargin = (8 * density).toInt()
