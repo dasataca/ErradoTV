@@ -6,13 +6,31 @@ plugins {
 android {
     namespace = "com.gareca.tv"
     compileSdk = 34
+    ndkVersion = "26.1.10909125"
 
     defaultConfig {
         applicationId = "com.gareca.tv"
         minSdk = 24
         targetSdk = 34
-        versionCode = 62
-        versionName = "1.8.7"
+        versionCode = 63
+        versionName = "1.8.8"
+
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++20"
+                arguments += "-DANDROID_STL=c++_shared"
+            }
+        }
+        ndk {
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildTypes {

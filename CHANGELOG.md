@@ -2,6 +2,16 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.8.8] - 2026-11-01
+### Añadido y Optimizado (Fase 2: Motor Nativo C++20 NDK para Criptografía y Blindaje)
+- **Motor Criptográfico Nativo C++20 (`libgareca_crypto.so`)**:
+  - Implementación en C++20 con estándares modernos (`std::span`, `std::string_view`, `std::array`) compilado para todas las arquitecturas Android (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) con Android NDK 26 y CMake 3.22.1.
+  - **FIPS 197 AES-256-CBC & FIPS 180-4 SHA-256 Nativo**: Rutinas de descifrado simétrico y hashing criptográfico implementadas a nivel de hardware/C++, eliminando la sobrecarga de reflexión y JNI boxing de `javax.crypto`.
+  - **Blindaje Anti-Ingeniería Inversa y Anti-Decompilación**:
+    - Las claves maestras y la semilla del sobre remoto no existen en texto plano ni en bytecode Dalvik/ART. Están enmascaradas con operaciones bit a bit en memoria nativa inaccesible para decompiladores Java (JADX, Bytecode Viewer, APKTool).
+    - Descifrado de cargas útiles JSON (`nativeDecrypt`) y sobres remotos (`nativeDecryptEnvelope`) en memoria binaria antes de devolver el resultado a la JVM.
+  - **Tolerancia a Fallos y Fallback Transparente**: `CryptoUtils.kt` cuenta con carga dinámica segura de la biblioteca compartida con conmutación autónoma a las rutinas Kotlin si el dispositivo no soporta JNI.
+
 ## [1.8.7] - 2026-11-01
 ### Añadido y Optimizado (Fase 1: SQLite FTS4 de Alto Rendimiento)
 - **Motor de Base de Datos Nativo SQLite FTS4 (`AppDatabase.kt`)**:

@@ -15,6 +15,28 @@ import javax.crypto.spec.SecretKeySpec
 
 object CryptoUtils {
 
+    private var nativeLoaded = false
+
+    init {
+        try {
+            System.loadLibrary("gareca_crypto")
+            nativeLoaded = true
+            android.util.Log.d("CryptoUtils", "C++20 NDK native crypto engine loaded successfully")
+        } catch (t: Throwable) {
+            nativeLoaded = false
+            android.util.Log.w("CryptoUtils", "Could not load native crypto engine, using Kotlin fallback", t)
+        }
+    }
+
+    @JvmStatic
+    private external fun nativeGetFactoryKey(): String
+
+    @JvmStatic
+    private external fun nativeDecryptEnvelope(envelopeHex: String): String
+
+    @JvmStatic
+    private external fun nativeDecrypt(payload: String, b64Key: String): String
+
     // Máscara y bytes protegidos para evitar extracción estática con Jadx / APKTool
     private const val SHIELD_MASK: Byte = 0x5A
     private val SHIELDED_KEY_BYTES = byteArrayOf(
@@ -27,6 +49,12 @@ object CryptoUtils {
     )
 
     fun getFactoryKey(): String {
+        if (nativeLoaded) {
+            try {
+                val key = nativeGetFactoryKey()
+                if (key.isNotEmpty()) return key
+            } catch (_: Throwable) {}
+        }
         val raw = ByteArray(SHIELDED_KEY_BYTES.size) { i ->
             (SHIELDED_KEY_BYTES[i].toInt() xor SHIELD_MASK.toInt()).toByte()
         }
@@ -109,10 +137,16 @@ object CryptoUtils {
         (0x63).toByte(), (0x79).toByte(), (0x52).toByte(), (0x4A).toByte(), (0x59).toByte(), (0x50).toByte(), (0x53).toByte(), (0x4C).toByte(),
         (0x59).toByte(), (0x63).toByte(), (0x6F).toByte(), (0x59).toByte(), (0x5F).toByte(), (0x4E).toByte(), (0x59).toByte(), (0x48).toByte(),
         (0x63).toByte(), (0x0E).toByte(), (0x0C).toByte(), (0x0E).toByte(), (0x0A).toByte(), (0x63).toByte(), (0x6C).toByte(), (0x4E).toByte(),
-        (0x53).toByte(), (0x48).toByte(), (0x59).toByte(), (0x5F).toByte(), (0x48).toByte(), (0x55).toByte(), (0x53).toByte(), (0x52).toByte()
+        (0x53).toByte(), (0x48).toByte(), (0x59).toByte(), (0x5F).toByte(), (0x48).toByte(), (0x53).toByte(), (0x53).toByte(), (0x52).toByte()
     )
 
     fun decryptEnvelope(envelopeHex: String): String {
+        if (nativeLoaded) {
+            try {
+                val res = nativeDecryptEnvelope(envelopeHex)
+                if (res.isNotEmpty()) return res
+            } catch (_: Throwable) {}
+        }
         return try {
             val trimmed = envelopeHex.trim()
             if (trimmed.length < 64) return ""
@@ -146,11 +180,21 @@ object CryptoUtils {
 
     fun decrypt(encryptedPayload: String): String {
         val trimmed = encryptedPayload.trim()
-        if (trimmed.startsWith("{")) {
+        if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
             return trimmed
         }
 
-        // 1. Intenta descifrar con la clave activa en caché o remota y valida que sea JSON auténtico
+        // C++20 NDK engine execution
+        if (nativeLoaded) {
+            try {
+                val nativeResult = nativeDecrypt(trimmed, activeKeyB64)
+                if (nativeResult.startsWith("{") || nativeResult.startsWith("[")) {
+                    return nativeResult
+                }
+            } catch (_: Throwable) {}
+        }
+
+        // 1. Intenta descifrar con la clave activa en caché o remota y valida que sea JSON auténtico (Kotlin fallback)
         val result = tryDecryptWithKey(trimmed, activeKeyB64)
         if (result.startsWith("{") || result.startsWith("[")) {
             return result

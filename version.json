@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "dc1d01b42f671f67d30a0df57b0d73ad6b79329184d89cedcb46a7ec505cc998e28d8049cc4848dc0efb238d7f9f010e1491cfb4d88663369204419c799b35f999dc4a7cd744583f73abad9f0a05b23e",
-  "latest_version_code": 62,
-  "latest_version_name": "1.8.7",
-  "release_timestamp": 1793531397558,
+  "active_key_enc": "48274920a9d4a54a38ca774b4d8db1c7b759d5e16bad62b9570e7c84624b46db91c944f4fef3eb4adc942624d7dc78c91b4f5a1f78f060018497f7291ac7fe3dd67d3de9e356b6c06a7a49fc3dceac38",
+  "latest_version_code": 63,
+  "latest_version_name": "1.8.8",
+  "release_timestamp": 1793532186012,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Fase 1 SQLite FTS4 de alto rendimiento, busqueda indexada en disco y baja huella de RAM"
+  "changelog": "GarecaTV: Fase 2 Modulo nativo C++20 NDK para descifrado criptografico y blindaje de claves"
 }
