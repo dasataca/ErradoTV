@@ -133,6 +133,8 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:layout_marginEnd="12dp"
+                    android:nextFocusDown="@id/llModeSelector"
+                    android:nextFocusRight="@id/btnRefresh"
                     android:background="@drawable/button_focus_selector">
 
                     <ImageView
@@ -168,6 +170,9 @@
                     android:paddingEnd="16dp"
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
+                    android:nextFocusDown="@id/llModeSelector"
+                    android:nextFocusLeft="@id/btnUpdate"
+                    android:nextFocusRight="@id/btnHelpBadge"
                     android:background="@drawable/button_focus_selector" />
 
                 <TextView
@@ -185,6 +190,8 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:layout_marginStart="8dp"
+                    android:nextFocusDown="@id/llModeSelector"
+                    android:nextFocusLeft="@id/btnRefresh"
                     android:background="@drawable/button_focus_selector"
                     android:contentDescription="Guía de tipos de señal" />
             </LinearLayout>

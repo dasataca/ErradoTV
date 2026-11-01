@@ -67,20 +67,71 @@ class EventAdapter(
         private val btnCardFavorite: TextView? = itemView.findViewById(R.id.btnCardFavorite)
         private val btnCardPlay: TextView? = itemView.findViewById(R.id.btnCardPlay)
 
+        companion object {
+            private val COLOR_GOLD = Color.parseColor("#FFD700")
+            private val COLOR_MUTED = Color.parseColor("#64748B")
+
+            private val badgeColorMap = mapOf(
+                EventStatus.LIVE to Color.parseColor(EventStatus.LIVE.colorHex),
+                EventStatus.STARTING_SOON to Color.parseColor(EventStatus.STARTING_SOON.colorHex),
+                EventStatus.SCHEDULED to Color.parseColor(EventStatus.SCHEDULED.colorHex),
+                EventStatus.FINISHED to Color.parseColor(EventStatus.FINISHED.colorHex),
+                EventStatus.REPLAY to Color.parseColor(EventStatus.REPLAY.colorHex),
+                EventStatus.REPLAY_UNAVAILABLE to Color.parseColor(EventStatus.REPLAY_UNAVAILABLE.colorHex),
+                EventStatus.CHANNEL_24_7 to Color.parseColor(EventStatus.CHANNEL_24_7.colorHex)
+            )
+
+            private val streamTypeColorMap = mapOf(
+                "exo" to Color.parseColor("#059669"),
+                "youtube" to Color.parseColor("#DC2626"),
+                "web" to Color.parseColor("#2563EB"),
+                "other" to Color.parseColor("#7C3AED")
+            )
+
+            private val drawableCache = HashMap<Int, GradientDrawable>()
+
+            fun getBadgeDrawable(color: Int): GradientDrawable {
+                val cached = drawableCache[color]
+                if (cached != null) {
+                    return (cached.constantState?.newDrawable()?.mutate() as? GradientDrawable) ?: cached
+                }
+                val gd = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = 8f
+                    setColor(color)
+                }
+                drawableCache[color] = gd
+                return (gd.constantState?.newDrawable()?.mutate() as? GradientDrawable) ?: gd
+            }
+        }
+
         private var boundPosition: Int = -1
         private var boundTotal: Int = -1
         private var boundItem: EventItem? = null
 
         init {
-            // TV focus animation
+            // TV focus animation con cancelación previa para evitar sobrecarga en D-Pad rápido
             itemView.setOnFocusChangeListener { view, hasFocus ->
+                view.animate().cancel()
                 if (hasFocus) {
-                    view.animate().scaleX(1.02f).scaleY(1.02f).setDuration(150).start()
+                    view.animate().scaleX(1.02f).scaleY(1.02f).setDuration(80).start()
                     if (boundPosition >= 0 && boundTotal > 0) {
                         onItemFocus?.invoke(boundPosition, boundTotal)
                     }
                 } else {
-                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start()
+                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(80).start()
+                }
+            }
+
+            btnCardPlay?.setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus && boundPosition >= 0 && boundTotal > 0) {
+                    onItemFocus?.invoke(boundPosition, boundTotal)
+                }
+            }
+
+            btnCardFavorite?.setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus && boundPosition >= 0 && boundTotal > 0) {
+                    onItemFocus?.invoke(boundPosition, boundTotal)
                 }
             }
 
@@ -202,6 +253,7 @@ class EventAdapter(
                     .centerCrop()
                     .into(ivThumbnail)
             } else {
+                Glide.with(itemView.context).clear(ivThumbnail)
                 ivThumbnail.visibility = View.GONE
             }
 
@@ -242,12 +294,8 @@ class EventAdapter(
                 }
 
                 tvStreamBadge.text = effectiveStatus.label
-                val badgeDrawable = GradientDrawable().apply {
-                    shape = GradientDrawable.RECTANGLE
-                    cornerRadius = 8f
-                    setColor(Color.parseColor(effectiveStatus.colorHex))
-                }
-                tvStreamBadge.background = badgeDrawable
+                val badgeColor = badgeColorMap[effectiveStatus] ?: Color.GRAY
+                tvStreamBadge.background = getBadgeDrawable(badgeColor)
 
                 val isUnavailable = item.status == EventStatus.REPLAY_UNAVAILABLE || effectiveStatus == EventStatus.REPLAY_UNAVAILABLE
                 itemView.alpha = if (isUnavailable || effectiveStatus == EventStatus.FINISHED) 0.5f else 1.0f
@@ -260,41 +308,36 @@ class EventAdapter(
 
                 val isFav = isFavorite?.invoke(item) == true
                 btnCardFavorite?.text = "★"
-                btnCardFavorite?.setTextColor(if (isFav) Color.parseColor("#FFD700") else Color.parseColor("#64748B"))
+                btnCardFavorite?.setTextColor(if (isFav) COLOR_GOLD else COLOR_MUTED)
 
                 val badgeText: String
-                val badgeColor: String
+                val streamColor: Int
                 if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
                     badgeText = "⚪ NO DISP."
-                    badgeColor = "#6B7280"
+                    streamColor = badgeColorMap[EventStatus.REPLAY_UNAVAILABLE] ?: Color.GRAY
                 } else {
                     when (item.streamType.lowercase()) {
                         "exo" -> {
                             badgeText = "⚡ HLS"
-                            badgeColor = "#059669"
+                            streamColor = streamTypeColorMap["exo"] ?: Color.GREEN
                         }
                         "youtube" -> {
                             badgeText = "🔴 YouTube"
-                            badgeColor = "#DC2626"
+                            streamColor = streamTypeColorMap["youtube"] ?: Color.RED
                         }
                         "web" -> {
                             badgeText = "🔵 Web"
-                            badgeColor = "#2563EB"
+                            streamColor = streamTypeColorMap["web"] ?: Color.BLUE
                         }
                         else -> {
                             badgeText = "🌐 Web"
-                            badgeColor = "#7C3AED"
+                            streamColor = streamTypeColorMap["other"] ?: Color.MAGENTA
                         }
                     }
                 }
 
                 tvChannelStreamBadge?.text = badgeText
-                val channelBadgeDrawable = GradientDrawable().apply {
-                    shape = GradientDrawable.RECTANGLE
-                    cornerRadius = 8f
-                    setColor(Color.parseColor(badgeColor))
-                }
-                tvChannelStreamBadge?.background = channelBadgeDrawable
+                tvChannelStreamBadge?.background = getBadgeDrawable(streamColor)
 
                 val isUnavailable = item.status == EventStatus.REPLAY_UNAVAILABLE
                 itemView.alpha = if (isUnavailable) 0.5f else 1.0f

@@ -574,7 +574,9 @@ class MainActivity : AppCompatActivity() {
 
         rvEvents.layoutManager = LinearLayoutManager(this)
         rvEvents.setHasFixedSize(true)
-        rvEvents.setItemViewCacheSize(25)
+        rvEvents.setItemViewCacheSize(30)
+        rvEvents.itemAnimator = null
+        rvEvents.recycledViewPool.setMaxRecycledViews(0, 35)
         rvEvents.adapter = adapter
 
         rvSidebarCategories.setHasFixedSize(true)
@@ -1794,25 +1796,78 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateChannelPositionIndicator(pos: Int, total: Int) {
-        if (currentAppMode != AppMode.WORLD_TV || total <= 0) {
+        if (total <= 0) {
             tvChannelPositionIndicator.visibility = View.GONE
             return
         }
-        val groupLabel = if (currentCategory == "🌍 Países") {
-            if (currentSubcategory.isNotEmpty()) {
-                "${selectedCountry.ifEmpty { "Países" }}  •  $currentSubcategory"
+        val isMatchCategory = currentAppMode == AppMode.SPORTS && (currentCategory == "⚽ Partidos del Día" || currentCategory == "🔁 Repeticiones")
+        val itemWord = if (isMatchCategory) "Partido" else "Canal"
+
+        val groupLabel = if (currentAppMode == AppMode.WORLD_TV) {
+            if (currentCategory == "🌍 Países") {
+                if (currentSubcategory.isNotEmpty()) {
+                    "${selectedCountry.ifEmpty { "Países" }}  •  $currentSubcategory"
+                } else {
+                    selectedCountry.ifEmpty { "Países" }
+                }
             } else {
-                selectedCountry.ifEmpty { "Países" }
+                if (currentSubcategory.isNotEmpty()) {
+                    "$currentCategory  •  $currentSubcategory"
+                } else {
+                    currentCategory
+                }
             }
         } else {
+            // AppMode.SPORTS
             if (currentSubcategory.isNotEmpty()) {
                 "$currentCategory  •  $currentSubcategory"
             } else {
                 currentCategory
             }
         }
-        tvChannelPositionIndicator.text = "Canal ${pos + 1} de $total  •  $groupLabel"
-        tvChannelPositionIndicator.visibility = View.VISIBLE
+        val indicatorText = "$itemWord ${pos + 1} de $total  •  $groupLabel"
+        if (tvChannelPositionIndicator.text != indicatorText) {
+            tvChannelPositionIndicator.text = indicatorText
+        }
+        if (tvChannelPositionIndicator.visibility != View.VISIBLE) {
+            tvChannelPositionIndicator.visibility = View.VISIBLE
+        }
+    }
+
+    private fun isAnyHeaderOrSearchFocused(): Boolean {
+        if (btnUpdate.hasFocus() || btnRefresh.hasFocus() || (findViewById<View>(R.id.btnHelpBadge)?.hasFocus() == true)) return true
+        if (btnModeSports.hasFocus() || btnModeWorldTv.hasFocus()) return true
+        if (rvCategories.hasFocus()) return true
+        if (::rvSidebarCategories.isInitialized && rvSidebarCategories.hasFocus()) return true
+        if (::rvSidebarCountries.isInitialized && rvSidebarCountries.hasFocus()) return true
+        if (::rvSubcategories.isInitialized && rvSubcategories.hasFocus()) return true
+        if (::rvSuggestions.isInitialized && rvSuggestions.hasFocus()) return true
+        if (::etSearch.isInitialized && (etSearch.hasFocus() || btnSortDate.hasFocus() || btnSortName.hasFocus() || btnVoiceSearchReplay.hasFocus() || btnSearchReplay.hasFocus() || (::btnClearSearchText.isInitialized && btnClearSearchText.hasFocus()))) return true
+        if (::etGlobalSearch.isInitialized && (etGlobalSearch.hasFocus() || btnVoiceGlobalSearch.hasFocus() || btnSearchGlobal.hasFocus() || btnSortNameGlobal.hasFocus() || (::btnClearGlobalText.isInitialized && btnClearGlobalText.hasFocus()))) return true
+        return false
+    }
+
+    private fun sortDailyMatchesChronologically(list: List<EventItem>): List<EventItem> {
+        return list.sortedWith(
+            compareBy<EventItem> { item ->
+                if (item.startEpochMillis > 0L) item.startEpochMillis else Long.MAX_VALUE
+            }.thenBy { it.time.orEmpty() }
+            .thenBy { it.title.lowercase().trim() }
+        )
+    }
+
+    private fun refreshDailyEventsTiming(list: List<EventItem>): List<EventItem> {
+        for (item in list) {
+            val extractedTime = item.time
+            if (!extractedTime.isNullOrBlank()) {
+                val timing = EventItem.calculateTimesAndStatus(extractedTime, item.rawDate)
+                item.status = timing.status
+                item.localTime = timing.localTime
+                item.countdownText = timing.countdown
+                item.startEpochMillis = timing.startEpochMillis
+            }
+        }
+        return sortDailyMatchesChronologically(list)
     }
 
     private fun focusFirstEventItem() {
@@ -2028,7 +2083,7 @@ class MainActivity : AppCompatActivity() {
         for (item in cachedCxtvChannels) syncItemAvailability(item)
 
         if (updated) {
-            cachedDailyEvents = sortEventList(cachedDailyEvents)
+            cachedDailyEvents = sortDailyMatchesChronologically(cachedDailyEvents)
             cachedLiveChannels = sortEventList(cachedLiveChannels)
             filterAndDisplayEvents(silent = true)
         }
@@ -2082,7 +2137,7 @@ class MainActivity : AppCompatActivity() {
 
                     if (cachedDaily.isNotEmpty()) {
                         withContext(Dispatchers.Main) {
-                            cachedDailyEvents = cachedDaily
+                            cachedDailyEvents = sortDailyMatchesChronologically(cachedDaily)
                             cachedReplayEvents = cachedReplay
                             cachedLiveChannels = cachedLive
                             if (cachedCxtvChannels.isEmpty() && cachedCxtv.isNotEmpty()) {
@@ -2135,7 +2190,7 @@ class MainActivity : AppCompatActivity() {
                     replayMatches.add(item.copy(status = EventStatus.REPLAY, category = "Repeticiones"))
                 }
 
-                cachedDailyEvents = sortEventList(todayMatches)
+                cachedDailyEvents = sortDailyMatchesChronologically(todayMatches)
                 cachedReplayEvents = replayMatches
 
                 // Ocultar progressBar de inmediato: la pantalla de inicio ya tiene los eventos frescos
@@ -2455,7 +2510,7 @@ class MainActivity : AppCompatActivity() {
                     GlobalSortMode.DEFAULT -> sortEventList(base)
                 }
             }
-            "⚽ Partidos del Día" -> cachedDailyEvents
+            "⚽ Partidos del Día" -> refreshDailyEventsTiming(cachedDailyEvents)
             "🔁 Repeticiones" -> getFilteredAndSortedReplays()
             "⭐ Favoritos" -> {
                 val favKeys = try {
@@ -2469,7 +2524,16 @@ class MainActivity : AppCompatActivity() {
             else -> sortEventList(cachedLiveChannels.filter { it.category == currentCategory })
         }
 
+        val rvHadFocus = rvEvents.hasFocus()
+        val focusedChild = rvEvents.findFocus()
+        val focusedPos = if (focusedChild != null) {
+            val vh = rvEvents.findContainingViewHolder(focusedChild)
+            vh?.bindingAdapterPosition ?: -1
+        } else -1
+        val focusedId = focusedChild?.id ?: -1
+
         if (displayList.isEmpty()) {
+            tvChannelPositionIndicator.visibility = View.GONE
             tvEmpty.visibility = View.VISIBLE
             tvEmpty.text = when (currentCategory) {
                 "🔍 Buscar Todo" -> if (globalSearchQuery.isNotEmpty()) {
@@ -2490,14 +2554,50 @@ class MainActivity : AppCompatActivity() {
         } else {
             tvEmpty.visibility = View.GONE
             adapter.submitList(displayList)
-            if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
-                && !btnModeSports.hasFocus() && !btnModeWorldTv.hasFocus()
-                && (!::rvSubcategories.isInitialized || !rvSubcategories.hasFocus())
-                && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus() && !btnVoiceSearchReplay.hasFocus() && !btnSearchReplay.hasFocus() && (!::btnClearSearchText.isInitialized || !btnClearSearchText.hasFocus())))
-                && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus() && !btnSortNameGlobal.hasFocus() && (!::btnClearGlobalText.isInitialized || !btnClearGlobalText.hasFocus())))
-                && (!::rvSuggestions.isInitialized || !rvSuggestions.hasFocus())
-            ) {
-                rvEvents.requestFocus()
+
+            if (currentCategory == "⚽ Partidos del Día" && !rvHadFocus && (focusedPos == -1)) {
+                // Auto-posicionamiento y foco inicial en los partidos EN VIVO (o por empezar)
+                val firstLiveIndex = displayList.indexOfFirst { it.status == EventStatus.LIVE }.let { liveIdx ->
+                    if (liveIdx != -1) liveIdx
+                    else displayList.indexOfFirst { it.status == EventStatus.STARTING_SOON }.let { soonIdx ->
+                        if (soonIdx != -1) soonIdx
+                        else displayList.indexOfFirst { it.status == EventStatus.SCHEDULED }.let { schedIdx ->
+                            if (schedIdx != -1) schedIdx else 0
+                        }
+                    }
+                }
+                if (firstLiveIndex > 0) {
+                    (rvEvents.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(firstLiveIndex, 0)
+                }
+                updateChannelPositionIndicator(firstLiveIndex, displayList.size)
+                if (!silent && !isAnyHeaderOrSearchFocused()) {
+                    rvEvents.post {
+                        val vh = rvEvents.findViewHolderForAdapterPosition(firstLiveIndex)
+                        vh?.itemView?.requestFocus() ?: rvEvents.requestFocus()
+                    }
+                }
+            } else if (rvHadFocus && displayList.isNotEmpty()) {
+                val targetPos = if (focusedPos >= 0) minOf(focusedPos, displayList.size - 1) else 0
+                rvEvents.post {
+                    val vh = rvEvents.findViewHolderForAdapterPosition(targetPos)
+                    if (vh != null) {
+                        val targetView = if (focusedId != -1) vh.itemView.findViewById<View>(focusedId) else null
+                        targetView?.requestFocus() ?: vh.itemView.requestFocus()
+                    } else {
+                        (rvEvents.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(targetPos, 0)
+                        rvEvents.post {
+                            val retryVh = rvEvents.findViewHolderForAdapterPosition(targetPos)
+                            val targetView = if (focusedId != -1) retryVh?.itemView?.findViewById<View>(focusedId) else null
+                            targetView?.requestFocus() ?: retryVh?.itemView?.requestFocus() ?: rvEvents.requestFocus()
+                        }
+                    }
+                }
+                updateChannelPositionIndicator(targetPos, displayList.size)
+            } else {
+                updateChannelPositionIndicator(0, displayList.size)
+                if (!silent && !isAnyHeaderOrSearchFocused()) {
+                    rvEvents.requestFocus()
+                }
             }
         }
     }
@@ -2635,7 +2735,36 @@ class MainActivity : AppCompatActivity() {
             sidebarCategoryAdapter.setItems(cachedCategoryNavItems, currentCategory)
         }
 
-        filterAndDisplayEvents(silent = true)
+        if (currentCategory == "⭐ Favoritos") {
+            val currentPos = adapter.currentList.indexOfFirst { it.title.trim().equals(item.title.trim(), ignoreCase = true) }
+            filterAndDisplayEvents(silent = true)
+            rvEvents.post {
+                val newCount = adapter.itemCount
+                if (newCount > 0) {
+                    val targetPos = if (currentPos >= newCount) newCount - 1 else currentPos
+                    val vh = rvEvents.findViewHolderForAdapterPosition(targetPos)
+                    val btnFav = vh?.itemView?.findViewById<View>(R.id.btnCardFavorite)
+                    btnFav?.requestFocus() ?: vh?.itemView?.requestFocus()
+                    updateChannelPositionIndicator(targetPos, newCount)
+                } else {
+                    if (currentAppMode == AppMode.SPORTS) {
+                        focusSelectedSportsCategory()
+                    } else {
+                        focusSelectedSidebarCategory()
+                    }
+                }
+            }
+        } else {
+            val pos = adapter.currentList.indexOfFirst { it.title.trim().equals(item.title.trim(), ignoreCase = true) }
+            if (pos != -1) {
+                adapter.notifyItemChanged(pos)
+                rvEvents.post {
+                    val vh = rvEvents.findViewHolderForAdapterPosition(pos)
+                    val btnFav = vh?.itemView?.findViewById<View>(R.id.btnCardFavorite)
+                    btnFav?.requestFocus() ?: vh?.itemView?.requestFocus()
+                }
+            }
+        }
     }
 
     private fun handleEventClick(item: EventItem) {
