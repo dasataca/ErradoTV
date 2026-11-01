@@ -56,12 +56,13 @@ class EventAdapter(
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
-        private val tvFavoriteBadge: TextView? = itemView.findViewById(R.id.tvFavoriteBadge)
         private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
         private val tvSubtitle: TextView = itemView.findViewById(R.id.tvSubtitle)
         private val ivThumbnail: ImageView = itemView.findViewById(R.id.ivThumbnail)
         private val tvStreamBadge: TextView = itemView.findViewById(R.id.tvStreamBadge)
         private val tvCountdown: TextView = itemView.findViewById(R.id.tvCountdown)
+        private val btnCardFavorite: TextView? = itemView.findViewById(R.id.btnCardFavorite)
+        private val btnCardPlay: TextView? = itemView.findViewById(R.id.btnCardPlay)
 
         private var boundPosition: Int = -1
         private var boundTotal: Int = -1
@@ -87,11 +88,28 @@ class EventAdapter(
                 } ?: false
             }
 
+            btnCardFavorite?.setOnClickListener {
+                boundItem?.let { item ->
+                    onItemLongClick?.invoke(item)
+                }
+            }
+
+            btnCardPlay?.setOnClickListener {
+                boundItem?.let { item ->
+                    onItemClick(item)
+                }
+            }
+
             itemView.setOnKeyListener { _, keyCode, event ->
                 if (event.action == android.view.KeyEvent.ACTION_DOWN) {
                     if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
                         if (onLeftPressed != null) {
                             return@setOnKeyListener onLeftPressed.invoke()
+                        }
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT) {
+                        btnCardFavorite?.let {
+                            it.requestFocus()
+                            return@setOnKeyListener true
                         }
                     } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && boundPosition == 0) {
                         if (onUpPressed != null) {
@@ -110,6 +128,33 @@ class EventAdapter(
                 }
                 false
             }
+
+            btnCardFavorite?.setOnKeyListener { _, keyCode, event ->
+                if (event.action == android.view.KeyEvent.ACTION_DOWN) {
+                    if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
+                        itemView.requestFocus()
+                        return@setOnKeyListener true
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT) {
+                        btnCardPlay?.let {
+                            it.requestFocus()
+                            return@setOnKeyListener true
+                        }
+                    }
+                }
+                false
+            }
+
+            btnCardPlay?.setOnKeyListener { _, keyCode, event ->
+                if (event.action == android.view.KeyEvent.ACTION_DOWN) {
+                    if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
+                        btnCardFavorite?.let {
+                            it.requestFocus()
+                            return@setOnKeyListener true
+                        }
+                    }
+                }
+                false
+            }
         }
 
         fun bind(item: EventItem, position: Int, total: Int) {
@@ -120,7 +165,8 @@ class EventAdapter(
             tvSubtitle.text = item.subtitle
 
             val isFav = isFavorite?.invoke(item) == true
-            tvFavoriteBadge?.visibility = if (isFav) View.VISIBLE else View.GONE
+            btnCardFavorite?.text = if (isFav) "⭐ Fav" else "☆ Fav"
+            btnCardFavorite?.setTextColor(if (isFav) Color.parseColor("#FFD700") else Color.parseColor("#94A3B8"))
 
             val displayTime = item.localTime ?: item.time
             if (displayTime != null) {
@@ -168,24 +214,24 @@ class EventAdapter(
             val badgeColor: String
 
             if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
-                badgeText = "⚪ NO DISPONIBLE"
+                badgeText = "⚪ NO DISP."
                 badgeColor = "#6B7280"
             } else if (isChannel) {
                 when (item.streamType.lowercase()) {
                     "exo" -> {
-                        badgeText = "⚡ EXOPLAYER HLS"
+                        badgeText = "⚡ HLS"
                         badgeColor = "#059669"
                     }
                     "youtube" -> {
-                        badgeText = "🔴 YOUTUBE LIVE"
+                        badgeText = "🔴 YouTube"
                         badgeColor = "#DC2626"
                     }
                     "web" -> {
-                        badgeText = "🔵 WEB HTML5"
+                        badgeText = "🔵 Web"
                         badgeColor = "#2563EB"
                     }
                     else -> {
-                        badgeText = "🌐 WEB EXTERNA"
+                        badgeText = "🌐 Web"
                         badgeColor = "#7C3AED"
                     }
                 }

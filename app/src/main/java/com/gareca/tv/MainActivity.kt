@@ -301,6 +301,10 @@ class MainActivity : AppCompatActivity() {
         btnModeWorldTv = findViewById(R.id.btnModeWorldTv)
         tvModeSportsLabel = findViewById(R.id.tvModeSportsLabel)
         tvModeWorldTvLabel = findViewById(R.id.tvModeWorldTvLabel)
+        if (!isTvDevice) {
+            tvModeSportsLabel.text = "⚽ Deportes"
+            tvModeWorldTvLabel.text = "📺 TV Mundial"
+        }
 
         btnModeSports.setOnClickListener {
             if (currentAppMode != AppMode.SPORTS) {
@@ -1581,13 +1585,12 @@ class MainActivity : AppCompatActivity() {
             }
 
             val subcatNavItems = mutableListOf<NavItem>()
-            subcatNavItems.add(NavItem("⭐ Todos", channels.size))
             for ((name, count) in subcatCounts) {
                 subcatNavItems.add(NavItem(name, count))
             }
 
-            if (subcatNavItems.none { it.title == currentSubcategory }) {
-                currentSubcategory = "⭐ Todos"
+            if (subcatNavItems.isNotEmpty() && subcatNavItems.none { it.title == currentSubcategory }) {
+                currentSubcategory = subcatNavItems[0].title
             }
 
             val hadFocus = rvSubcategories.hasFocus()
@@ -1601,7 +1604,7 @@ class MainActivity : AppCompatActivity() {
                 focusSelectedSubcategory(focusedPos)
             }
 
-            return if (currentSubcategory != "⭐ Todos") {
+            return if (currentSubcategory.isNotEmpty()) {
                 if (isCountryMode) {
                     channels.filter { (it.category.ifBlank { "Variedades" }) == currentSubcategory }
                 } else {
@@ -1612,7 +1615,7 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             rvSubcategories.visibility = View.GONE
-            currentSubcategory = "⭐ Todos"
+            currentSubcategory = ""
             return channels
         }
     }
@@ -1687,13 +1690,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val groupLabel = if (currentCategory == "🌍 Países") {
-            if (currentSubcategory != "⭐ Todos") {
+            if (currentSubcategory.isNotEmpty()) {
                 "${selectedCountry.ifEmpty { "Países" }}  •  $currentSubcategory"
             } else {
                 selectedCountry.ifEmpty { "Países" }
             }
         } else {
-            if (currentSubcategory != "⭐ Todos") {
+            if (currentSubcategory.isNotEmpty()) {
                 "$currentCategory  •  $currentSubcategory"
             } else {
                 currentCategory
@@ -1959,28 +1962,32 @@ class MainActivity : AppCompatActivity() {
 
         // 1. CARGA INSTANTÁNEA DESDE CACHÉ SQLITE (0.02s) SI LA MEMORIA ESTÁ VACÍA
         if (cachedDailyEvents.isEmpty() && !force) {
-            try {
-                val db = AppDatabase.getInstance(this)
-                val cachedDaily = db.getAllChannels("daily")
-                val cachedReplay = db.getAllChannels("replay")
-                val cachedLive = db.getAllChannels("live")
-                val cachedCxtv = db.getAllChannels("cxtv")
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val db = AppDatabase.getInstance(this@MainActivity)
+                    val cachedDaily = db.getAllChannels("daily")
+                    val cachedReplay = db.getAllChannels("replay")
+                    val cachedLive = db.getAllChannels("live")
+                    val cachedCxtv = db.getAllChannels("cxtv")
 
-                if (cachedDaily.isNotEmpty()) {
-                    cachedDailyEvents = cachedDaily
-                    cachedReplayEvents = cachedReplay
-                    cachedLiveChannels = cachedLive
-                    if (cachedCxtvChannels.isEmpty() && cachedCxtv.isNotEmpty()) {
-                        cachedCxtvChannels = cachedCxtv
-                        dynamicCxtvCategories = cachedCxtv.map { it.category }.filter { it.isNotBlank() }.distinct().sorted()
-                        dynamicCxtvCountries = cachedCxtv.map { it.country.orEmpty() }.filter { it.isNotBlank() }.distinct().sorted()
-                        indexCxtvCatalog()
+                    if (cachedDaily.isNotEmpty()) {
+                        withContext(Dispatchers.Main) {
+                            cachedDailyEvents = cachedDaily
+                            cachedReplayEvents = cachedReplay
+                            cachedLiveChannels = cachedLive
+                            if (cachedCxtvChannels.isEmpty() && cachedCxtv.isNotEmpty()) {
+                                cachedCxtvChannels = cachedCxtv
+                                dynamicCxtvCategories = cachedCxtv.map { it.category }.filter { it.isNotBlank() }.distinct().sorted()
+                                dynamicCxtvCountries = cachedCxtv.map { it.country.orEmpty() }.filter { it.isNotBlank() }.distinct().sorted()
+                                indexCxtvCatalog()
+                            }
+                            progressBar.visibility = View.GONE
+                            tvEmpty.visibility = View.GONE
+                            filterAndDisplayEvents(silent = true)
+                        }
                     }
-                    progressBar.visibility = View.GONE
-                    tvEmpty.visibility = View.GONE
-                    filterAndDisplayEvents(silent = true)
-                }
-            } catch (_: Exception) {}
+                } catch (_: Exception) {}
+            }
         }
 
         // Si aún no hay datos en memoria ni SQLite (primer arranque de la app), mostramos spinner

@@ -212,7 +212,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="⚽ DEPORTES Y PARTIDOS"
-                android:textSize="14sp"
+                android:textSize="13sp"
+                android:singleLine="true"
+                android:ellipsize="end"
                 android:textStyle="bold"
                 android:textColor="@color/mode_button_text_selector"
                 android:duplicateParentState="true" />
@@ -235,7 +237,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="📺 TELEVISIÓN MUNDIAL"
-                android:textSize="14sp"
+                android:textSize="13sp"
+                android:singleLine="true"
+                android:ellipsize="end"
                 android:textStyle="bold"
                 android:textColor="@color/mode_button_text_selector"
                 android:duplicateParentState="true" />

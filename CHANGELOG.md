@@ -2,6 +2,26 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.5] - 2026-11-01
+### Añadido y Optimizado (Rediseño Móvil Responsivo, Botones Favorito/Play por Fila, Splash Instantáneo y Supresión de "Todos")
+- **Splash Screen Nativo Instantáneo (0.00s) — Eliminación de Pantalla Negra al Iniciar**:
+  - Reemplazado el fondo negro inanimado (`@color/bg_dark`) en `themes.xml` por el splash screen nativo en capa cero `splash_window_background.xml` con el logo oficial del tigre de GarecaTV centrado.
+  - El SurfaceFlinger / Window Manager del sistema operativo muestra el logo en el fotograma 0 (en 0.00s), antes de ejecutar bytecode de Kotlin o C++, eliminando por completo la pantalla negra inicial.
+  - La lectura de caché SQLite local (`getAllChannels`) se trasladó al pool de subprocesos en segundo plano (`Dispatchers.IO`), desbloqueando el hilo principal (`Main Thread`) durante el arranque.
+- **Rediseño Integral de Tarjetas de Canales y Partidos (`item_event_card.xml`)**:
+  - **Título sin Restricciones (Fila 1 Completa)**: El título del canal o partido ocupa ahora el 100% del ancho del contenedor central, eliminando el bug visual donde títulos como "Como vs Cagliari" se comprimían verticalmente a 3 caracteres por renglón.
+  - **Fila 2 Contextual**: La hora local (`tvTime`), el contador regresivo (`tvCountdown`) y el subtítulo se ubican organizadamente debajo del título.
+  - **Botones Interactivos Dedicados en Cada Fila**:
+    - `btnCardFavorite`: Botón tipo chip (`☆ Fav` / `⭐ Fav`) para añadir o quitar de favoritos de forma directa.
+    - `btnCardPlay`: Botón tipo chip (`▶ Ver`) con acento visual para iniciar la reproducción al instante.
+    - Operables tanto con control remoto TV (navegación fluida D-Pad `▶ Derecha` desde la tarjeta a Favorito y Play) como por interacción táctil / mouse en celular.
+- **Insignias Técnicas de Reproductor Ultracompactas**:
+  - Sustituidas las etiquetas extensas que desbordaban la pantalla por distintivos concisos, elegantes y de mínimo ancho: `⚡ HLS` (Verde), `🔴 YouTube` (Rojo), `🔵 Web` (Azul) y `⚪ NO DISP.` (Gris).
+- **Supresión de la Opción "Todos" en Subcategorías**:
+  - Eliminado el botón redundante `⭐ Todos` de la barra de agrupaciones (`applySubcategories`). Ahora solo se despliegan los grupos temáticos reales (`Noticias`, `Cine`, `Deportes`, etc.), seleccionando directamente la primera subcategoría válida.
+- **Ajuste y Respiración Visual en Móviles**:
+  - Botones de modo con texto conciso en celular (`⚽ Deportes` y `📺 TV Mundial`) y protección `singleLine="true"`, evitando desbordes o saltos de línea antiestéticos.
+
 ## [1.9.4] - 2026-11-01
 ### Añadido y Optimizado (Favoritos en TV Mundial, Navegación Circular D-Pad y Resolutor Dinámico YouTube Live)
 - **⭐ Categoría de Favoritos en Televisión Mundial**:
