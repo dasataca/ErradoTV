@@ -2,6 +2,16 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.3] - 2026-11-01
+### Corregido y Optimizado (Retención Absoluta de Foco D-Pad en Pestañas Superiores)
+- **Eliminación de Fuga de Foco hacia el Botón "Actualizado"**:
+  - Corregido el bug crítico donde al navegar y hacer click/OK en las pestañas superiores de un grupo (`rvCategories` o `rvSubcategories`), el foco se perdía y el motor de Android TV lo enviaba al primer elemento enfocable de la cabecera (`btnUpdate`).
+  - **Evitación de Re-renderizado Destructivo**: En `SubcategoryAdapter`, `setItems()` ahora comprueba si los elementos son idénticos antes de invocar `notifyDataSetChanged()`, evitando destruir las vistas hijas enfocadas.
+  - **Actualización In-Place de Selección**: En `CategoryAdapter` y `SubcategoryAdapter`, la conmutación de estado seleccionado se realiza directamente en las vistas visibles (`itemView.isSelected = true/false`) sin llamar a `notifyItemChanged()`, impidiendo que el RecyclerView desenganche el elemento en foco.
+  - **Re-anclaje Inmediato de Foco Post-Click**: Se implementó `itemView.post { itemView.requestFocus() }` tanto en categorías deportivas como en subcategorías de TV Mundial para asegurar que el foco se mantenga firme en la pestaña activa.
+  - **Protección en `filterAndDisplayEvents`**: La lista de eventos (`rvEvents`) ya no roba el foco mientras el usuario se encuentre operando en las barras de pestañas (`!rvCategories.hasFocus()` y `!rvSubcategories.hasFocus()`).
+  - **Feedback Visual Fluido**: Se integró animación de escala suave (1.06f) en las pestañas de subcategorías al recibir foco con el D-Pad.
+
 ## [1.9.2] - 2026-11-01
 ### Añadido y Optimizado (Arranque Instantáneo Cache-First 0.02s y Subcategorías Dinámicas > 20 Canales)
 - **Arranque Instantáneo Cache-First (0.02s) con SQLite Nativo (`AppDatabase`)**:

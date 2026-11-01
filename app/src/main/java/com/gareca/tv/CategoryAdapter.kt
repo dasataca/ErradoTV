@@ -23,13 +23,18 @@ class CategoryAdapter(
         notifyDataSetChanged()
     }
 
-    fun setSelectedCategory(category: String) {
+    fun setSelectedCategory(category: String, rv: RecyclerView? = null) {
         if (selectedCategory != category) {
             val oldIndex = categories.indexOf(selectedCategory)
             val newIndex = categories.indexOf(category)
             selectedCategory = category
-            if (oldIndex != -1) notifyItemChanged(oldIndex)
-            if (newIndex != -1) notifyItemChanged(newIndex)
+            if (rv != null) {
+                if (oldIndex != -1) rv.findViewHolderForAdapterPosition(oldIndex)?.itemView?.isSelected = false
+                if (newIndex != -1) rv.findViewHolderForAdapterPosition(newIndex)?.itemView?.isSelected = true
+            } else {
+                if (oldIndex != -1) notifyItemChanged(oldIndex)
+                if (newIndex != -1) notifyItemChanged(newIndex)
+            }
         }
     }
 
@@ -48,8 +53,12 @@ class CategoryAdapter(
             category = cat,
             isSelected = cat == selectedCategory,
             onClick = {
-                setSelectedCategory(cat)
+                val rv = holder.itemView.parent as? RecyclerView
+                setSelectedCategory(cat, rv)
                 onCategoryClick(cat)
+                holder.itemView.post {
+                    holder.itemView.requestFocus()
+                }
             },
             onDown = onDownPressed
         )
@@ -81,6 +90,9 @@ class CategoryAdapter(
 
             itemView.setOnClickListener {
                 onClick()
+                itemView.post {
+                    itemView.requestFocus()
+                }
             }
 
             itemView.setOnKeyListener { _, keyCode, event ->

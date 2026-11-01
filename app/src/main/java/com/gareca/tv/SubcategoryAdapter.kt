@@ -19,19 +19,31 @@ class SubcategoryAdapter(
     private val items = initialItems.toMutableList()
 
     fun setItems(newItems: List<NavItem>, newSelected: String) {
+        val sameItems = items.size == newItems.size && items.indices.all { i ->
+            items[i].title == newItems[i].title && items[i].count == newItems[i].count
+        }
+        if (sameItems) {
+            setSelected(newSelected)
+            return
+        }
         items.clear()
         items.addAll(newItems)
         selectedSubcategory = newSelected
         notifyDataSetChanged()
     }
 
-    fun setSelected(subcategory: String) {
+    fun setSelected(subcategory: String, rv: RecyclerView? = null) {
         if (selectedSubcategory != subcategory) {
             val oldIndex = items.indexOfFirst { it.title == selectedSubcategory }
             val newIndex = items.indexOfFirst { it.title == subcategory }
             selectedSubcategory = subcategory
-            if (oldIndex != -1) notifyItemChanged(oldIndex)
-            if (newIndex != -1) notifyItemChanged(newIndex)
+            if (rv != null) {
+                if (oldIndex != -1) rv.findViewHolderForAdapterPosition(oldIndex)?.itemView?.isSelected = false
+                if (newIndex != -1) rv.findViewHolderForAdapterPosition(newIndex)?.itemView?.isSelected = true
+            } else {
+                if (oldIndex != -1) notifyItemChanged(oldIndex)
+                if (newIndex != -1) notifyItemChanged(newIndex)
+            }
         }
     }
 
@@ -57,6 +69,16 @@ class SubcategoryAdapter(
         private val tvTitle: TextView = itemView.findViewById(R.id.tvSubcategoryTitle)
         private val tvCount: TextView = itemView.findViewById(R.id.tvSubcategoryCount)
 
+        init {
+            itemView.setOnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    view.animate().scaleX(1.06f).scaleY(1.06f).setDuration(120).start()
+                } else {
+                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+                }
+            }
+        }
+
         fun bind(item: NavItem, position: Int) {
             tvTitle.text = item.title
             if (item.count > 0) {
@@ -70,8 +92,12 @@ class SubcategoryAdapter(
             itemView.isSelected = isSelected
 
             itemView.setOnClickListener {
-                setSelected(item.title)
+                val rv = itemView.parent as? RecyclerView
+                setSelected(item.title, rv)
                 onSubcategoryClick(item.title)
+                itemView.post {
+                    itemView.requestFocus()
+                }
             }
 
             itemView.setOnKeyListener { _, keyCode, event ->

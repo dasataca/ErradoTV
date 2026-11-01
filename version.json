@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "4bae85361e041f9151ab0b24797d0d7aada612bb19f6dd3c5429a0b539130d7ace0eb5ed310a66ab01e354c22ca10e5aac60b9dd7ed42288f2cfa7fabae8c9deb7960203aebb321fde404d4bc6dfde42",
-  "latest_version_code": 67,
-  "latest_version_name": "1.9.2",
-  "release_timestamp": 1793537352913,
+  "active_key_enc": "809d31fbed26cd4738c0082d98359d837ec6137d9603e4415c16a33ee7c3202098daadf53aadc65b75cacf3cd7c75c943d366d059c9622e70631fb9707d2662ffe3ea6850b5666240ef70b505223fae7",
+  "latest_version_code": 68,
+  "latest_version_name": "1.9.3",
+  "release_timestamp": 1793537996200,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Arranque instantaneo Cache-First en 0.02s y subcategorias con cantidades para canales mayores a 20"
+  "changelog": "GarecaTV: Retencion absoluta de foco D-Pad en pestanas superiores evitando fuga al boton Actualizado"
 }

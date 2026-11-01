@@ -362,7 +362,8 @@ class MainActivity : AppCompatActivity() {
                 if (::rvSuggestions.isInitialized) {
                     rvSuggestions.visibility = View.GONE
                 }
-                filterAndDisplayEvents(silent = false)
+                filterAndDisplayEvents(silent = true)
+                focusSelectedSportsCategory()
             },
             onDownPressed = { category ->
                 if ((category == "🔍 Buscar Todo" || category == "🔍 Buscar TV") && globalSearchContainer.visibility == View.VISIBLE) {
@@ -468,7 +469,8 @@ class MainActivity : AppCompatActivity() {
             selectedSubcategory = currentSubcategory,
             onSubcategoryClick = { subcat ->
                 currentSubcategory = subcat
-                filterAndDisplayEvents(silent = false)
+                filterAndDisplayEvents(silent = true)
+                focusSelectedSubcategory()
             },
             onDownPressed = {
                 focusFirstEventItem()
@@ -1552,8 +1554,16 @@ class MainActivity : AppCompatActivity() {
                 currentSubcategory = "⭐ Todos"
             }
 
+            val hadFocus = rvSubcategories.hasFocus()
+            val focusedChild = rvSubcategories.findFocus()
+            val focusedPos = if (focusedChild != null) rvSubcategories.getChildAdapterPosition(focusedChild) else subcategoryAdapter.getSelectedPosition()
+
             subcategoryAdapter.setItems(subcatNavItems, currentSubcategory)
             rvSubcategories.visibility = View.VISIBLE
+
+            if (hadFocus) {
+                focusSelectedSubcategory(focusedPos)
+            }
 
             return if (currentSubcategory != "⭐ Todos") {
                 if (isCountryMode) {
@@ -1681,9 +1691,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun focusSelectedSubcategory() {
+    private fun focusSelectedSubcategory(targetPosition: Int = -1) {
         if (!::rvSubcategories.isInitialized || rvSubcategories.visibility != View.VISIBLE || subcategoryAdapter.itemCount == 0) return
-        val pos = subcategoryAdapter.getSelectedPosition()
+        val pos = if (targetPosition >= 0 && targetPosition < subcategoryAdapter.itemCount) targetPosition else subcategoryAdapter.getSelectedPosition()
         rvSubcategories.scrollToPosition(pos)
         rvSubcategories.post {
             val vh = rvSubcategories.findViewHolderForAdapterPosition(pos)
@@ -2229,6 +2239,7 @@ class MainActivity : AppCompatActivity() {
                 adapter.submitList(displayList)
                 updateChannelPositionIndicator(0, displayList.size)
                 if (!silent && !rvCategories.hasFocus() && !rvSidebarCategories.hasFocus() && (!::rvSidebarCountries.isInitialized || !rvSidebarCountries.hasFocus())
+                    && (!::rvSubcategories.isInitialized || !rvSubcategories.hasFocus())
                     && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
                     && !btnModeSports.hasFocus() && !btnModeWorldTv.hasFocus()
                     && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus() && !btnSortNameGlobal.hasFocus() && (!::btnClearGlobalText.isInitialized || !btnClearGlobalText.hasFocus())))
@@ -2312,6 +2323,7 @@ class MainActivity : AppCompatActivity() {
             adapter.submitList(displayList)
             if (!silent && !rvCategories.hasFocus() && !btnRefresh.hasFocus() && !btnUpdate.hasFocus()
                 && !btnModeSports.hasFocus() && !btnModeWorldTv.hasFocus()
+                && (!::rvSubcategories.isInitialized || !rvSubcategories.hasFocus())
                 && (!::etSearch.isInitialized || (!etSearch.hasFocus() && !btnSortDate.hasFocus() && !btnSortName.hasFocus() && !btnVoiceSearchReplay.hasFocus() && !btnSearchReplay.hasFocus() && (!::btnClearSearchText.isInitialized || !btnClearSearchText.hasFocus())))
                 && (!::etGlobalSearch.isInitialized || (!etGlobalSearch.hasFocus() && !btnVoiceGlobalSearch.hasFocus() && !btnSearchGlobal.hasFocus() && !btnSortNameGlobal.hasFocus() && (!::btnClearGlobalText.isInitialized || !btnClearGlobalText.hasFocus())))
                 && (!::rvSuggestions.isInitialized || !rvSuggestions.hasFocus())
