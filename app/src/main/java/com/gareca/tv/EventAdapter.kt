@@ -15,7 +15,8 @@ import com.gareca.tv.model.EventStatus
 class EventAdapter(
     private val onItemClick: (EventItem) -> Unit,
     private val onLeftPressed: (() -> Boolean)? = null,
-    private val onItemFocus: ((position: Int, total: Int) -> Unit)? = null
+    private val onItemFocus: ((position: Int, total: Int) -> Unit)? = null,
+    private val onUpPressed: (() -> Boolean)? = null
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
     private val items = mutableListOf<EventItem>()
@@ -31,7 +32,7 @@ class EventAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_event_card, parent, false)
-        return EventViewHolder(view, onItemClick, onLeftPressed, onItemFocus)
+        return EventViewHolder(view, onItemClick, onLeftPressed, onItemFocus, onUpPressed)
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
@@ -44,7 +45,8 @@ class EventAdapter(
         itemView: View,
         private val onItemClick: (EventItem) -> Unit,
         private val onLeftPressed: (() -> Boolean)? = null,
-        private val onItemFocus: ((position: Int, total: Int) -> Unit)? = null
+        private val onItemFocus: ((position: Int, total: Int) -> Unit)? = null,
+        private val onUpPressed: (() -> Boolean)? = null
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
@@ -75,6 +77,10 @@ class EventAdapter(
                     if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
                         if (onLeftPressed != null) {
                             return@setOnKeyListener onLeftPressed.invoke()
+                        }
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && boundPosition == 0) {
+                        if (onUpPressed != null) {
+                            return@setOnKeyListener onUpPressed.invoke()
                         }
                     }
                 }

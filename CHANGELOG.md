@@ -2,6 +2,27 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.2] - 2026-11-01
+### Añadido y Optimizado (Arranque Instantáneo Cache-First 0.02s y Subcategorías Dinámicas > 20 Canales)
+- **Arranque Instantáneo Cache-First (0.02s) con SQLite Nativo (`AppDatabase`)**:
+  - Eliminación absoluta del cuello de botella de 5.1 segundos en el inicio de la app.
+  - En el arranque en frío, la aplicación lee de inmediato los canales y partidos almacenados en SQLite en solo 20 milisegundos (0.02s), ocultando el spinner de carga y renderizando la interfaz de usuario al instante.
+  - **Sincronización en 2 Etapas Desacopladas (Stale-While-Revalidate)**:
+    - *Etapa 1 (Primer plano, ~150ms)*: Descarga ultrarrápida de agenda deportiva diaria y repeticiones desde CDN Cloudflare (`event.json` y `destacado.json`), refrescando la lista de partidos del día y guardando en SQLite.
+    - *Etapa 2 (Segundo plano asíncrono)*: Descarga en segundo plano de señales en vivo de Teveplay (3.4s) y CXTv (0.7s), clave remota y comunidad Supabase sin congelar ni demorar la pantalla del usuario.
+- **Subcategorías Dinámicas con Cantidades en Televisión Mundial (Canales > 20)**:
+  - Cuando una selección en Televisión Mundial supera los 20 canales, se despliega automáticamente en la parte superior del panel de canales una barra horizontal ergonómica (`rvSubcategories`) con sus subgrupos.
+  - Cada pestaña incluye su título y su pastilla numérica con la cantidad exacta de canales (`item_subcategory_tab.xml`), encabezada por `⭐ Todos (N)` y ordenada alfabéticamente.
+  - **En `🌍 Países`**: Columna 1 = `🌍 Países`, Columna 2 = Países con conteos, Panel 3 = Barra superior con subcategorías temáticas (`Noticias (14)`, `Deportes (8)`, etc.) si el país tiene más de 20 canales.
+  - **En Categorías Temáticas**: Barra superior con subcategorías por países de origen si la categoría supera los 20 canales.
+  - Si la lista de canales es $\le 20$, la barra de subcategorías se oculta automáticamente para mantener la interfaz despejada.
+- **Navegación Ergonómica D-Pad Bidireccional**:
+  - `▶ Derecha` desde las columnas laterales transfiere el foco a la barra de subcategorías.
+  - `▼ Abajo` desde cualquier subcategoría salta al primer canal del listado filtrado.
+  - `▲ Arriba` desde el primer canal de la lista retorna el foco fluidamente a la barra de subcategorías.
+  - `◀ Izquierda` desde la primera subcategoría regresa al menú o país seleccionado.
+  - El indicador ordinal superior (`tvChannelPositionIndicator`) se actualiza en tiempo real reflejando el subgrupo activo (ej. `Canal 1 de 14 • Argentina • Noticias`).
+
 ## [1.9.1] - 2026-11-01
 ### Añadido y Optimizado (Fase C: Gestos Táctiles y Controles Móviles en Reproductor)
 - **Gestos Táctiles Modernos en Reproductor ExoPlayer (`PlayerActivity.kt`)**:

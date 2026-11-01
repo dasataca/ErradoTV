@@ -634,6 +634,18 @@
                 android:singleLine="true"
                 android:ellipsize="end" />
 
+            <!-- Barra horizontal de Subcategorías (visible si la lista supera los 20 canales) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSubcategories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingBottom="8dp"
+                android:clipToPadding="false"
+                android:descendantFocusability="afterDescendants"
+                android:focusable="false"
+                android:visibility="gone" />
+
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"

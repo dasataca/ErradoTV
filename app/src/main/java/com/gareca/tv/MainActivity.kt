@@ -133,6 +133,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sidebarCategoryAdapter: SidebarCategoryAdapter
     private lateinit var rvSidebarCountries: RecyclerView
     private lateinit var sidebarCountryAdapter: SidebarCategoryAdapter
+    private lateinit var rvSubcategories: RecyclerView
+    private lateinit var subcategoryAdapter: SubcategoryAdapter
+    private var currentSubcategory = "⭐ Todos"
     private lateinit var tvChannelPositionIndicator: TextView
     private lateinit var llMobileFilterBar: View
     private lateinit var btnMobileCategoryFilter: Button
@@ -382,6 +385,7 @@ class MainActivity : AppCompatActivity() {
             selectedCategory = currentCategory,
             onCategorySelected = { selectedCat ->
                 currentCategory = selectedCat
+                currentSubcategory = "⭐ Todos"
                 if (::rvSuggestions.isInitialized) {
                     rvSuggestions.visibility = View.GONE
                 }
@@ -400,6 +404,9 @@ class MainActivity : AppCompatActivity() {
             onRightPressed = {
                 if (currentCategory == "🌍 Países" && rvSidebarCountries.visibility == View.VISIBLE) {
                     focusSelectedCountry()
+                    true
+                } else if (::rvSubcategories.isInitialized && rvSubcategories.visibility == View.VISIBLE) {
+                    focusSelectedSubcategory()
                     true
                 } else {
                     focusFirstEventItem()
@@ -426,11 +433,17 @@ class MainActivity : AppCompatActivity() {
             selectedCategory = selectedCountry,
             onCategorySelected = { country ->
                 selectedCountry = country
+                currentSubcategory = "⭐ Todos"
                 filterAndDisplayEvents(silent = false)
             },
             onRightPressed = {
-                focusFirstEventItem()
-                true
+                if (::rvSubcategories.isInitialized && rvSubcategories.visibility == View.VISIBLE) {
+                    focusSelectedSubcategory()
+                    true
+                } else {
+                    focusFirstEventItem()
+                    true
+                }
             },
             onLeftPressed = {
                 focusSelectedSidebarCategory()
@@ -447,6 +460,42 @@ class MainActivity : AppCompatActivity() {
             }
         )
         rvSidebarCountries.adapter = sidebarCountryAdapter
+
+        rvSubcategories = findViewById(R.id.rvSubcategories)
+        rvSubcategories.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        subcategoryAdapter = SubcategoryAdapter(
+            initialItems = emptyList(),
+            selectedSubcategory = currentSubcategory,
+            onSubcategoryClick = { subcat ->
+                currentSubcategory = subcat
+                filterAndDisplayEvents(silent = false)
+            },
+            onDownPressed = {
+                focusFirstEventItem()
+                true
+            },
+            onLeftFromFirst = {
+                if (currentCategory == "🌍 Países" && rvSidebarCountries.visibility == View.VISIBLE) {
+                    focusSelectedCountry()
+                    true
+                } else if (rvSidebarCategories.visibility == View.VISIBLE) {
+                    focusSelectedSidebarCategory()
+                    true
+                } else {
+                    false
+                }
+            },
+            onUpPressed = {
+                if (globalSearchContainer.visibility == View.VISIBLE) {
+                    etGlobalSearch.requestFocus()
+                    true
+                } else {
+                    btnModeWorldTv.requestFocus()
+                    true
+                }
+            }
+        )
+        rvSubcategories.adapter = subcategoryAdapter
 
         tvChannelPositionIndicator = findViewById(R.id.tvChannelPositionIndicator)
         llMobileFilterBar = findViewById(R.id.llMobileFilterBar)
@@ -484,6 +533,14 @@ class MainActivity : AppCompatActivity() {
             },
             onItemFocus = { pos, total ->
                 updateChannelPositionIndicator(pos, total)
+            },
+            onUpPressed = {
+                if (::rvSubcategories.isInitialized && rvSubcategories.visibility == View.VISIBLE) {
+                    focusSelectedSubcategory()
+                    true
+                } else {
+                    false
+                }
             }
         )
 
@@ -1244,6 +1301,7 @@ class MainActivity : AppCompatActivity() {
     private fun switchAppMode(mode: AppMode) {
         if (currentAppMode == mode) return
         currentAppMode = mode
+        currentSubcategory = "⭐ Todos"
         updateModeButtonStyles()
 
         val isTv = com.gareca.tv.util.DeviceUtils.isTv(this)
@@ -1251,6 +1309,7 @@ class MainActivity : AppCompatActivity() {
             rvCategories.visibility = View.VISIBLE
             rvSidebarCategories.visibility = View.GONE
             rvSidebarCountries.visibility = View.GONE
+            if (::rvSubcategories.isInitialized) rvSubcategories.visibility = View.GONE
             if (::llMobileFilterBar.isInitialized) llMobileFilterBar.visibility = View.GONE
             tvChannelPositionIndicator.visibility = View.GONE
             currentCategory = "⚽ Partidos del Día"
@@ -1469,6 +1528,49 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    private fun applySubcategories(channels: List<EventItem>, isCountryMode: Boolean): List<EventItem> {
+        if (!::rvSubcategories.isInitialized) return channels
+
+        if (channels.size > 20) {
+            val subcatCounts: List<Pair<String, Int>> = if (isCountryMode) {
+                channels.groupBy { it.category.ifBlank { "Variedades" } }
+                    .map { Pair(it.key, it.value.size) }
+                    .sortedBy { it.first }
+            } else {
+                channels.groupBy { it.country?.ifBlank { "Internacional" } ?: "Internacional" }
+                    .map { Pair(it.key, it.value.size) }
+                    .sortedBy { it.first }
+            }
+
+            val subcatNavItems = mutableListOf<NavItem>()
+            subcatNavItems.add(NavItem("⭐ Todos", channels.size))
+            for ((name, count) in subcatCounts) {
+                subcatNavItems.add(NavItem(name, count))
+            }
+
+            if (subcatNavItems.none { it.title == currentSubcategory }) {
+                currentSubcategory = "⭐ Todos"
+            }
+
+            subcategoryAdapter.setItems(subcatNavItems, currentSubcategory)
+            rvSubcategories.visibility = View.VISIBLE
+
+            return if (currentSubcategory != "⭐ Todos") {
+                if (isCountryMode) {
+                    channels.filter { (it.category.ifBlank { "Variedades" }) == currentSubcategory }
+                } else {
+                    channels.filter { (it.country?.ifBlank { "Internacional" } ?: "Internacional") == currentSubcategory }
+                }
+            } else {
+                channels
+            }
+        } else {
+            rvSubcategories.visibility = View.GONE
+            currentSubcategory = "⭐ Todos"
+            return channels
+        }
+    }
+
     private fun startVoiceSearch(isGlobal: Boolean) {
         val promptText = if (isGlobal) {
             if (currentAppMode == AppMode.WORLD_TV) "Di el canal o país a buscar..." else "Di el nombre del equipo o canal a buscar..."
@@ -1539,9 +1641,17 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val groupLabel = if (currentCategory == "🌍 Países") {
-            selectedCountry.ifEmpty { "Países" }
+            if (currentSubcategory != "⭐ Todos") {
+                "${selectedCountry.ifEmpty { "Países" }}  •  $currentSubcategory"
+            } else {
+                selectedCountry.ifEmpty { "Países" }
+            }
         } else {
-            currentCategory
+            if (currentSubcategory != "⭐ Todos") {
+                "$currentCategory  •  $currentSubcategory"
+            } else {
+                currentCategory
+            }
         }
         tvChannelPositionIndicator.text = "Canal ${pos + 1} de $total  •  $groupLabel"
         tvChannelPositionIndicator.visibility = View.VISIBLE
@@ -1566,6 +1676,25 @@ class MainActivity : AppCompatActivity() {
                             tryFocus()
                         }, 50)
                     }
+                }, 50)
+            }
+        }
+    }
+
+    private fun focusSelectedSubcategory() {
+        if (!::rvSubcategories.isInitialized || rvSubcategories.visibility != View.VISIBLE || subcategoryAdapter.itemCount == 0) return
+        val pos = subcategoryAdapter.getSelectedPosition()
+        rvSubcategories.scrollToPosition(pos)
+        rvSubcategories.post {
+            val vh = rvSubcategories.findViewHolderForAdapterPosition(pos)
+            val view = vh?.itemView ?: rvSubcategories.layoutManager?.findViewByPosition(pos)
+            if (view != null) {
+                view.requestFocus()
+            } else {
+                rvSubcategories.postDelayed({
+                    val retryView = rvSubcategories.findViewHolderForAdapterPosition(pos)?.itemView
+                        ?: rvSubcategories.layoutManager?.findViewByPosition(pos)
+                    retryView?.requestFocus() ?: rvSubcategories.requestFocus()
                 }, 50)
             }
         }
@@ -1782,44 +1911,52 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (!silent) {
+        // 1. CARGA INSTANTÁNEA DESDE CACHÉ SQLITE (0.02s) SI LA MEMORIA ESTÁ VACÍA
+        if (cachedDailyEvents.isEmpty() && !force) {
+            try {
+                val db = AppDatabase.getInstance(this)
+                val cachedDaily = db.getAllChannels("daily")
+                val cachedReplay = db.getAllChannels("replay")
+                val cachedLive = db.getAllChannels("live")
+                val cachedCxtv = db.getAllChannels("cxtv")
+
+                if (cachedDaily.isNotEmpty()) {
+                    cachedDailyEvents = cachedDaily
+                    cachedReplayEvents = cachedReplay
+                    cachedLiveChannels = cachedLive
+                    if (cachedCxtvChannels.isEmpty() && cachedCxtv.isNotEmpty()) {
+                        cachedCxtvChannels = cachedCxtv
+                        dynamicCxtvCategories = cachedCxtv.map { it.category }.filter { it.isNotBlank() }.distinct().sorted()
+                        dynamicCxtvCountries = cachedCxtv.map { it.country.orEmpty() }.filter { it.isNotBlank() }.distinct().sorted()
+                        indexCxtvCatalog()
+                    }
+                    progressBar.visibility = View.GONE
+                    tvEmpty.visibility = View.GONE
+                    filterAndDisplayEvents(silent = true)
+                }
+            } catch (_: Exception) {}
+        }
+
+        // Si aún no hay datos en memoria ni SQLite (primer arranque de la app), mostramos spinner
+        if (!silent && cachedDailyEvents.isEmpty()) {
             progressBar.visibility = View.VISIBLE
             tvEmpty.visibility = View.GONE
         }
 
         lifecycleScope.launch {
             try {
-                // Sincroniza la clave remota si está disponible
-                CryptoUtils.syncRemoteKey(this@MainActivity, ApiClient.httpClient)
-
-                // Sincronización comunitaria desde Supabase en paralelo con los catálogos de canales
-                val communityJob = async(Dispatchers.IO) {
-                    CommunityStreamManager.syncFromCommunity(this@MainActivity)
-                }
+                // Etapa 1: Sincronización ultrarrápida de eventos del día y repeticiones (~150ms desde CDN Cloudflare)
                 val dailyJob = async { ApiClient.fetchDailyEvents() }
                 val featuredJob = async { ApiClient.fetchFeaturedEvents() }
-                val liveChannelsJob = async { ApiClient.fetchTeveplayChannels() }
-                val cxtvJob = async { ApiClient.fetchCxtvChannels(this@MainActivity) }
 
-                communityJob.await()
                 val dailyResponse = dailyJob.await()
                 val featuredList = featuredJob.await()
-                val liveChannels = liveChannelsJob.await()
-                val cxtvResult = cxtvJob.await()
-
-                cachedCxtvChannels = cxtvResult.channels
-                dynamicCxtvCategories = cxtvResult.categories
-                dynamicCxtvCountries = cxtvResult.countries
-
-                // Enriquecer canales de TevePlay que sean partidos cruzándolos con la agenda deportiva diaria
-                enrichTeveplayMatches(liveChannels, dailyResponse.events)
 
                 tvDate.text = dailyResponse.date
                 val currentVer = AppUpdater.getCurrentVersionName(this@MainActivity)
                 tvAppVersion.text = if (dailyResponse.date.isNotEmpty()) "• v$currentVer" else "v$currentVer"
                 updateTimeZoneHeader()
 
-                // Separación estricta: en Partidos del Día SOLO van partidos que NO sean repetición
                 val todayMatches = mutableListOf<EventItem>()
                 val replayMatches = mutableListOf<EventItem>()
 
@@ -1839,83 +1976,103 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                // Aprendizaje comunitario y local: sólo las señales reportadas por fallo real se muestran como no disponibles.
-                // Si la señal vuelve a estar activa, restaura su etiqueta previa (originalStatus).
-                // NOTA: Para canales 24/7 NO se etiqueta nunca como NO DISPONIBLE.
-                fun applyAvailability(item: EventItem) {
-                    val is247 = item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 || item.category != "Partidos"
-                    if (is247) {
-                        if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
-                            item.status = if (item.originalStatus != EventStatus.REPLAY_UNAVAILABLE) item.originalStatus else EventStatus.CHANNEL_24_7
-                        }
-                        return
-                    }
-
-                    val allUnavailable = item.streams.isNotEmpty() && item.streams.all { StreamCache.isUnavailable(it.url) }
-                    if (allUnavailable) {
-                        if (item.status != EventStatus.REPLAY_UNAVAILABLE) {
-                            item.originalStatus = item.status
-                            item.status = EventStatus.REPLAY_UNAVAILABLE
-                        }
-                    } else if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
-                        item.status = item.originalStatus
-                    }
-                }
-                for (item in todayMatches) applyAvailability(item)
-                for (item in replayMatches) applyAvailability(item)
-                for (item in liveChannels) applyAvailability(item)
-                for (item in cachedCxtvChannels) applyAvailability(item)
-                indexCxtvCatalog()
-
-                // Ordenar según la regla estricta:
-                // 1. En vivo primero (LIVE y STARTING_SOON)
-                // 2. Programados después (SCHEDULED)
-                // 3. Canales 24/7 luego (los canales 24/7 con NO DISPONIBLE se quedan en su lugar entre los 24/7)
-                // 4. Finalizados SIEMPRE al final de la lista
                 cachedDailyEvents = sortEventList(todayMatches)
                 cachedReplayEvents = replayMatches
-                cachedLiveChannels = sortEventList(liveChannels)
 
-                lifecycleScope.launch(Dispatchers.IO) {
-                    try {
-                        val db = AppDatabase.getInstance(this@MainActivity)
-                        db.saveChannels("cxtv", cachedCxtvChannels)
-                        db.saveChannels("daily", cachedDailyEvents)
-                        db.saveChannels("replay", cachedReplayEvents)
-                        db.saveChannels("live", cachedLiveChannels)
-                    } catch (_: Exception) {}
-                }
-
-                if (currentAppMode == AppMode.WORLD_TV) {
-                    val navItems = buildCategoryNavItems()
-                    sidebarCategoryAdapter.setItems(navItems, currentCategory)
-                    if (currentCategory == "🌍 Países") {
-                        rvSidebarCountries.visibility = View.VISIBLE
-                        val countryItems = buildCountryNavItems()
-                        sidebarCountryAdapter.setItems(countryItems, selectedCountry)
-                    } else {
-                        rvSidebarCountries.visibility = View.GONE
-                    }
-                }
-
-                updateSearchSuggestions()
-                prefs.edit().putLong("last_sync_time", System.currentTimeMillis()).apply()
-
+                // Ocultar progressBar de inmediato: la pantalla de inicio ya tiene los eventos frescos
                 if (!silent) {
                     progressBar.visibility = View.GONE
                 }
+                filterAndDisplayEvents(silent = true)
 
-                filterAndDisplayEvents(silent)
+                // Persistir eventos frescos a SQLite
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        val db = AppDatabase.getInstance(this@MainActivity)
+                        db.saveChannels("daily", cachedDailyEvents)
+                        db.saveChannels("replay", cachedReplayEvents)
+                    } catch (_: Exception) {}
+                }
+
+                // Etapa 2: Tareas en segundo plano asíncrono sin bloquear la interfaz (clave remota, Supabase, Teveplay ~3.4s, CXTv ~0.7s)
+                launch(Dispatchers.IO) {
+                    try {
+                        CryptoUtils.syncRemoteKey(this@MainActivity, ApiClient.httpClient)
+                        CommunityStreamManager.syncFromCommunity(this@MainActivity)
+
+                        val liveChannelsJob = async { ApiClient.fetchTeveplayChannels() }
+                        val cxtvJob = async { ApiClient.fetchCxtvChannels(this@MainActivity) }
+
+                        val liveChannels = liveChannelsJob.await()
+                        val cxtvResult = cxtvJob.await()
+
+                        enrichTeveplayMatches(liveChannels, cachedDailyEvents)
+
+                        fun applyAvailability(item: EventItem) {
+                            val is247 = item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 || item.category != "Partidos"
+                            if (is247) {
+                                if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                                    item.status = if (item.originalStatus != EventStatus.REPLAY_UNAVAILABLE) item.originalStatus else EventStatus.CHANNEL_24_7
+                                }
+                                return
+                            }
+
+                            val allUnavailable = item.streams.isNotEmpty() && item.streams.all { StreamCache.isUnavailable(it.url) }
+                            if (allUnavailable) {
+                                if (item.status != EventStatus.REPLAY_UNAVAILABLE) {
+                                    item.originalStatus = item.status
+                                    item.status = EventStatus.REPLAY_UNAVAILABLE
+                                }
+                            } else if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                                item.status = item.originalStatus
+                            }
+                        }
+
+                        for (item in liveChannels) applyAvailability(item)
+                        for (item in cxtvResult.channels) applyAvailability(item)
+
+                        val sortedLive = sortEventList(liveChannels)
+
+                        withContext(Dispatchers.Main) {
+                            cachedLiveChannels = sortedLive
+                            cachedCxtvChannels = cxtvResult.channels
+                            dynamicCxtvCategories = cxtvResult.categories
+                            dynamicCxtvCountries = cxtvResult.countries
+                            indexCxtvCatalog()
+
+                            if (currentAppMode == AppMode.WORLD_TV) {
+                                val navItems = buildCategoryNavItems()
+                                sidebarCategoryAdapter.setItems(navItems, currentCategory)
+                                if (currentCategory == "🌍 Países") {
+                                    rvSidebarCountries.visibility = View.VISIBLE
+                                    val countryItems = buildCountryNavItems()
+                                    sidebarCountryAdapter.setItems(countryItems, selectedCountry)
+                                } else {
+                                    rvSidebarCountries.visibility = View.GONE
+                                }
+                            }
+                            updateSearchSuggestions()
+
+                            // Si el usuario está viendo canales en vivo o TV Mundial, refrescar suavemente
+                            if (currentCategory != "⚽ Partidos del Día" || currentAppMode == AppMode.WORLD_TV) {
+                                filterAndDisplayEvents(silent = true)
+                            }
+                        }
+
+                        val db = AppDatabase.getInstance(this@MainActivity)
+                        db.saveChannels("live", sortedLive)
+                        db.saveChannels("cxtv", cxtvResult.channels)
+                    } catch (_: Exception) {}
+                }
+
+                prefs.edit().putLong("last_sync_time", System.currentTimeMillis()).apply()
 
                 if (!silent && ::tvHeaderButtonHint.isInitialized && btnRefresh.hasFocus()) {
                     tvHeaderButtonHint.text = "Lista de eventos/canales actualizada"
                     tvHeaderButtonHint.visibility = View.VISIBLE
                 }
-
-                // Verificación en segundo plano sin molestar si no hay actualización
-                checkAndPromptUpdate(userInitiated = false)
             } catch (e: Exception) {
-                if (!silent) {
+                if (!silent && cachedDailyEvents.isEmpty()) {
                     progressBar.visibility = View.GONE
                     tvEmpty.visibility = View.VISIBLE
                     tvEmpty.text = "Error al cargar eventos: ${e.message}"
@@ -2019,6 +2176,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             val displayList: List<EventItem> = if (hasSearch) {
+                if (::rvSubcategories.isInitialized) rvSubcategories.visibility = View.GONE
+                currentSubcategory = "⭐ Todos"
                 if (isTv) rvSidebarCountries.visibility = View.GONE
                 val ftsResults = try {
                     AppDatabase.getInstance(this).searchChannelsFts(globalSearchQuery, source = "cxtv")
@@ -2045,13 +2204,15 @@ class MainActivity : AppCompatActivity() {
                 }
             } else if (currentCategory == "🌍 Países") {
                 if (isTv) rvSidebarCountries.visibility = View.VISIBLE
-                cxtvCountryMap[selectedCountry] ?: emptyList()
+                val countryChannels = cxtvCountryMap[selectedCountry] ?: emptyList()
+                applySubcategories(countryChannels, isCountryMode = true)
             } else if (currentCategory == "⭐ Todos los Canales") {
                 if (isTv) rvSidebarCountries.visibility = View.GONE
-                preSortedAllChannels
+                applySubcategories(preSortedAllChannels, isCountryMode = false)
             } else {
                 if (isTv) rvSidebarCountries.visibility = View.GONE
-                cxtvCategoryMap[currentCategory] ?: emptyList()
+                val catChannels = cxtvCategoryMap[currentCategory] ?: emptyList()
+                applySubcategories(catChannels, isCountryMode = false)
             }
 
             if (displayList.isEmpty()) {
@@ -2079,6 +2240,9 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        if (::rvSubcategories.isInitialized) {
+            rvSubcategories.visibility = View.GONE
+        }
         if (::tvChannelPositionIndicator.isInitialized) {
             tvChannelPositionIndicator.visibility = View.GONE
         }

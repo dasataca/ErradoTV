@@ -355,6 +355,48 @@ class AppDatabase private constructor(context: Context) : SQLiteOpenHelper(
         return list
     }
 
+    fun getSubcategoriesByCountry(country: String, source: String = "cxtv"): List<Pair<String, Int>> {
+        val db = readableDatabase
+        val list = mutableListOf<Pair<String, Int>>()
+        var cursor: Cursor? = null
+        try {
+            val sql = "SELECT category, COUNT(*) as cnt FROM channels WHERE source = ? AND country = ? GROUP BY category ORDER BY category ASC"
+            cursor = db.rawQuery(sql, arrayOf(source, country))
+            while (cursor.moveToNext()) {
+                val cat = cursor.getString(0)
+                val cnt = cursor.getInt(1)
+                if (!cat.isNullOrBlank()) {
+                    list.add(Pair(cat, cnt))
+                }
+            }
+        } catch (_: Exception) {
+        } finally {
+            cursor?.close()
+        }
+        return list
+    }
+
+    fun getSubcategoriesByCategory(category: String, source: String = "cxtv"): List<Pair<String, Int>> {
+        val db = readableDatabase
+        val list = mutableListOf<Pair<String, Int>>()
+        var cursor: Cursor? = null
+        try {
+            val sql = "SELECT country, COUNT(*) as cnt FROM channels WHERE source = ? AND category = ? AND country IS NOT NULL AND country != '' GROUP BY country ORDER BY country ASC"
+            cursor = db.rawQuery(sql, arrayOf(source, category))
+            while (cursor.moveToNext()) {
+                val country = cursor.getString(0)
+                val cnt = cursor.getInt(1)
+                if (!country.isNullOrBlank()) {
+                    list.add(Pair(country, cnt))
+                }
+            }
+        } catch (_: Exception) {
+        } finally {
+            cursor?.close()
+        }
+        return list
+    }
+
     // ==========================================
     // STREAM CACHE (METADATOS Y RESOLUCIONES)
     // ==========================================
