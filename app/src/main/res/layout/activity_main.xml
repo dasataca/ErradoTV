@@ -36,6 +36,7 @@
 
             <!-- Fila superior: Hora y meridiano (mayor magnitud) -->
             <LinearLayout
+                android:id="@+id/llHeaderClock"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
@@ -576,6 +577,47 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical">
+
+            <!-- Barra de Filtros Táctil Exclusiva para Celulares en Modo TV Mundial -->
+            <LinearLayout
+                android:id="@+id/llMobileFilterBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="10dp"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/btnMobileCategoryFilter"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_focus_selector"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="false"
+                    android:text="📂 Categoría: Todas ▾"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:layout_marginEnd="6dp" />
+
+                <Button
+                    android:id="@+id/btnMobileCountryFilter"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_focus_selector"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="false"
+                    android:text="🌍 País: Todos ▾"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <!-- Indicador ordinal de posición en tiempo real (Canal X de Y) -->
             <TextView

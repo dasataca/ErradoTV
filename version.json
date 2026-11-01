@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "0c93da5d73fa1a8a12d70d86359942d4cb7a44be385b7c48c4536371390e12de30c96f9bf46abbe01600b5d90b3607e5f12e87a6293a59164cb1794f43372905fb4aa2a68538396245f38760e8d5e257",
-  "latest_version_code": 64,
-  "latest_version_name": "1.8.9",
-  "release_timestamp": 1793533369825,
+  "active_key_enc": "196c0386b781de4deff3968c5839dd1a0f9fab4a62d756db9d75b7d9395e10272837c3e170328a06086bb3a5d2105ad1780b7dc2eefff8de5fda5bb7ef2847912a3ff37b5a0b25a83f386094bc77eb2f",
+  "latest_version_code": 65,
+  "latest_version_name": "1.9.0",
+  "release_timestamp": 1793533859252,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Fase A Deteccion hibrida TV y celular, orientacion dinamica y ajuste de safe area"
+  "changelog": "GarecaTV: Fase B Navegacion adaptativa y Full-Width para celulares sin afectar Android TV"
 }

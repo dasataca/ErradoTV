@@ -2,6 +2,17 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.0] - 2026-11-01
+### Añadido y Optimizado (Fase B: Navegación Adaptativa y Full-Width en Celulares)
+- **Desacoplamiento de Columnas Laterales en Celulares**:
+  - En Smart TV se mantiene estricta la arquitectura Master-Detail de 3 columnas (Rail de Categorías de 200dp + Subcolumna de Países de 200dp + Panel de Canales) operable con D-Pad.
+  - En celulares se ocultan automáticamente las columnas fijas que consumían 400dp, otorgando el **100% del ancho de la pantalla** a la lista de canales y eventos deportivos.
+- **Barra de Filtros Táctil y Selectores Modales (`llMobileFilterBar`)**:
+  - Botón táctil de categorías (`btnMobileCategoryFilter`) y países (`btnMobileCountryFilter`) con indicador contextual dinámico (`📂 Cine ▾`, `🌍 Perú ▾`).
+  - Diálogos táctiles interactivos (`showMobileCategoryPicker` y `showMobileCountryPicker`) con contadores de señales por categoría y listado alfabético de países.
+- **Compactación del Encabezado en Móvil**:
+  - Ocultamiento del reloj digital redundante (`llHeaderClock`) en teléfonos, aprovechando la barra de estado nativa de Android y redimensionando el logo a 48dp para maximizar el área útil de visualización vertical.
+
 ## [1.8.9] - 2026-11-01
 ### Añadido y Optimizado (Fase A: Detección Híbrida TV/Móvil, Orientación Dinámica y Safe Area)
 - **Módulo de Detección de Dispositivo (`DeviceUtils.kt`)**:

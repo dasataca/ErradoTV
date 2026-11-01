@@ -134,6 +134,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rvSidebarCountries: RecyclerView
     private lateinit var sidebarCountryAdapter: SidebarCategoryAdapter
     private lateinit var tvChannelPositionIndicator: TextView
+    private lateinit var llMobileFilterBar: View
+    private lateinit var btnMobileCategoryFilter: Button
+    private lateinit var btnMobileCountryFilter: Button
     private var selectedCountry = ""
 
     private val categoryList = listOf(
@@ -223,6 +226,15 @@ class MainActivity : AppCompatActivity() {
 
                 v.setPadding(padLeft, padTop, padRight, padBottom)
                 insets
+            }
+
+            // En celular: Ocultar reloj redundante (mostrado en barra de estado de Android) y compactar logo
+            findViewById<View>(R.id.llHeaderClock)?.visibility = View.GONE
+            findViewById<ImageView>(R.id.ivLogo)?.let { logo ->
+                val density = resources.displayMetrics.density
+                logo.layoutParams?.width = (48 * density).toInt()
+                logo.layoutParams?.height = (48 * density).toInt()
+                logo.requestLayout()
             }
         }
 
@@ -437,6 +449,16 @@ class MainActivity : AppCompatActivity() {
         rvSidebarCountries.adapter = sidebarCountryAdapter
 
         tvChannelPositionIndicator = findViewById(R.id.tvChannelPositionIndicator)
+        llMobileFilterBar = findViewById(R.id.llMobileFilterBar)
+        btnMobileCategoryFilter = findViewById(R.id.btnMobileCategoryFilter)
+        btnMobileCountryFilter = findViewById(R.id.btnMobileCountryFilter)
+
+        btnMobileCategoryFilter.setOnClickListener {
+            showMobileCategoryPicker()
+        }
+        btnMobileCountryFilter.setOnClickListener {
+            showMobileCountryPicker()
+        }
 
         adapter = EventAdapter(
             onItemClick = { item ->
@@ -1224,35 +1246,104 @@ class MainActivity : AppCompatActivity() {
         currentAppMode = mode
         updateModeButtonStyles()
 
+        val isTv = com.gareca.tv.util.DeviceUtils.isTv(this)
         if (mode == AppMode.SPORTS) {
             rvCategories.visibility = View.VISIBLE
             rvSidebarCategories.visibility = View.GONE
             rvSidebarCountries.visibility = View.GONE
+            if (::llMobileFilterBar.isInitialized) llMobileFilterBar.visibility = View.GONE
             tvChannelPositionIndicator.visibility = View.GONE
             currentCategory = "⚽ Partidos del Día"
             categoryAdapter.setCategories(categoryList, currentCategory)
             rvCategories.scrollToPosition(1)
         } else {
             rvCategories.visibility = View.GONE
-            rvSidebarCategories.visibility = View.VISIBLE
             val navItems = buildCategoryNavItems()
             currentCategory = if (navItems.isNotEmpty()) navItems[0].title else "⭐ Todos los Canales"
             sidebarCategoryAdapter.setItems(navItems, currentCategory)
-            if (currentCategory == "🌍 Países") {
-                rvSidebarCountries.visibility = View.VISIBLE
-                val countryItems = buildCountryNavItems()
-                if (selectedCountry.isEmpty() && countryItems.isNotEmpty()) {
-                    selectedCountry = countryItems[0].title
+
+            if (isTv) {
+                rvSidebarCategories.visibility = View.VISIBLE
+                if (::llMobileFilterBar.isInitialized) llMobileFilterBar.visibility = View.GONE
+                if (currentCategory == "🌍 Países") {
+                    rvSidebarCountries.visibility = View.VISIBLE
+                    val countryItems = buildCountryNavItems()
+                    if (selectedCountry.isEmpty() && countryItems.isNotEmpty()) {
+                        selectedCountry = countryItems[0].title
+                    }
+                    sidebarCountryAdapter.setItems(countryItems, selectedCountry)
+                } else {
+                    rvSidebarCountries.visibility = View.GONE
                 }
-                sidebarCountryAdapter.setItems(countryItems, selectedCountry)
+                rvSidebarCategories.scrollToPosition(0)
             } else {
+                rvSidebarCategories.visibility = View.GONE
                 rvSidebarCountries.visibility = View.GONE
+                if (::llMobileFilterBar.isInitialized) {
+                    llMobileFilterBar.visibility = View.VISIBLE
+                    updateMobileFilterButtons()
+                }
             }
-            rvSidebarCategories.scrollToPosition(0)
         }
 
         updateSearchSuggestions()
         filterAndDisplayEvents(silent = false)
+    }
+
+    private fun updateMobileFilterButtons() {
+        if (!::btnMobileCategoryFilter.isInitialized) return
+        btnMobileCategoryFilter.text = "📂 $currentCategory ▾"
+        if (currentCategory == "🌍 Países") {
+            btnMobileCountryFilter.visibility = View.VISIBLE
+            val countryLabel = if (selectedCountry.isNotEmpty()) selectedCountry else "Seleccionar País"
+            btnMobileCountryFilter.text = "🌍 $countryLabel ▾"
+        } else {
+            btnMobileCountryFilter.visibility = View.GONE
+        }
+    }
+
+    private fun showMobileCategoryPicker() {
+        val navItems = buildCategoryNavItems()
+        if (navItems.isEmpty()) return
+        val titles = navItems.map { "${it.title} (${it.count})" }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("📂 Categorías de Televisión")
+            .setItems(titles) { _, which ->
+                val selectedCat = navItems[which].title
+                currentCategory = selectedCat
+                sidebarCategoryAdapter.setSelectedCategory(selectedCat)
+                if (selectedCat == "🌍 Países") {
+                    val countryItems = buildCountryNavItems()
+                    if (selectedCountry.isEmpty() && countryItems.isNotEmpty()) {
+                        selectedCountry = countryItems[0].title
+                    }
+                    updateMobileFilterButtons()
+                    showMobileCountryPicker()
+                } else {
+                    updateMobileFilterButtons()
+                    filterAndDisplayEvents(silent = false)
+                }
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
+    }
+
+    private fun showMobileCountryPicker() {
+        val countryItems = buildCountryNavItems()
+        if (countryItems.isEmpty()) return
+        val titles = countryItems.map { "${it.title} (${it.count})" }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("🌍 Países del Mundo")
+            .setItems(titles) { _, which ->
+                selectedCountry = countryItems[which].title
+                sidebarCountryAdapter.setSelectedCategory(selectedCountry)
+                updateMobileFilterButtons()
+                filterAndDisplayEvents(silent = false)
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
     }
 
     private fun updateModeButtonStyles() {
@@ -1902,9 +1993,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun filterAndDisplayEvents(silent: Boolean = false) {
+        val isTv = com.gareca.tv.util.DeviceUtils.isTv(this)
         if (currentAppMode == AppMode.WORLD_TV) {
             rvCategories.visibility = View.GONE
-            rvSidebarCategories.visibility = View.VISIBLE
+            if (isTv) {
+                rvSidebarCategories.visibility = View.VISIBLE
+                if (::llMobileFilterBar.isInitialized) llMobileFilterBar.visibility = View.GONE
+            } else {
+                rvSidebarCategories.visibility = View.GONE
+                rvSidebarCountries.visibility = View.GONE
+                if (::llMobileFilterBar.isInitialized) {
+                    llMobileFilterBar.visibility = if (globalSearchQuery.isNotEmpty()) View.GONE else View.VISIBLE
+                    updateMobileFilterButtons()
+                }
+            }
             searchContainer.visibility = View.GONE
             globalSearchContainer.visibility = View.VISIBLE
             etGlobalSearch.hint = "Buscar canal, país o categoría..."
@@ -1917,7 +2019,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             val displayList: List<EventItem> = if (hasSearch) {
-                rvSidebarCountries.visibility = View.GONE
+                if (isTv) rvSidebarCountries.visibility = View.GONE
                 val ftsResults = try {
                     AppDatabase.getInstance(this).searchChannelsFts(globalSearchQuery, source = "cxtv")
                 } catch (_: Exception) { emptyList() }
@@ -1942,13 +2044,13 @@ class MainActivity : AppCompatActivity() {
                     GlobalSortMode.DEFAULT -> sortCxtvChannelList(searchList)
                 }
             } else if (currentCategory == "🌍 Países") {
-                rvSidebarCountries.visibility = View.VISIBLE
+                if (isTv) rvSidebarCountries.visibility = View.VISIBLE
                 cxtvCountryMap[selectedCountry] ?: emptyList()
             } else if (currentCategory == "⭐ Todos los Canales") {
-                rvSidebarCountries.visibility = View.GONE
+                if (isTv) rvSidebarCountries.visibility = View.GONE
                 preSortedAllChannels
             } else {
-                rvSidebarCountries.visibility = View.GONE
+                if (isTv) rvSidebarCountries.visibility = View.GONE
                 cxtvCategoryMap[currentCategory] ?: emptyList()
             }
 
@@ -1979,6 +2081,9 @@ class MainActivity : AppCompatActivity() {
 
         if (::tvChannelPositionIndicator.isInitialized) {
             tvChannelPositionIndicator.visibility = View.GONE
+        }
+        if (::llMobileFilterBar.isInitialized) {
+            llMobileFilterBar.visibility = View.GONE
         }
 
         when (currentCategory) {
