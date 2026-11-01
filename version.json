@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "8c1776b0017f351740df27fb6d90bfd71f9ab30236919571f603e347d4dc3a7179ea1913c62efe6cdfb14261502718323c1cada8bb98eaacf7182e7c2eadaf4935b453c4e2cb1a83c739bfef13d3d5b7",
-  "latest_version_code": 80,
-  "latest_version_name": "1.9.15",
-  "release_timestamp": 1793548346225,
+  "active_key_enc": "cbca45a4d87e6159b9d3b29277f1b2d149ffbc6f02b869daba82c6995371576e2b88f41c87ea5e9c1f8015b5aa70f727a2d3b40ac90107f248def232a138d7f03af9212e5fb09fd99a2ee53d9af09e88",
+  "latest_version_code": 81,
+  "latest_version_name": "1.9.16",
+  "release_timestamp": 1793550012467,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Rendimiento ultrarrapido 60 FPS en D-Pad, cero animadores CPU, altura fija 68dp y debounce al vuelo"
+  "changelog": "GarecaTV: Ancho completo en vertical movil sin bandas negras, enlace D-Pad directo a pestanas y auto-enfoque en vivo"
 }

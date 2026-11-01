@@ -2,6 +2,22 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.16] - 2026-11-01
+### Ancho Completo en Modo Vertical Móvil, Enlace D-Pad Directo a Pestañas y Auto-Enfoque en Partidos En Vivo
+- **Ajuste de Ancho Completo en Móviles (Fin de Bandas Negras Laterales)**:
+  - Eliminado el padding de sobreexploración de TV (48dp lateral) en celulares y tablets. En orientación vertical (portrait), el layout raíz pasa de 48dp a 8dp de padding lateral, recuperando 80dp de ancho útil de pantalla.
+  - Los nombres de equipos y partidos ya no se truncan con puntos suspensivos ("Com...", "Getaf...", "Progr..."), permitiendo leer claramente los enfrentamientos completos.
+  - Reducción del margen inferior del encabezado a 8dp en celular para maximizar el área vertical de visualización de eventos.
+- **Navegación D-Pad Fluida desde Selector de Modo a Pestañas de Categoría**:
+  - Agregados listeners de teclado (`setOnKeyListener`) para `KEYCODE_DPAD_DOWN` en `btnModeSports` y `btnModeWorldTv`.
+  - Al pulsar flecha abajo desde `⚽ DEPORTES Y PARTIDOS`, el foco se transfiere de inmediato a la pestaña activa `⚽ Partidos del Día`, resaltando en cian vibrante (`#00E5FF`) con texto negro para eliminar la falsa impresión de control remoto bloqueado.
+- **Auto-Posicionamiento y Resaltado en Pantalla del Grupo de Partidos EN VIVO**:
+  - Al ingresar a `⚽ Partidos del Día` con la flecha abajo o abrir la app, la vista se desplaza directamente (`scrollToPositionWithOffset`) y enfoca el primer partido con transmisión activa **● EN VIVO**.
+  - La tarjeta seleccionada se ilumina intensamente con borde neón cian de 3.5dp y fondo azul profundo `#1E3A5F`.
+  - Los partidos se ordenan cronológicamente por hora: el usuario puede presionar `▲ Flecha arriba` para explorar partidos que finalizaron horas antes, o `▼ Flecha abajo` para consultar los partidos programados más tarde.
+- **Retorno de Foco Limpio D-Pad**:
+  - Al pulsar `▲ Flecha arriba` desde el inicio de la lista de deportes, el foco regresa a la barra horizontal de pestañas (`⚽ Partidos del Día`), y de allí hacia arriba al selector de modo.
+
 ## [1.9.15] - 2026-11-01
 ### Rendimiento Ultrarrápido 60 FPS en D-Pad (Cero Animadores CPU, Altura Fija y Debounce de Catálogo al Vuelo)
 - **Eliminación Total de Animadores por Software CPU (`view.animate().scaleX/scaleY`)**:

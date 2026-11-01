@@ -246,16 +246,22 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        // En celular: Reducción del padding de sobreexploración (48dp overscan de TV) y respeto de recortes de pantalla (Notch/Insets)
+        // En celular: Reducción inmediata del padding de sobreexploración (48dp overscan de TV a 8dp móvil) y respeto de recortes (Insets)
         val mainRootLayout = findViewById<View>(R.id.mainRootLayout)
         if (!isTvDevice && mainRootLayout != null) {
+            val density = resources.displayMetrics.density
+            val isPortrait = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+            val padH = if (isPortrait) (8 * density).toInt() else (12 * density).toInt()
+            val padV = (8 * density).toInt()
+            mainRootLayout.setPadding(padH, padV, padH, padV)
+
             androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainRootLayout) { v, insets ->
                 val statusBar = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
                 val navBar = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())
                 val cutout = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.displayCutout())
 
-                val density = resources.displayMetrics.density
-                val basePadH = (10 * density).toInt()
+                val currentPortrait = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+                val basePadH = if (currentPortrait) (8 * density).toInt() else (12 * density).toInt()
                 val basePadV = (8 * density).toInt()
 
                 val padLeft = maxOf(basePadH, cutout.left, navBar.left)
@@ -339,11 +345,29 @@ class MainActivity : AppCompatActivity() {
                 switchAppMode(AppMode.SPORTS)
             }
         }
+        btnModeSports.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                focusSelectedSportsCategory()
+                return@setOnKeyListener true
+            }
+            false
+        }
 
         btnModeWorldTv.setOnClickListener {
             if (currentAppMode != AppMode.WORLD_TV) {
                 switchAppMode(AppMode.WORLD_TV)
             }
+        }
+        btnModeWorldTv.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                if (currentAppMode == AppMode.WORLD_TV) {
+                    focusSelectedSidebarCategory()
+                } else {
+                    focusSelectedSportsCategory()
+                }
+                return@setOnKeyListener true
+            }
+            false
         }
         updateModeButtonStyles()
 
@@ -588,6 +612,9 @@ class MainActivity : AppCompatActivity() {
                 if (::rvSubcategories.isInitialized && rvSubcategories.visibility == View.VISIBLE) {
                     focusSelectedSubcategory()
                     true
+                } else if (currentAppMode == AppMode.SPORTS && rvCategories.visibility == View.VISIBLE) {
+                    focusSelectedSportsCategory()
+                    true
                 } else {
                     false
                 }
@@ -673,6 +700,13 @@ class MainActivity : AppCompatActivity() {
 
         val density = resources.displayMetrics.density
         val isPortrait = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+
+        // Ajustar padding del root layout para ocupar TODO el ancho disponible en celular (eliminar bandas negras laterales de TV)
+        findViewById<View>(R.id.mainRootLayout)?.let { root ->
+            val padH = if (isPortrait) (8 * density).toInt() else (12 * density).toInt()
+            val padV = (8 * density).toInt()
+            root.setPadding(padH, padV, padH, padV)
+        }
 
         // Reducir tamaño del logo en celular
         findViewById<ImageView>(R.id.ivLogo)?.let { logo ->
@@ -1855,16 +1889,6 @@ class MainActivity : AppCompatActivity() {
     private fun sortDailyMatchesChronologically(list: List<EventItem>): List<EventItem> {
         return list.sortedWith(
             compareBy<EventItem> { item ->
-                when {
-                    // Partidos con señal en vivo activa van arriba de todo (exactamente los que tienen streams en Errado)
-                    item.status == EventStatus.LIVE && item.streams.isNotEmpty() -> 10
-                    item.status == EventStatus.STARTING_SOON && item.streams.isNotEmpty() -> 20
-                    // Partidos programados van después en orden cronológico por hora
-                    item.status == EventStatus.SCHEDULED -> 30
-                    item.status == EventStatus.FINISHED -> 90
-                    else -> 40
-                }
-            }.thenBy { item ->
                 if (item.startEpochMillis > 0L) item.startEpochMillis else Long.MAX_VALUE
             }.thenBy { it.time.orEmpty() }
             .thenBy { it.title.lowercase().trim() }
@@ -1888,14 +1912,34 @@ class MainActivity : AppCompatActivity() {
     private fun focusFirstEventItem() {
         if (adapter.itemCount == 0) return
         val lm = rvEvents.layoutManager as? LinearLayoutManager
-        val firstPos = lm?.findFirstVisibleItemPosition() ?: 0
-        val targetPos = if (firstPos in 0 until adapter.itemCount) firstPos else 0
 
-        // Si el elemento ya está visible en pantalla, enfocarlo inmediatamente sin mover el scroll
-        val directChild = rvEvents.findViewHolderForAdapterPosition(targetPos)?.itemView
-            ?: lm?.findViewByPosition(targetPos)
-        if (directChild != null && directChild.requestFocus()) {
-            return
+        val targetPos = if (currentCategory == "⚽ Partidos del Día") {
+            // Prioridad 1: Primer partido con señal activa EN VIVO
+            val liveWithStreams = adapter.currentList.indexOfFirst {
+                it.status == EventStatus.LIVE && it.streams.isNotEmpty()
+            }
+            if (liveWithStreams != -1) {
+                liveWithStreams
+            } else {
+                // Prioridad 2: Cualquier partido marcado EN VIVO
+                val liveAny = adapter.currentList.indexOfFirst { it.status == EventStatus.LIVE }
+                if (liveAny != -1) {
+                    liveAny
+                } else {
+                    // Prioridad 3: Primer partido por comenzar
+                    val startingSoon = adapter.currentList.indexOfFirst { it.status == EventStatus.STARTING_SOON }
+                    if (startingSoon != -1) {
+                        startingSoon
+                    } else {
+                        // Prioridad 4: Primer partido programado pendiente (no finalizado)
+                        val scheduled = adapter.currentList.indexOfFirst { it.status == EventStatus.SCHEDULED }
+                        if (scheduled != -1) scheduled else 0
+                    }
+                }
+            }
+        } else {
+            val firstPos = lm?.findFirstVisibleItemPosition() ?: 0
+            if (firstPos in 0 until adapter.itemCount) firstPos else 0
         }
 
         lm?.scrollToPositionWithOffset(targetPos, 0)
@@ -1903,7 +1947,9 @@ class MainActivity : AppCompatActivity() {
             val child = rvEvents.findViewHolderForAdapterPosition(targetPos)?.itemView
                 ?: lm?.findViewByPosition(targetPos)
                 ?: rvEvents.getChildAt(0)
-            child?.requestFocus()
+            if (child != null && !child.hasFocus()) {
+                child.requestFocus()
+            }
         }
     }
 
@@ -1950,23 +1996,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun focusSelectedSportsCategory() {
         val pos = categoryAdapter.getSelectedPosition()
-        if (pos >= 0) {
-            rvCategories.scrollToPosition(pos)
+        val target = if (pos >= 0 && pos < categoryAdapter.itemCount) pos else 0
+        if (categoryAdapter.itemCount > 0) {
+            rvCategories.scrollToPosition(target)
             rvCategories.post {
-                val vh = rvCategories.findViewHolderForAdapterPosition(pos)
-                val view = vh?.itemView ?: rvCategories.layoutManager?.findViewByPosition(pos)
+                val vh = rvCategories.findViewHolderForAdapterPosition(target)
+                val view = vh?.itemView ?: rvCategories.layoutManager?.findViewByPosition(target)
                 if (view != null) {
                     view.requestFocus()
                 } else {
                     rvCategories.postDelayed({
-                        val retryView = rvCategories.findViewHolderForAdapterPosition(pos)?.itemView
-                            ?: rvCategories.layoutManager?.findViewByPosition(pos)
+                        val retryView = rvCategories.findViewHolderForAdapterPosition(target)?.itemView
+                            ?: rvCategories.layoutManager?.findViewByPosition(target)
                         retryView?.requestFocus() ?: rvCategories.requestFocus()
                     }, 50)
                 }
             }
-        } else {
-            rvCategories.requestFocus()
         }
     }
 
