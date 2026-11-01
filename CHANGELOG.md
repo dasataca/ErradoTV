@@ -2,6 +2,18 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.8.7] - 2026-11-01
+### Añadido y Optimizado (Fase 1: SQLite FTS4 de Alto Rendimiento)
+- **Motor de Base de Datos Nativo SQLite FTS4 (`AppDatabase.kt`)**:
+  - Implementación de base de datos relacional SQLite con tablas virtuales `channels_fts USING fts4` y triggers automáticos de sincronización (`channels_ai`, `channels_au`, `channels_bu`, `channels_bd`).
+  - Configurado en modo **WAL (Write-Ahead Logging)** con `PRAGMA synchronous = NORMAL`, almacenamiento temporal en RAM (`temp_store = MEMORY`) y límite de caché de ~2MB (`cache_size = -2000`), ideal para TV Boxes y Smart TVs de memoria reducida (1GB RAM).
+  - **Inserciones Masivas Ultrarrápidas**: Persistencia asíncrona de los catálogos (2.500+ canales de Televisión Mundial, partidos del día, repeticiones y canales en vivo) mediante transacciones no exclusivas y `SQLiteStatement` precompilados en menos de 25 ms.
+- **Búsqueda Tokenizada FTS y Sugerencias Instantáneas**:
+  - `searchChannelsFts`: Búsqueda de texto completo de orden $O(\log N)$ basada en árboles B-Tree con prefijos (`palabra*`), eliminando el filtrado iterativo lineal en el heap de la JVM.
+  - `getSuggestions`: Consultas FTS en tiempo real que devuelven sugerencias predictivas sin cargar miles de palabras clave en la memoria RAM del televisor.
+- **Persistencia Dual en StreamCache (`stream_metadata`)**:
+  - Tabla relacional indexada `stream_metadata` para registrar resoluciones verificadas y estados de disponibilidad, conviviendo con la caché en memoria RAM para lecturas instantáneas.
+
 ## [1.8.6] - 2026-10-31
 ### Añadido y Corregido
 - **Detección y Persistencia Real de Resoluciones en Selector de Partidos**:

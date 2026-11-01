@@ -1,6 +1,7 @@
 package com.gareca.tv
 
 import android.content.Context
+import com.gareca.tv.db.AppDatabase
 import java.util.concurrent.ConcurrentHashMap
 
 object StreamCache {
@@ -11,6 +12,12 @@ object StreamCache {
     fun init(context: Context) {
         val appCtx = context.applicationContext ?: context
         appContext = appCtx
+
+        try {
+            val db = AppDatabase.getInstance(appCtx)
+            unavailableUrls.addAll(db.getUnavailableUrls())
+            resolutionMap.putAll(db.getAllStreamResolutions())
+        } catch (_: Exception) {}
 
         val prefs = appCtx.getSharedPreferences("stream_cache_prefs", Context.MODE_PRIVATE)
         val savedDead = prefs.getStringSet("dead_urls", emptySet()) ?: emptySet()
@@ -28,9 +35,12 @@ object StreamCache {
         if (url.isNotEmpty() && resolution.isNotEmpty()) {
             resolutionMap[url] = resolution
             val targetCtx = context?.applicationContext ?: appContext
-            targetCtx?.let {
+            targetCtx?.let { ctx ->
                 try {
-                    val resPrefs = it.getSharedPreferences("stream_resolutions_prefs", Context.MODE_PRIVATE)
+                    AppDatabase.getInstance(ctx).saveStreamResolution(url, resolution)
+                } catch (_: Exception) {}
+                try {
+                    val resPrefs = ctx.getSharedPreferences("stream_resolutions_prefs", Context.MODE_PRIVATE)
                     resPrefs.edit().putString(url, resolution).apply()
                 } catch (_: Exception) {}
             }
@@ -50,9 +60,13 @@ object StreamCache {
     ) {
         if (url.isEmpty()) return
         val isNew = unavailableUrls.add(url)
-        context?.let {
+        val targetCtx = context?.applicationContext ?: appContext
+        targetCtx?.let { ctx ->
             try {
-                val prefs = it.getSharedPreferences("stream_cache_prefs", Context.MODE_PRIVATE)
+                AppDatabase.getInstance(ctx).markStreamUnavailable(url)
+            } catch (_: Exception) {}
+            try {
+                val prefs = ctx.getSharedPreferences("stream_cache_prefs", Context.MODE_PRIVATE)
                 val set = prefs.getStringSet("dead_urls", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
                 set.add(url)
                 prefs.edit().putStringSet("dead_urls", set).apply()
@@ -66,9 +80,13 @@ object StreamCache {
     fun markAvailable(context: Context?, url: String) {
         if (url.isEmpty()) return
         unavailableUrls.remove(url)
-        context?.let {
+        val targetCtx = context?.applicationContext ?: appContext
+        targetCtx?.let { ctx ->
             try {
-                val prefs = it.getSharedPreferences("stream_cache_prefs", Context.MODE_PRIVATE)
+                AppDatabase.getInstance(ctx).markStreamAvailable(url)
+            } catch (_: Exception) {}
+            try {
+                val prefs = ctx.getSharedPreferences("stream_cache_prefs", Context.MODE_PRIVATE)
                 val set = prefs.getStringSet("dead_urls", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
                 if (set.remove(url)) {
                     prefs.edit().putStringSet("dead_urls", set).apply()

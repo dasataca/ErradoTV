@@ -35,6 +35,7 @@ import com.gareca.tv.updater.AppUpdater
 import com.gareca.tv.updater.UpdateInfo
 import com.gareca.tv.auth.AuthManager
 import com.gareca.tv.auth.SessionState
+import com.gareca.tv.db.AppDatabase
 import androidx.appcompat.app.AlertDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -516,15 +517,22 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val tokens = q.split(Regex("""\s+""")).filter { it.isNotBlank() }
+        val dbSuggestions = try {
+            AppDatabase.getInstance(this).getSuggestions(q, limit = 6)
+        } catch (_: Exception) { emptyList() }
 
-        val matches = allKeywords.filter { keyword ->
-            val lower = keyword.lowercase()
-            tokens.all { lower.contains(it) }
-        }.sortedBy { item ->
-            val lower = item.lowercase()
-            if (lower.startsWith(q)) 0 else 1
-        }.take(6)
+        val matches = if (dbSuggestions.isNotEmpty()) {
+            dbSuggestions
+        } else {
+            val tokens = q.split(Regex("""\s+""")).filter { it.isNotBlank() }
+            allKeywords.filter { keyword ->
+                val lower = keyword.lowercase()
+                tokens.all { lower.contains(it) }
+            }.sortedBy { item ->
+                val lower = item.lowercase()
+                if (lower.startsWith(q)) 0 else 1
+            }.take(6)
+        }
 
         if (matches.isNotEmpty() && ::rvSuggestions.isInitialized) {
             suggestionAdapter.submitList(matches)
@@ -1747,6 +1755,16 @@ class MainActivity : AppCompatActivity() {
                 cachedReplayEvents = replayMatches
                 cachedLiveChannels = sortEventList(liveChannels)
 
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        val db = AppDatabase.getInstance(this@MainActivity)
+                        db.saveChannels("cxtv", cachedCxtvChannels)
+                        db.saveChannels("daily", cachedDailyEvents)
+                        db.saveChannels("replay", cachedReplayEvents)
+                        db.saveChannels("live", cachedLiveChannels)
+                    } catch (_: Exception) {}
+                }
+
                 if (currentAppMode == AppMode.WORLD_TV) {
                     val navItems = buildCategoryNavItems()
                     sidebarCategoryAdapter.setItems(navItems, currentCategory)
@@ -1817,11 +1835,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getFilteredGlobalEvents(): List<EventItem> {
-        val q = globalSearchQuery.trim().lowercase()
+        val q = globalSearchQuery.trim()
         if (q.isEmpty()) {
             return cachedDailyEvents
         }
-        val tokens = q.split(Regex("""\s+""")).filter { it.isNotBlank() }
+        val ftsResults = try {
+            AppDatabase.getInstance(this).searchChannelsFts(q)
+        } catch (_: Exception) { emptyList() }
+        if (ftsResults.isNotEmpty()) {
+            return ftsResults
+        }
+        val tokens = q.lowercase().split(Regex("""\s+""")).filter { it.isNotBlank() }
         val results = mutableListOf<EventItem>()
 
         fun matchesTokens(item: EventItem): Boolean {
@@ -1864,21 +1888,28 @@ class MainActivity : AppCompatActivity() {
 
             val displayList: List<EventItem> = if (hasSearch) {
                 rvSidebarCountries.visibility = View.GONE
-                val tokens = globalSearchQuery.trim().lowercase().split(Regex("""\s+""")).filter { it.isNotBlank() }
-                val filtered = cachedCxtvChannels.filter { item ->
-                    val target = "${item.title} ${item.subtitle} ${item.category} ${item.country.orEmpty()}".lowercase()
-                    tokens.all { target.contains(it) }
+                val ftsResults = try {
+                    AppDatabase.getInstance(this).searchChannelsFts(globalSearchQuery, source = "cxtv")
+                } catch (_: Exception) { emptyList() }
+                val searchList = if (ftsResults.isNotEmpty()) {
+                    ftsResults
+                } else {
+                    val tokens = globalSearchQuery.trim().lowercase().split(Regex("""\s+""")).filter { it.isNotBlank() }
+                    cachedCxtvChannels.filter { item ->
+                        val target = "${item.title} ${item.subtitle} ${item.category} ${item.country.orEmpty()}".lowercase()
+                        tokens.all { target.contains(it) }
+                    }
                 }
                 when (currentGlobalSortMode) {
-                    GlobalSortMode.NAME_ASC -> filtered.sortedWith(
+                    GlobalSortMode.NAME_ASC -> searchList.sortedWith(
                         compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
                             .thenBy { it.title.lowercase() }
                     )
-                    GlobalSortMode.NAME_DESC -> filtered.sortedWith(
+                    GlobalSortMode.NAME_DESC -> searchList.sortedWith(
                         compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
                             .thenByDescending { it.title.lowercase() }
                     )
-                    GlobalSortMode.DEFAULT -> sortCxtvChannelList(filtered)
+                    GlobalSortMode.DEFAULT -> sortCxtvChannelList(searchList)
                 }
             } else if (currentCategory == "🌍 Países") {
                 rvSidebarCountries.visibility = View.VISIBLE
