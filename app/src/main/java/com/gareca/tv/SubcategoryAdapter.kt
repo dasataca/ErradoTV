@@ -69,16 +69,6 @@ class SubcategoryAdapter(
         private val tvTitle: TextView = itemView.findViewById(R.id.tvSubcategoryTitle)
         private val tvCount: TextView = itemView.findViewById(R.id.tvSubcategoryCount)
 
-        init {
-            itemView.setOnFocusChangeListener { view, hasFocus ->
-                if (hasFocus) {
-                    view.animate().scaleX(1.06f).scaleY(1.06f).setDuration(120).start()
-                } else {
-                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
-                }
-            }
-        }
-
         fun bind(item: NavItem, position: Int) {
             tvTitle.text = item.title
             if (item.count > 0) {

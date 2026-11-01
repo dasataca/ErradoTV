@@ -59,6 +59,7 @@ class SidebarCategoryAdapter(
         private val tvTitle: TextView = itemView.findViewById(R.id.tvSidebarCategoryTitle)
         private val tvCount: TextView = itemView.findViewById(R.id.tvSidebarCategoryCount)
         private val viewAccentBar: View = itemView.findViewById(R.id.viewAccentBar)
+        private var categoryDebounceRunnable: Runnable? = null
 
         fun bind(item: NavItem, position: Int) {
             tvTitle.text = item.title
@@ -73,16 +74,20 @@ class SidebarCategoryAdapter(
             itemView.isSelected = isSelected
             viewAccentBar.visibility = if (isSelected) View.VISIBLE else View.INVISIBLE
 
-            itemView.setOnFocusChangeListener { view, hasFocus ->
+            itemView.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
-                    view.animate().scaleX(1.02f).scaleY(1.02f).setDuration(120).start()
                     viewAccentBar.visibility = View.VISIBLE
                     if (selectedCategory != item.title) {
                         setSelectedCategory(item.title)
-                        onCategorySelected(item.title)
+                        itemView.removeCallbacks(categoryDebounceRunnable)
+                        categoryDebounceRunnable = Runnable {
+                            if (itemView.hasFocus()) {
+                                onCategorySelected(item.title)
+                            }
+                        }
+                        itemView.postDelayed(categoryDebounceRunnable, 100)
                     }
                 } else {
-                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
                     viewAccentBar.visibility = if (item.title == selectedCategory) View.VISIBLE else View.INVISIBLE
                 }
             }

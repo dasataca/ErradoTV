@@ -1022,14 +1022,8 @@ class MainActivity : AppCompatActivity() {
         })
 
         // Botón "X" interno para limpiar texto e invocar teclado (Repeticiones)
-        btnClearSearchText.setOnFocusChangeListener { view, hasFocus ->
-            if (hasFocus) {
-                view.animate().scaleX(1.1f).scaleY(1.1f).setDuration(120).start()
-                btnClearSearchText.setColorFilter(android.graphics.Color.BLACK)
-            } else {
-                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
-                btnClearSearchText.setColorFilter(android.graphics.Color.WHITE)
-            }
+        btnClearSearchText.setOnFocusChangeListener { _, hasFocus ->
+            btnClearSearchText.setColorFilter(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
         }
         btnClearSearchText.setOnClickListener {
             etSearch.setText("")
@@ -1080,13 +1074,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Botón Micrófono Replay (a la izquierda)
-        btnVoiceSearchReplay.setOnFocusChangeListener { view, hasFocus ->
-            if (hasFocus) {
-                view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
-            } else {
-                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
-            }
-        }
         btnVoiceSearchReplay.setOnClickListener {
             startVoiceSearch(isGlobal = false)
         }
@@ -1108,14 +1095,8 @@ class MainActivity : AppCompatActivity() {
 
         // Botón Lupa Replay (a la derecha de la caja de texto, sin texto)
         val ivSearchIconReplay = findViewById<ImageView>(R.id.ivSearchIconReplay)
-        btnSearchReplay.setOnFocusChangeListener { view, hasFocus ->
-            if (hasFocus) {
-                view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
-                ivSearchIconReplay?.setColorFilter(android.graphics.Color.BLACK)
-            } else {
-                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
-                ivSearchIconReplay?.setColorFilter(android.graphics.Color.WHITE)
-            }
+        btnSearchReplay.setOnFocusChangeListener { _, hasFocus ->
+            ivSearchIconReplay?.setColorFilter(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
         }
         btnSearchReplay.setOnClickListener {
             executeSearch(isGlobal = false)
@@ -1285,14 +1266,8 @@ class MainActivity : AppCompatActivity() {
         })
 
         // Botón "X" interno para limpiar texto e invocar teclado (Buscar Todo)
-        btnClearGlobalText.setOnFocusChangeListener { view, hasFocus ->
-            if (hasFocus) {
-                view.animate().scaleX(1.1f).scaleY(1.1f).setDuration(120).start()
-                btnClearGlobalText.setColorFilter(android.graphics.Color.BLACK)
-            } else {
-                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
-                btnClearGlobalText.setColorFilter(android.graphics.Color.WHITE)
-            }
+        btnClearGlobalText.setOnFocusChangeListener { _, hasFocus ->
+            btnClearGlobalText.setColorFilter(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
         }
         btnClearGlobalText.setOnClickListener {
             etGlobalSearch.setText("")
@@ -1345,13 +1320,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Botón Micrófono Global (a la izquierda)
-        btnVoiceGlobalSearch.setOnFocusChangeListener { view, hasFocus ->
-            if (hasFocus) {
-                view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
-            } else {
-                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
-            }
-        }
         btnVoiceGlobalSearch.setOnClickListener {
             startVoiceSearch(isGlobal = true)
         }
@@ -1373,14 +1341,8 @@ class MainActivity : AppCompatActivity() {
 
         // Botón Lupa Global (a la derecha de la caja de texto, sin texto)
         val ivSearchIconGlobal = findViewById<ImageView>(R.id.ivSearchIconGlobal)
-        btnSearchGlobal.setOnFocusChangeListener { view, hasFocus ->
-            if (hasFocus) {
-                view.animate().scaleX(1.05f).scaleY(1.05f).setDuration(120).start()
-                ivSearchIconGlobal?.setColorFilter(android.graphics.Color.BLACK)
-            } else {
-                view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
-                ivSearchIconGlobal?.setColorFilter(android.graphics.Color.WHITE)
-            }
+        btnSearchGlobal.setOnFocusChangeListener { _, hasFocus ->
+            ivSearchIconGlobal?.setColorFilter(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
         }
         btnSearchGlobal.setOnClickListener {
             executeSearch(isGlobal = true)

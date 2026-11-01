@@ -66,16 +66,6 @@ class CategoryAdapter(
     class CategoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTabTitle: TextView = itemView.findViewById(R.id.tvTabTitle)
 
-        init {
-            itemView.setOnFocusChangeListener { view, hasFocus ->
-                if (hasFocus) {
-                    view.animate().scaleX(1.06f).scaleY(1.06f).setDuration(120).start()
-                } else {
-                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
-                }
-            }
-        }
-
         fun bind(
             category: String,
             isSelected: Boolean,

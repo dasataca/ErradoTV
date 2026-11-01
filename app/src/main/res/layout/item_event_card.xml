@@ -2,14 +2,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/cardContainer"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="68dp"
+    android:minHeight="68dp"
     android:orientation="horizontal"
     android:focusable="true"
     android:clickable="true"
     android:focusableInTouchMode="true"
     android:background="@drawable/card_selector"
-    android:padding="12dp"
-    android:layout_marginBottom="10dp"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
+    android:layout_marginBottom="8dp"
     android:gravity="center_vertical">
 
     <ImageView
@@ -60,7 +64,7 @@
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:maxLines="2"
+                android:singleLine="true"
                 android:ellipsize="end" />
         </LinearLayout>
 
@@ -71,7 +75,9 @@
             android:text="Transmisión en Vivo"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
-            android:layout_marginTop="4dp" />
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginTop="2dp" />
     </LinearLayout>
 
     <!-- Contenedor Derecho para Canales (Insignia Compacta + Botón Play + Botón Favorito) -->

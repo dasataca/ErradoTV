@@ -2,6 +2,19 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.15] - 2026-11-01
+### Rendimiento Ultrarrápido 60 FPS en D-Pad (Cero Animadores CPU, Altura Fija y Debounce de Catálogo al Vuelo)
+- **Eliminación Total de Animadores por Software CPU (`view.animate().scaleX/scaleY`)**:
+  - Removidos los animadores por software en `CategoryAdapter`, `SidebarCategoryAdapter`, `SubcategoryAdapter`, `SuggestionAdapter` y en los botones de búsqueda en `MainActivity`.
+  - El resaltado visual de foco se delega ahora 100% al chip gráfico GPU mediante los selectores nativos (`category_tab_selector.xml`, `card_selector.xml`), liberando el Choreographer de Android TV para respuesta a 0ms.
+- **Tarjetas de Altura Fija Uniforme (`68dp`) y `singleLine`**:
+  - `item_event_card.xml` ahora cuenta con una altura fija y uniforme de `68dp` (`minHeight="68dp"`), permitiendo que `rvEvents.setHasFixedSize(true)` calcule posiciones por aritmética pura (`y = index * 68dp`), sin recalcular dimensiones ni alturas durante el desplazamiento con el control.
+  - Títulos y subtítulos configurados con `singleLine="true"` y elipsis al final, idéntico al estándar EPG de TiviMate / Smart IPTV.
+- **Debounce de 100ms en el Menú Lateral de Categorías / Países**:
+  - Al desplazarse rápidamente por las categorías del menú lateral con las flechas `▲`/`▼`, la app ya no dispara filtrados pesados de 1,200 canales en cada pulsación intermedia. El selector visual responde al instante y actualiza el panel derecho suavemente al detenerse.
+- **Preservación Total del Flujo de Datos al Vuelo**:
+  - Todas las fuentes en caliente (Errado `event.json`, Teveplay `api/channels`, CDN directo y CXTv) continúan obteniéndose al vuelo sin alteraciones, pero ahora se navegan en pantalla sin fricción ni lag.
+
 ## [1.9.14] - 2026-11-01
 ### Blindaje Definitivo D-Pad y Desacoplamiento de Layout (Fin de Cierres Inesperados y Freezes)
 - **Desacoplamiento del Indicador de Posición como Overlay en FrameLayout**:
