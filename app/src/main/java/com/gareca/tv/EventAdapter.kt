@@ -187,10 +187,11 @@ class EventAdapter(
                 ivThumbnail.visibility = View.GONE
             }
 
-            val isMatch = (item.category == "Partidos" || item.category == "Repeticiones" ||
+            val isMatch = item.category == "Partidos" || item.category == "Repeticiones" ||
+                           item.category == "⚽ Partidos del Día" || item.category == "🔁 Repeticiones" ||
                            item.status == EventStatus.LIVE || item.status == EventStatus.STARTING_SOON ||
                            item.status == EventStatus.SCHEDULED || item.status == EventStatus.FINISHED ||
-                           item.time != null) && item.status != EventStatus.CHANNEL_24_7
+                           item.status == EventStatus.REPLAY
 
             if (isMatch) {
                 // Bloque de Partidos: Interfaz original sin favoritos ni botones Play
@@ -240,8 +241,8 @@ class EventAdapter(
                 tvCountdown.visibility = View.GONE
 
                 val isFav = isFavorite?.invoke(item) == true
-                btnCardFavorite?.text = if (isFav) "⭐ Fav" else "☆ Fav"
-                btnCardFavorite?.setTextColor(if (isFav) Color.parseColor("#FFD700") else Color.parseColor("#94A3B8"))
+                btnCardFavorite?.text = "★"
+                btnCardFavorite?.setTextColor(if (isFav) Color.parseColor("#FFD700") else Color.parseColor("#64748B"))
 
                 val badgeText: String
                 val badgeColor: String

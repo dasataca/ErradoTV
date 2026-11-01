@@ -183,7 +183,7 @@ object ApiClient {
                                 eventCal.before(todayCal)
                             } ?: false
 
-                            val itemStatus = if (isPreviousDay) EventStatus.REPLAY else EventStatus.CHANNEL_24_7
+                            val itemStatus = EventStatus.REPLAY
 
                             list.add(
                                 EventItem(

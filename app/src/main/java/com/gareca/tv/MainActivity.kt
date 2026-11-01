@@ -146,6 +146,7 @@ class MainActivity : AppCompatActivity() {
         "🔍 Buscar Todo",
         "⚽ Partidos del Día",
         "🔁 Repeticiones",
+        "⭐ Favoritos",
         "📺 Regionales",
         "🏆 Deportes",
         "🇦🇷 Argentina",
@@ -219,8 +220,8 @@ class MainActivity : AppCompatActivity() {
                 val cutout = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.displayCutout())
 
                 val density = resources.displayMetrics.density
-                val basePadH = (14 * density).toInt()
-                val basePadV = (10 * density).toInt()
+                val basePadH = (10 * density).toInt()
+                val basePadV = (8 * density).toInt()
 
                 val padLeft = maxOf(basePadH, cutout.left, navBar.left)
                 val padTop = maxOf(basePadV, statusBar.top, cutout.top)
@@ -230,15 +231,7 @@ class MainActivity : AppCompatActivity() {
                 v.setPadding(padLeft, padTop, padRight, padBottom)
                 insets
             }
-
-            // En celular: Ocultar reloj redundante (mostrado en barra de estado de Android) y compactar logo
-            findViewById<View>(R.id.llHeaderClock)?.visibility = View.GONE
-            findViewById<ImageView>(R.id.ivLogo)?.let { logo ->
-                val density = resources.displayMetrics.density
-                logo.layoutParams?.width = (48 * density).toInt()
-                logo.layoutParams?.height = (48 * density).toInt()
-                logo.requestLayout()
-            }
+            setupMobileLayout()
         }
 
         findViewById<View>(R.id.ivLogo)?.setOnLongClickListener {
@@ -614,6 +607,80 @@ class MainActivity : AppCompatActivity() {
 
         // Carga al abrir la app con punto de control de 15 minutos
         loadData(silent = false, force = false)
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        setupMobileLayout()
+        if (::adapter.isInitialized) {
+            adapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun setupMobileLayout() {
+        val isTv = com.gareca.tv.util.DeviceUtils.isTv(this)
+        if (isTv) return
+
+        val density = resources.displayMetrics.density
+        val isPortrait = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+
+        // Reducir tamaño del logo en celular
+        findViewById<ImageView>(R.id.ivLogo)?.let { logo ->
+            val sz = if (isPortrait) (40 * density).toInt() else (44 * density).toInt()
+            logo.layoutParams?.width = sz
+            logo.layoutParams?.height = sz
+            logo.requestLayout()
+        }
+
+        // Reloj oculto en celular (redundante con la barra de estado de Android)
+        findViewById<View>(R.id.llHeaderClock)?.visibility = View.GONE
+
+        // Botones de cabecera en celular: en portrait, ocultar texto largo para evitar desborde
+        findViewById<TextView>(R.id.tvUpdateLabel)?.let { label ->
+            label.visibility = if (isPortrait) View.GONE else View.VISIBLE
+        }
+        findViewById<View>(R.id.btnUpdate)?.let { btn ->
+            val padH = if (isPortrait) (8 * density).toInt() else (12 * density).toInt()
+            val padV = (6 * density).toInt()
+            btn.setPadding(padH, padV, padH, padV)
+        }
+        findViewById<TextView>(R.id.btnRefresh)?.let { btn ->
+            if (isPortrait) {
+                btn.text = "🔄"
+                btn.textSize = 14f
+                val pad = (6 * density).toInt()
+                btn.setPadding(pad, pad, pad, pad)
+            } else {
+                btn.text = "Recargar"
+                btn.textSize = 14f
+                val padH = (12 * density).toInt()
+                val padV = (6 * density).toInt()
+                btn.setPadding(padH, padV, padH, padV)
+            }
+        }
+
+        // Márgenes verticales compactados en celular para maximizar área de contenido
+        findViewById<View>(R.id.llModeSelector)?.let { modeSelector ->
+            (modeSelector.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.let { lp ->
+                lp.bottomMargin = (8 * density).toInt()
+                lp.height = (38 * density).toInt()
+                modeSelector.layoutParams = lp
+            }
+        }
+
+        findViewById<View>(R.id.rvCategories)?.let { catBar ->
+            (catBar.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.let { lp ->
+                lp.bottomMargin = (8 * density).toInt()
+                catBar.layoutParams = lp
+            }
+        }
+
+        (findViewById<View>(R.id.ivLogo)?.parent as? View)?.let { headerRow ->
+            (headerRow.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.let { lp ->
+                lp.bottomMargin = (8 * density).toInt()
+                headerRow.layoutParams = lp
+            }
+        }
     }
 
     private fun executeSearch(isGlobal: Boolean) {
@@ -2015,18 +2082,14 @@ class MainActivity : AppCompatActivity() {
 
                 for (item in dailyResponse.events) {
                     if (item.status == EventStatus.REPLAY) {
-                        replayMatches.add(item)
+                        replayMatches.add(item.copy(category = "Repeticiones"))
                     } else {
-                        todayMatches.add(item)
+                        todayMatches.add(item.copy(category = "Partidos"))
                     }
                 }
 
                 for (item in featuredList) {
-                    if (item.status == EventStatus.REPLAY) {
-                        replayMatches.add(item)
-                    } else {
-                        todayMatches.add(item)
-                    }
+                    replayMatches.add(item.copy(status = EventStatus.REPLAY, category = "Repeticiones"))
                 }
 
                 cachedDailyEvents = sortEventList(todayMatches)
@@ -2351,6 +2414,14 @@ class MainActivity : AppCompatActivity() {
             }
             "⚽ Partidos del Día" -> cachedDailyEvents
             "🔁 Repeticiones" -> getFilteredAndSortedReplays()
+            "⭐ Favoritos" -> {
+                val favKeys = try {
+                    AppDatabase.getInstance(this).getAllFavorites("sports")
+                } catch (_: Exception) {
+                    emptySet()
+                }
+                sortEventList(cachedLiveChannels.filter { favKeys.contains(it.title.trim().lowercase()) })
+            }
             "🌐 Todos los Canales" -> sortEventList(cachedLiveChannels)
             else -> sortEventList(cachedLiveChannels.filter { it.category == currentCategory })
         }
@@ -2369,6 +2440,7 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     "No hay repeticiones disponibles en este momento."
                 }
+                "⭐ Favoritos" -> "No tienes canales favoritos en Deportes.\n\nPulsa en ★ en cualquier canal de Regionales o Deportes para guardarlo aquí."
                 else -> "No hay señales disponibles actualmente para esta categoría."
             }
             adapter.submitList(emptyList())
@@ -2506,8 +2578,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleToggleFavorite(item: EventItem) {
         val channelKey = item.title.trim().lowercase()
+        val src = if (currentAppMode == AppMode.SPORTS) "sports" else "cxtv"
         val isFav = try {
-            AppDatabase.getInstance(this).toggleFavorite(channelKey, source = "cxtv")
+            AppDatabase.getInstance(this).toggleFavorite(channelKey, source = src)
         } catch (_: Exception) {
             false
         }

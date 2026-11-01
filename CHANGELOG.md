@@ -2,6 +2,28 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.7] - 2026-11-01
+### Añadido y Optimizado (Estrella Limpia de Favoritos, Pestaña Favoritos en Deportes y Optimización Móvil Vertical/Horizontal)
+- **Botón de Favorito Exclusivo por Estrella (`★`) sin Texto "Fav"**:
+  - Se suprime la palabra "Fav" en todas las tarjetas de canales.
+  - Cuando el canal no está en favoritos: estrella gris (`★` `#64748B`).
+  - Cuando el canal está guardado en favoritos: estrella dorada / amarilla brillante (`★` `#FFD700`).
+  - Botón de 34x34dp con selector visual responsivo, ahorrando espacio horizontal crítico en pantallas móviles y de TV.
+- **Pestaña `⭐ Favoritos` en el Menú Superior de Deportes**:
+  - Incorporada inmediatamente después de `🔁 Repeticiones` en el menú horizontal de categorías (`categoryList`).
+  - Filtra en tiempo real los canales de `📺 Regionales` y `🏆 Deportes` guardados como favoritos por el usuario (`source = "sports"` en SQLite).
+  - Estado vacío contextual con mensaje explicativo si no hay favoritos guardados.
+- **Aislamiento Absoluto de Partidos del Día vs Canales**:
+  - Las repeticiones de `destacado.json` se enrutan exclusivamente a `replayMatches` con categoría `Repeticiones`, impidiendo que contaminen `Partidos del Día`.
+  - Todos los partidos (en vivo, programados o repeticiones) tienen su interfaz limpia y original garantizada: hora, título, subtítulo, estado del partido (`● EN VIVO`, `● EN JUEGO`, `PROGRAMADO`, `FINALIZADO`) y cuenta regresiva. Cero botones de favoritos o etiquetas tipo web en partidos.
+- **Optimización y Diseño Responsivo para Celulares (Vertical y Horizontal)**:
+  - Implementado `setupMobileLayout()` y `onConfigurationChanged()` en `MainActivity.kt`.
+  - En formato vertical (portrait) en celulares:
+    - Cabecera compacta: el botón de actualización se muestra como icono para no desbordar ni empujar elementos fuera de pantalla.
+    - El botón de recarga se adapta como icono táctil `🔄`.
+    - Márgenes verticales reducidos entre cabecera, selector de modo y pestañas de categorías, liberando más de 120dp de altura útil para visualizar 4 o 5 tarjetas simultáneamente en vez de una sola tarjeta cortada.
+    - Soporte fluido para rotación de pantalla sin pérdidas de padding ni anchos desfasados.
+
 ## [1.9.6] - 2026-11-01
 ### Corregido y Restaurado (Restauración de Interfaz Limpia para Partidos y Exclusividad de Favoritos para Canales)
 - **Supresión Absoluta de Favoritos en Partidos Deportivos**:
