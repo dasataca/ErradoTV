@@ -59,6 +59,9 @@ class EventAdapter(
         private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
         private val tvSubtitle: TextView = itemView.findViewById(R.id.tvSubtitle)
         private val ivThumbnail: ImageView = itemView.findViewById(R.id.ivThumbnail)
+        private val llChannelActions: View? = itemView.findViewById(R.id.llChannelActions)
+        private val llMatchStatus: View? = itemView.findViewById(R.id.llMatchStatus)
+        private val tvChannelStreamBadge: TextView? = itemView.findViewById(R.id.tvChannelStreamBadge)
         private val tvStreamBadge: TextView = itemView.findViewById(R.id.tvStreamBadge)
         private val tvCountdown: TextView = itemView.findViewById(R.id.tvCountdown)
         private val btnCardFavorite: TextView? = itemView.findViewById(R.id.btnCardFavorite)
@@ -82,10 +85,14 @@ class EventAdapter(
             }
 
             itemView.setOnLongClickListener {
-                boundItem?.let {
-                    onItemLongClick?.invoke(it)
-                    true
-                } ?: false
+                if (llChannelActions?.visibility == View.VISIBLE) {
+                    boundItem?.let {
+                        onItemLongClick?.invoke(it)
+                        true
+                    } ?: false
+                } else {
+                    false
+                }
             }
 
             btnCardFavorite?.setOnClickListener {
@@ -107,9 +114,11 @@ class EventAdapter(
                             return@setOnKeyListener onLeftPressed.invoke()
                         }
                     } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT) {
-                        btnCardFavorite?.let {
-                            it.requestFocus()
-                            return@setOnKeyListener true
+                        if (llChannelActions?.visibility == View.VISIBLE) {
+                            btnCardFavorite?.let {
+                                it.requestFocus()
+                                return@setOnKeyListener true
+                            }
                         }
                     } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && boundPosition == 0) {
                         if (onUpPressed != null) {
@@ -120,9 +129,11 @@ class EventAdapter(
                             return@setOnKeyListener onDownAtEnd.invoke()
                         }
                     } else if (keyCode == android.view.KeyEvent.KEYCODE_PROG_YELLOW || keyCode == android.view.KeyEvent.KEYCODE_BUTTON_Y) {
-                        boundItem?.let {
-                            onItemLongClick?.invoke(it)
-                            return@setOnKeyListener true
+                        if (llChannelActions?.visibility == View.VISIBLE) {
+                            boundItem?.let {
+                                onItemLongClick?.invoke(it)
+                                return@setOnKeyListener true
+                            }
                         }
                     }
                 }
@@ -164,31 +175,6 @@ class EventAdapter(
             tvTitle.text = item.title
             tvSubtitle.text = item.subtitle
 
-            val isFav = isFavorite?.invoke(item) == true
-            btnCardFavorite?.text = if (isFav) "⭐ Fav" else "☆ Fav"
-            btnCardFavorite?.setTextColor(if (isFav) Color.parseColor("#FFD700") else Color.parseColor("#94A3B8"))
-
-            val displayTime = item.localTime ?: item.time
-            if (displayTime != null) {
-                tvTime.visibility = View.VISIBLE
-                tvTime.text = displayTime
-            } else {
-                tvTime.visibility = View.GONE
-            }
-
-            val hasTimeInfo = displayTime != null
-            if (hasTimeInfo && !item.countdownText.isNullOrEmpty() &&
-                item.countdownText != item.status.label &&
-                item.countdownText != "PROGRAMADO" &&
-                item.status != EventStatus.CHANNEL_24_7 &&
-                item.status != EventStatus.REPLAY &&
-                item.status != EventStatus.REPLAY_UNAVAILABLE) {
-                tvCountdown.visibility = View.VISIBLE
-                tvCountdown.text = item.countdownText
-            } else {
-                tvCountdown.visibility = View.GONE
-            }
-
             if (!item.imageUrl.isNullOrEmpty()) {
                 ivThumbnail.visibility = View.VISIBLE
                 Glide.with(itemView.context)
@@ -201,56 +187,99 @@ class EventAdapter(
                 ivThumbnail.visibility = View.GONE
             }
 
-            val is247 = item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 || item.category != "Partidos"
-            val effectiveStatus = if (is247 && item.status == EventStatus.REPLAY_UNAVAILABLE) {
-                if (item.originalStatus != EventStatus.REPLAY_UNAVAILABLE) item.originalStatus else EventStatus.CHANNEL_24_7
+            val isMatch = (item.category == "Partidos" || item.category == "Repeticiones" ||
+                           item.status == EventStatus.LIVE || item.status == EventStatus.STARTING_SOON ||
+                           item.status == EventStatus.SCHEDULED || item.status == EventStatus.FINISHED ||
+                           item.time != null) && item.status != EventStatus.CHANNEL_24_7
+
+            if (isMatch) {
+                // Bloque de Partidos: Interfaz original sin favoritos ni botones Play
+                llChannelActions?.visibility = View.GONE
+                llMatchStatus?.visibility = View.VISIBLE
+
+                val displayTime = item.localTime ?: item.time
+                if (displayTime != null) {
+                    tvTime.visibility = View.VISIBLE
+                    tvTime.text = displayTime
+                } else {
+                    tvTime.visibility = View.GONE
+                }
+
+                if (!item.countdownText.isNullOrEmpty() &&
+                    item.countdownText != item.status.label &&
+                    item.countdownText != "PROGRAMADO" &&
+                    item.status != EventStatus.FINISHED &&
+                    item.status != EventStatus.REPLAY_UNAVAILABLE) {
+                    tvCountdown.visibility = View.VISIBLE
+                    tvCountdown.text = item.countdownText
+                } else {
+                    tvCountdown.visibility = View.GONE
+                }
+
+                val effectiveStatus = if (item.status == EventStatus.REPLAY_UNAVAILABLE && item.originalStatus != EventStatus.REPLAY_UNAVAILABLE) {
+                    item.originalStatus
+                } else {
+                    item.status
+                }
+
+                tvStreamBadge.text = effectiveStatus.label
+                val badgeDrawable = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = 8f
+                    setColor(Color.parseColor(effectiveStatus.colorHex))
+                }
+                tvStreamBadge.background = badgeDrawable
+
+                val isUnavailable = item.status == EventStatus.REPLAY_UNAVAILABLE || effectiveStatus == EventStatus.REPLAY_UNAVAILABLE
+                itemView.alpha = if (isUnavailable || effectiveStatus == EventStatus.FINISHED) 0.5f else 1.0f
             } else {
-                item.status
-            }
+                // Bloque de Canales (TV Mundial, Regionales, Deportes 24/7): Distintivo compacto, Fav y Play
+                llMatchStatus?.visibility = View.GONE
+                llChannelActions?.visibility = View.VISIBLE
+                tvTime.visibility = View.GONE
+                tvCountdown.visibility = View.GONE
 
-            // Distintivos explícitos para canales y eventos
-            val isChannel = item.country != null || item.status == EventStatus.CHANNEL_24_7 || item.category != "Partidos"
-            val badgeText: String
-            val badgeColor: String
+                val isFav = isFavorite?.invoke(item) == true
+                btnCardFavorite?.text = if (isFav) "⭐ Fav" else "☆ Fav"
+                btnCardFavorite?.setTextColor(if (isFav) Color.parseColor("#FFD700") else Color.parseColor("#94A3B8"))
 
-            if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
-                badgeText = "⚪ NO DISP."
-                badgeColor = "#6B7280"
-            } else if (isChannel) {
-                when (item.streamType.lowercase()) {
-                    "exo" -> {
-                        badgeText = "⚡ HLS"
-                        badgeColor = "#059669"
-                    }
-                    "youtube" -> {
-                        badgeText = "🔴 YouTube"
-                        badgeColor = "#DC2626"
-                    }
-                    "web" -> {
-                        badgeText = "🔵 Web"
-                        badgeColor = "#2563EB"
-                    }
-                    else -> {
-                        badgeText = "🌐 Web"
-                        badgeColor = "#7C3AED"
+                val badgeText: String
+                val badgeColor: String
+                if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
+                    badgeText = "⚪ NO DISP."
+                    badgeColor = "#6B7280"
+                } else {
+                    when (item.streamType.lowercase()) {
+                        "exo" -> {
+                            badgeText = "⚡ HLS"
+                            badgeColor = "#059669"
+                        }
+                        "youtube" -> {
+                            badgeText = "🔴 YouTube"
+                            badgeColor = "#DC2626"
+                        }
+                        "web" -> {
+                            badgeText = "🔵 Web"
+                            badgeColor = "#2563EB"
+                        }
+                        else -> {
+                            badgeText = "🌐 Web"
+                            badgeColor = "#7C3AED"
+                        }
                     }
                 }
-            } else {
-                badgeText = effectiveStatus.label
-                badgeColor = effectiveStatus.colorHex
-            }
 
-            tvStreamBadge.text = badgeText
-            val badgeDrawable = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 10f
-                setColor(Color.parseColor(badgeColor))
-            }
-            tvStreamBadge.background = badgeDrawable
+                tvChannelStreamBadge?.text = badgeText
+                val channelBadgeDrawable = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = 8f
+                    setColor(Color.parseColor(badgeColor))
+                }
+                tvChannelStreamBadge?.background = channelBadgeDrawable
 
-            // Si el canal/partido no está disponible o finalizó, atenuar visualmente
-            val isUnavailable = item.status == EventStatus.REPLAY_UNAVAILABLE || effectiveStatus == EventStatus.REPLAY_UNAVAILABLE
-            itemView.alpha = if (isUnavailable || (!is247 && effectiveStatus == EventStatus.FINISHED)) 0.5f else 1.0f
+                val isUnavailable = item.status == EventStatus.REPLAY_UNAVAILABLE
+                itemView.alpha = if (isUnavailable) 0.5f else 1.0f
+            }
 
             itemView.setOnClickListener {
                 onItemClick(item)

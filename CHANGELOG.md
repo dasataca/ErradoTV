@@ -2,6 +2,17 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.6] - 2026-11-01
+### Corregido y Restaurado (Restauración de Interfaz Limpia para Partidos y Exclusividad de Favoritos para Canales)
+- **Supresión Absoluta de Favoritos en Partidos Deportivos**:
+  - Garantizado que ningún partido de fútbol o evento deportivo (partidos del día, repeticiones) muestre botones de Favoritos ni estrella (`⭐`).
+  - La funcionalidad de Favoritos queda estrictamente reservada para canales de Televisión Mundial y señales 24/7 (como `📺 Regionales` y `🏆 Deportes`).
+- **Restauración de la Interfaz Original para Bloque de Partidos**:
+  - Los partidos recuperan su diseño limpio y espacioso: hora del encuentro (`tvTime`), título del partido sin compresión (`tvTitle`), subtítulo (`tvSubtitle`), distintivo de estado (`🔴 EN VIVO`, `POR EMPEZAR`, `PROGRAMADO`, `FINALIZADO`) y cuenta regresiva (`tvCountdown`).
+  - Sin botones intrusivos de Play ni Favorito en los eventos de partidos (la tarjeta se selecciona directamente para reproducir o ver opciones).
+- **Consistencia en Canales de TV**:
+  - Las señales de televisión continua (en TV Mundial, Regionales y canales deportivos 24/7) mantienen sus botones dedicados de Favorito (`btnCardFavorite`) y Play (`btnCardPlay`) con distintivos de señal ultracompactos (`⚡ HLS`, `🔴 YouTube`, `🔵 Web`).
+
 ## [1.9.5] - 2026-11-01
 ### Añadido y Optimizado (Rediseño Móvil Responsivo, Botones Favorito/Play por Fila, Splash Instantáneo y Supresión de "Todos")
 - **Splash Screen Nativo Instantáneo (0.00s) — Eliminación de Pantalla Negra al Iniciar**:

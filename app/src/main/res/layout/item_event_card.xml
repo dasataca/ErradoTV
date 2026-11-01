@@ -8,14 +8,14 @@
     android:clickable="true"
     android:focusableInTouchMode="true"
     android:background="@drawable/card_selector"
-    android:padding="10dp"
-    android:layout_marginBottom="8dp"
+    android:padding="12dp"
+    android:layout_marginBottom="10dp"
     android:gravity="center_vertical">
 
     <ImageView
         android:id="@+id/ivThumbnail"
-        android:layout_width="70dp"
-        android:layout_height="44dp"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
         android:scaleType="centerCrop"
         android:background="#222634"
         android:visibility="gone"
@@ -26,28 +26,14 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp">
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp">
 
-        <!-- Fila 1: Título completo del evento / canal sin restricciones de espacio -->
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Real Madrid vs Villarreal"
-            android:textColor="@color/text_primary"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:maxLines="2"
-            android:ellipsize="end" />
-
-        <!-- Fila 2: Hora + Cuenta regresiva + Subtítulo / País / Categoría -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="3dp">
+            android:gravity="center_vertical">
 
             <TextView
                 android:id="@+id/tvTime"
@@ -55,54 +41,50 @@
                 android:layout_height="wrap_content"
                 android:text="18:00"
                 android:textColor="@color/accent"
-                android:textSize="12sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
                 android:background="#2000E5FF"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
-                android:paddingTop="1dp"
-                android:paddingBottom="1dp"
-                android:layout_marginEnd="6dp"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:layout_marginEnd="8dp"
                 android:visibility="gone" />
 
             <TextView
-                android:id="@+id/tvCountdown"
-                android:layout_width="wrap_content"
+                android:id="@+id/tvTitle"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="⏳ En 2h 15m"
-                android:textSize="11sp"
+                android:layout_weight="1"
+                android:text="Real Madrid vs Villarreal"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@color/accent"
-                android:background="#2000E5FF"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
-                android:paddingTop="1dp"
-                android:paddingBottom="1dp"
-                android:layout_marginEnd="6dp"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvSubtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Transmisión en Vivo"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp"
-                android:maxLines="1"
+                android:maxLines="2"
                 android:ellipsize="end" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Transmisión en Vivo"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:layout_marginTop="4dp" />
     </LinearLayout>
 
-    <!-- Fila lateral derecha: Distintivo de Stream Compacto + Botón Favorito + Botón Play -->
+    <!-- Contenedor Derecho para Canales (Insignia Compacta + Botón Favorito + Botón Play) -->
     <LinearLayout
+        android:id="@+id/llChannelActions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:visibility="gone">
 
-        <!-- Insignia distintiva compacta del motor de reproducción -->
         <TextView
-            android:id="@+id/tvStreamBadge"
+            android:id="@+id/tvChannelStreamBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="⚡ HLS"
@@ -116,7 +98,6 @@
             android:paddingBottom="2dp"
             android:layout_marginEnd="6dp" />
 
-        <!-- Botón interactivo para añadir/quitar Favorito -->
         <TextView
             android:id="@+id/btnCardFavorite"
             android:layout_width="wrap_content"
@@ -135,7 +116,6 @@
             android:background="@drawable/card_btn_fav_selector"
             android:layout_marginEnd="6dp" />
 
-        <!-- Botón interactivo para reproducir señal -->
         <TextView
             android:id="@+id/btnCardPlay"
             android:layout_width="wrap_content"
@@ -152,6 +132,45 @@
             android:clickable="true"
             android:focusableInTouchMode="true"
             android:background="@drawable/card_btn_play_selector" />
+    </LinearLayout>
+
+    <!-- Contenedor Derecho para Partidos de Deportes (Anterior Interfaz Limpia: Badge + Countdown) -->
+    <LinearLayout
+        android:id="@+id/llMatchStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="end">
+
+        <TextView
+            android:id="@+id/tvStreamBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="EN VIVO"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@color/live_red"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp" />
+
+        <TextView
+            android:id="@+id/tvCountdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⏳ En 2h 15m"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/accent"
+            android:background="#2000E5FF"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
     </LinearLayout>
 
 </LinearLayout>
