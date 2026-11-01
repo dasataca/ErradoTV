@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "196c0386b781de4deff3968c5839dd1a0f9fab4a62d756db9d75b7d9395e10272837c3e170328a06086bb3a5d2105ad1780b7dc2eefff8de5fda5bb7ef2847912a3ff37b5a0b25a83f386094bc77eb2f",
-  "latest_version_code": 65,
-  "latest_version_name": "1.9.0",
-  "release_timestamp": 1793533859252,
+  "active_key_enc": "d8e43cff22af1227a67ff8fd3eab881575a130ca564d65d9a5a86bb1b49bf3ef105216896ffd0458113acfd624bb98c5880a19a9ddb0fac54abe250067de0110eaec24d517c77297508232f68bdd351b",
+  "latest_version_code": 66,
+  "latest_version_name": "1.9.1",
+  "release_timestamp": 1793534154492,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Fase B Navegacion adaptativa y Full-Width para celulares sin afectar Android TV"
+  "changelog": "GarecaTV: Fase C Gestos tactiles brillo, volumen, double-tap y pinch-to-zoom en reproductor"
 }

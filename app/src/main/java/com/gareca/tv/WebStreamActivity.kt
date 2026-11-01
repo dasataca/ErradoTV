@@ -52,6 +52,14 @@ class WebStreamActivity : AppCompatActivity() {
             finish()
         }
 
+        val btnFloatingBack = findViewById<View>(R.id.btnWebFloatingBack)
+        if (com.gareca.tv.util.DeviceUtils.isMobile(this) && btnFloatingBack != null) {
+            btnFloatingBack.visibility = View.VISIBLE
+            btnFloatingBack.setOnClickListener {
+                finish()
+            }
+        }
+
         val url = intent.getStringExtra("EXTRA_URL") ?: ""
         if (url.isEmpty()) {
             finish()

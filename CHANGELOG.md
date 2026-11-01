@@ -2,6 +2,23 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.1] - 2026-11-01
+### Añadido y Optimizado (Fase C: Gestos Táctiles y Controles Móviles en Reproductor)
+- **Gestos Táctiles Modernos en Reproductor ExoPlayer (`PlayerActivity.kt`)**:
+  - Activación automática de listeners táctiles (`GestureDetector` y `ScaleGestureDetector`) exclusivamente en dispositivos móviles con pantalla táctil.
+  - **Control de Brillo por Deslizamiento**: Swipe vertical en la mitad izquierda de la pantalla ajusta dinámicamente el brillo con retroalimentación visual inmediata en el HUD (`☀️ Brillo: X%`).
+  - **Control de Volumen por Deslizamiento**: Swipe vertical en la mitad derecha de la pantalla ajusta el volumen multimedia (`STREAM_MUSIC`) con indicador visual (`🔊 Volumen: X%`).
+  - **Doble Toque (Double Tap Seeking)**:
+    - Doble tap a la izquierda: Rebobina 10 segundos (`⏪ -10s`).
+    - Doble tap a la derecha: Adelanta 10 segundos (`⏩ +10s`).
+    - Doble tap al centro: Alterna Play / Pausa (`⏸ Pausa` / `▶ Reproduciendo`).
+  - **Pellizcar para Zoom (Pinch-to-Zoom)**: Gesto de pellizco en pantalla conmuta cíclicamente la relación de aspecto (`Ajuste Original`, `Rellenar 16:9`, `Zoom Completo`).
+  - **Toque Simple**: Despliega o desvanece suavemente los controles y el banner superior.
+- **Botones de Retroceso Táctil (`btnPlayerBack` y `btnWebFloatingBack`)**:
+  - Botón táctil visible en el banner superior de `PlayerActivity` y botón flotante en `WebStreamActivity` para salir del reproductor con un solo toque en celular sin necesidad de botones físicos de navegación.
+- **Preservación Total en Android TV**:
+  - Toda la navegación por control remoto D-Pad, zapping continuo con `◀ ▶`, teclas de zoom (`MENU`, `ZOOM`, `BLUE`) y controles Leanback se mantienen 100% intactos en televisores.
+
 ## [1.9.0] - 2026-11-01
 ### Añadido y Optimizado (Fase B: Navegación Adaptativa y Full-Width en Celulares)
 - **Desacoplamiento de Columnas Laterales en Celulares**:

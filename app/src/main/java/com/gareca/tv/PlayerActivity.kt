@@ -1,16 +1,23 @@
 package com.gareca.tv
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.GestureDetector
 import android.view.KeyEvent
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.gareca.tv.util.DeviceUtils
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -118,6 +125,12 @@ class PlayerActivity : AppCompatActivity() {
         btnZoomMode.setOnClickListener {
             cycleZoomMode()
         }
+
+        findViewById<View>(R.id.btnPlayerBack)?.setOnClickListener {
+            finish()
+        }
+
+        setupMobileTouchGestures()
 
         val streamUrl = intent.getStringExtra("EXTRA_URL") ?: ""
         val streamTitle = intent.getStringExtra("EXTRA_TITLE") ?: ""
@@ -597,7 +610,19 @@ class PlayerActivity : AppCompatActivity() {
         btnZoomMode.text = "🔍 Zoom: ${currentZoomMode.shortLabel}"
 
         // Mostrar HUD informativo en pantalla
-        tvZoomHud.text = "🔍 Pantalla: ${currentZoomMode.label}"
+        showHudMessage("🔍 Pantalla: ${currentZoomMode.label}")
+
+        SupabaseLogger.info(
+            "player_zoom_change",
+            "Relación de aspecto / Zoom cambiada a ${currentZoomMode.label}",
+            mapOf("url" to currentStreamUrl, "mode" to currentZoomMode.name)
+        )
+
+        showChannelBanner()
+    }
+
+    private fun showHudMessage(message: String) {
+        tvZoomHud.text = message
         tvZoomHud.animate().cancel()
         tvZoomHud.alpha = 1f
         tvZoomHud.visibility = View.VISIBLE
@@ -611,15 +636,115 @@ class PlayerActivity : AppCompatActivity() {
                 .start()
         }
         hideZoomHudRunnable = r
-        handler.postDelayed(r, 2500)
+        handler.postDelayed(r, 1800)
+    }
 
-        SupabaseLogger.info(
-            "player_zoom_change",
-            "Relación de aspecto / Zoom cambiada a ${currentZoomMode.label}",
-            mapOf("url" to currentStreamUrl, "mode" to currentZoomMode.name)
-        )
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupMobileTouchGestures() {
+        if (!DeviceUtils.isMobile(this)) return
 
-        showChannelBanner()
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+
+        val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                if (llChannelBanner.visibility == View.VISIBLE) {
+                    llChannelBanner.visibility = View.GONE
+                    playerView.hideController()
+                } else {
+                    showChannelBanner()
+                    showControlsTemporarily()
+                    if (currentResolutionText.isNotEmpty()) {
+                        showResolutionBadge(currentResolutionText)
+                    }
+                }
+                return true
+            }
+
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                val screenWidth = resources.displayMetrics.widthPixels
+                val x = e.x
+                val p = player ?: return false
+
+                if (x < screenWidth * 0.35f) {
+                    val target = maxOf(0L, p.currentPosition - 10000L)
+                    p.seekTo(target)
+                    showHudMessage("⏪ -10s")
+                    return true
+                } else if (x > screenWidth * 0.65f) {
+                    val target = minOf(p.duration, p.currentPosition + 10000L)
+                    p.seekTo(target)
+                    showHudMessage("⏩ +10s")
+                    return true
+                } else {
+                    if (p.isPlaying) {
+                        p.pause()
+                        showHudMessage("⏸ Pausa")
+                    } else {
+                        p.play()
+                        showHudMessage("▶ Reproduciendo")
+                    }
+                    return true
+                }
+            }
+
+            override fun onScroll(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                distanceX: Float,
+                distanceY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val screenWidth = resources.displayMetrics.widthPixels
+                val screenHeight = resources.displayMetrics.heightPixels
+
+                if (Math.abs(distanceY) > Math.abs(distanceX)) {
+                    val deltaPercent = distanceY / screenHeight.toFloat()
+                    if (e1.x < screenWidth / 2f) {
+                        val lp = window.attributes
+                        val currentBrightness = if (lp.screenBrightness < 0) 0.5f else lp.screenBrightness
+                        val newBrightness = (currentBrightness + deltaPercent * 1.5f).coerceIn(0.01f, 1.0f)
+                        lp.screenBrightness = newBrightness
+                        window.attributes = lp
+                        val percent = (newBrightness * 100).toInt()
+                        showHudMessage("☀️ Brillo: $percent%")
+                        return true
+                    } else {
+                        val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                        val deltaVol = (deltaPercent * maxVolume * 1.5f).toInt()
+                        val newVol = (currentVol + deltaVol).coerceIn(0, maxVolume)
+                        if (newVol != currentVol) {
+                            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVol, 0)
+                        }
+                        val percent = (newVol * 100) / maxVolume
+                        showHudMessage("🔊 Volumen: $percent%")
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+
+        val scaleDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            private var lastScaleTime = 0L
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                val now = System.currentTimeMillis()
+                if (now - lastScaleTime > 1200L) {
+                    if (detector.scaleFactor > 1.15f && videoFrameReceived) {
+                        lastScaleTime = now
+                        cycleZoomMode()
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+
+        playerView.setOnTouchListener { _, event ->
+            scaleDetector.onTouchEvent(event)
+            gestureDetector.onTouchEvent(event)
+            true
+        }
     }
 
     private fun showControlsTemporarily() {

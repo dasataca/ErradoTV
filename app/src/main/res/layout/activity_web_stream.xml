@@ -57,4 +57,19 @@
             android:textColor="@color/text_primary" />
     </LinearLayout>
 
+    <ImageView
+        android:id="@+id/btnWebFloatingBack"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_margin="16dp"
+        android:layout_gravity="top|start"
+        android:padding="10dp"
+        android:src="@drawable/ic_close"
+        android:background="@drawable/button_focus_selector"
+        android:focusable="true"
+        android:clickable="true"
+        android:focusableInTouchMode="true"
+        android:contentDescription="Cerrar reproductor"
+        android:visibility="gone" />
+
 </FrameLayout>
