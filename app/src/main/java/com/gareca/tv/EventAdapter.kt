@@ -16,7 +16,10 @@ class EventAdapter(
     private val onItemClick: (EventItem) -> Unit,
     private val onLeftPressed: (() -> Boolean)? = null,
     private val onItemFocus: ((position: Int, total: Int) -> Unit)? = null,
-    private val onUpPressed: (() -> Boolean)? = null
+    private val onUpPressed: (() -> Boolean)? = null,
+    private val onDownAtEnd: (() -> Boolean)? = null,
+    private val isFavorite: ((EventItem) -> Boolean)? = null,
+    private val onItemLongClick: ((EventItem) -> Unit)? = null
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
     private val items = mutableListOf<EventItem>()
@@ -32,7 +35,7 @@ class EventAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_event_card, parent, false)
-        return EventViewHolder(view, onItemClick, onLeftPressed, onItemFocus, onUpPressed)
+        return EventViewHolder(view, onItemClick, onLeftPressed, onItemFocus, onUpPressed, onDownAtEnd, isFavorite, onItemLongClick)
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
@@ -46,10 +49,14 @@ class EventAdapter(
         private val onItemClick: (EventItem) -> Unit,
         private val onLeftPressed: (() -> Boolean)? = null,
         private val onItemFocus: ((position: Int, total: Int) -> Unit)? = null,
-        private val onUpPressed: (() -> Boolean)? = null
+        private val onUpPressed: (() -> Boolean)? = null,
+        private val onDownAtEnd: (() -> Boolean)? = null,
+        private val isFavorite: ((EventItem) -> Boolean)? = null,
+        private val onItemLongClick: ((EventItem) -> Unit)? = null
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
+        private val tvFavoriteBadge: TextView? = itemView.findViewById(R.id.tvFavoriteBadge)
         private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
         private val tvSubtitle: TextView = itemView.findViewById(R.id.tvSubtitle)
         private val ivThumbnail: ImageView = itemView.findViewById(R.id.ivThumbnail)
@@ -58,6 +65,7 @@ class EventAdapter(
 
         private var boundPosition: Int = -1
         private var boundTotal: Int = -1
+        private var boundItem: EventItem? = null
 
         init {
             // TV focus animation
@@ -72,6 +80,13 @@ class EventAdapter(
                 }
             }
 
+            itemView.setOnLongClickListener {
+                boundItem?.let {
+                    onItemLongClick?.invoke(it)
+                    true
+                } ?: false
+            }
+
             itemView.setOnKeyListener { _, keyCode, event ->
                 if (event.action == android.view.KeyEvent.ACTION_DOWN) {
                     if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
@@ -82,6 +97,15 @@ class EventAdapter(
                         if (onUpPressed != null) {
                             return@setOnKeyListener onUpPressed.invoke()
                         }
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN && boundPosition == boundTotal - 1 && boundTotal > 1) {
+                        if (onDownAtEnd != null) {
+                            return@setOnKeyListener onDownAtEnd.invoke()
+                        }
+                    } else if (keyCode == android.view.KeyEvent.KEYCODE_PROG_YELLOW || keyCode == android.view.KeyEvent.KEYCODE_BUTTON_Y) {
+                        boundItem?.let {
+                            onItemLongClick?.invoke(it)
+                            return@setOnKeyListener true
+                        }
                     }
                 }
                 false
@@ -89,10 +113,14 @@ class EventAdapter(
         }
 
         fun bind(item: EventItem, position: Int, total: Int) {
+            boundItem = item
             boundPosition = position
             boundTotal = total
             tvTitle.text = item.title
             tvSubtitle.text = item.subtitle
+
+            val isFav = isFavorite?.invoke(item) == true
+            tvFavoriteBadge?.visibility = if (isFav) View.VISIBLE else View.GONE
 
             val displayTime = item.localTime ?: item.time
             if (displayTime != null) {

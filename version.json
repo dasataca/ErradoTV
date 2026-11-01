@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "809d31fbed26cd4738c0082d98359d837ec6137d9603e4415c16a33ee7c3202098daadf53aadc65b75cacf3cd7c75c943d366d059c9622e70631fb9707d2662ffe3ea6850b5666240ef70b505223fae7",
-  "latest_version_code": 68,
-  "latest_version_name": "1.9.3",
-  "release_timestamp": 1793537996200,
+  "active_key_enc": "25e005fbd6e134793089a546ac72f32f22fa6453b6b12a565a8c224a2d7ecabb543a0009484e41f3c6338ffca09774f3f74253344fbb399527f5298eea50b39b363dddd2c002d62699cbb68ddb2851ed",
+  "latest_version_code": 69,
+  "latest_version_name": "1.9.4",
+  "release_timestamp": 1793539060255,
   "release_date": "2026-11-01",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Retencion absoluta de foco D-Pad en pestanas superiores evitando fuga al boton Actualizado"
+  "changelog": "GarecaTV: Categoria Favoritos en TV Mundial, soporte agregar/remover con Long-Press, navegacion circular y resolutor dinamico YouTube Live"
 }

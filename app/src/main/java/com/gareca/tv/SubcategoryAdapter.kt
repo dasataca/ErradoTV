@@ -95,9 +95,6 @@ class SubcategoryAdapter(
                 val rv = itemView.parent as? RecyclerView
                 setSelected(item.title, rv)
                 onSubcategoryClick(item.title)
-                itemView.post {
-                    itemView.requestFocus()
-                }
             }
 
             itemView.setOnKeyListener { _, keyCode, event ->

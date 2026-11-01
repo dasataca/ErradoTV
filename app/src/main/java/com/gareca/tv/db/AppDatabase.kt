@@ -123,12 +123,35 @@ class AppDatabase private constructor(context: Context) : SQLiteOpenHelper(
                 updated_at INTEGER
             );
         """.trimIndent())
+
+        // 5. Tabla de Canales Favoritos
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS favorites (
+                channel_key TEXT PRIMARY KEY,
+                source TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            );
+        """.trimIndent())
+    }
+
+    override fun onOpen(db: SQLiteDatabase) {
+        super.onOpen(db)
+        try {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS favorites (
+                    channel_key TEXT PRIMARY KEY,
+                    source TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                );
+            """.trimIndent())
+        } catch (_: Exception) {}
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS channels_fts;")
         db.execSQL("DROP TABLE IF EXISTS channels;")
         db.execSQL("DROP TABLE IF EXISTS stream_metadata;")
+        db.execSQL("DROP TABLE IF EXISTS favorites;")
         onCreate(db)
     }
 
@@ -548,5 +571,54 @@ class AppDatabase private constructor(context: Context) : SQLiteOpenHelper(
             country = cursor.getString(cursor.getColumnIndexOrThrow("country")),
             streamType = cursor.getString(cursor.getColumnIndexOrThrow("stream_type"))
         )
+    }
+
+    // ==========================================
+    // CANALES FAVORITOS
+    // ==========================================
+
+    fun isFavorite(channelKey: String): Boolean {
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT 1 FROM favorites WHERE channel_key = ? LIMIT 1;", arrayOf(channelKey.trim().lowercase()))
+        val exists = cursor.moveToFirst()
+        cursor.close()
+        return exists
+    }
+
+    fun addFavorite(channelKey: String, source: String = "cxtv") {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            put("channel_key", channelKey.trim().lowercase())
+            put("source", source)
+            put("created_at", System.currentTimeMillis())
+        }
+        db.insertWithOnConflict("favorites", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    fun removeFavorite(channelKey: String) {
+        val db = writableDatabase
+        db.delete("favorites", "channel_key = ?", arrayOf(channelKey.trim().lowercase()))
+    }
+
+    fun toggleFavorite(channelKey: String, source: String = "cxtv"): Boolean {
+        val key = channelKey.trim().lowercase()
+        return if (isFavorite(key)) {
+            removeFavorite(key)
+            false
+        } else {
+            addFavorite(key, source)
+            true
+        }
+    }
+
+    fun getAllFavorites(source: String = "cxtv"): Set<String> {
+        val result = mutableSetOf<String>()
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT channel_key FROM favorites WHERE source = ?;", arrayOf(source))
+        while (cursor.moveToNext()) {
+            result.add(cursor.getString(0))
+        }
+        cursor.close()
+        return result
     }
 }

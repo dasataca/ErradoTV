@@ -362,8 +362,8 @@ class MainActivity : AppCompatActivity() {
                 if (::rvSuggestions.isInitialized) {
                     rvSuggestions.visibility = View.GONE
                 }
-                filterAndDisplayEvents(silent = true)
-                focusSelectedSportsCategory()
+                filterAndDisplayEvents(silent = false)
+                focusFirstEventItem()
             },
             onDownPressed = { category ->
                 if ((category == "🔍 Buscar Todo" || category == "🔍 Buscar TV") && globalSearchContainer.visibility == View.VISIBLE) {
@@ -469,8 +469,8 @@ class MainActivity : AppCompatActivity() {
             selectedSubcategory = currentSubcategory,
             onSubcategoryClick = { subcat ->
                 currentSubcategory = subcat
-                filterAndDisplayEvents(silent = true)
-                focusSelectedSubcategory()
+                filterAndDisplayEvents(silent = false)
+                focusFirstEventItem()
             },
             onDownPressed = {
                 focusFirstEventItem()
@@ -543,6 +543,20 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     false
                 }
+            },
+            onDownAtEnd = {
+                focusFirstEventItem()
+                true
+            },
+            isFavorite = { item ->
+                try {
+                    AppDatabase.getInstance(this).isFavorite(item.title.trim().lowercase())
+                } catch (_: Exception) {
+                    false
+                }
+            },
+            onItemLongClick = { item ->
+                handleToggleFavorite(item)
             }
         )
 
@@ -1320,7 +1334,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             rvCategories.visibility = View.GONE
             val navItems = buildCategoryNavItems()
-            currentCategory = if (navItems.isNotEmpty()) navItems[0].title else "⭐ Todos los Canales"
+            currentCategory = "⭐ Todos los Canales"
             sidebarCategoryAdapter.setItems(navItems, currentCategory)
 
             if (isTv) {
@@ -1440,7 +1454,15 @@ class MainActivity : AppCompatActivity() {
         cxtvCountryMap.clear()
         cxtvCountryMap.putAll(countMap)
 
+        val favKeys = try {
+            AppDatabase.getInstance(this).getAllFavorites("cxtv")
+        } catch (_: Exception) {
+            emptySet()
+        }
+        val favCount = sortedAll.count { favKeys.contains(it.title.trim().lowercase()) }
+
         val catNavs = mutableListOf<NavItem>()
+        catNavs.add(NavItem("⭐ Favoritos", favCount))
         catNavs.add(NavItem("⭐ Todos los Canales", sortedAll.size))
         for (cat in dynamicCxtvCategories.sortedWith(String.CASE_INSENSITIVE_ORDER)) {
             val label = getCategoryTabLabel(cat)
@@ -1461,7 +1483,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildCategoryNavItems(): List<NavItem> {
-        if (cachedCategoryNavItems.isEmpty()) indexCxtvCatalog()
+        if (cachedCategoryNavItems.isEmpty()) {
+            indexCxtvCatalog()
+        } else {
+            val favKeys = try {
+                AppDatabase.getInstance(this).getAllFavorites("cxtv")
+            } catch (_: Exception) {
+                emptySet()
+            }
+            val favCount = preSortedAllChannels.count { favKeys.contains(it.title.trim().lowercase()) }
+            if (cachedCategoryNavItems.isNotEmpty() && cachedCategoryNavItems[0].title == "⭐ Favoritos") {
+                val updated = cachedCategoryNavItems.toMutableList()
+                updated[0] = NavItem("⭐ Favoritos", favCount)
+                cachedCategoryNavItems = updated
+            }
+        }
         return cachedCategoryNavItems
     }
 
@@ -2212,6 +2248,15 @@ class MainActivity : AppCompatActivity() {
                     )
                     GlobalSortMode.DEFAULT -> sortCxtvChannelList(searchList)
                 }
+            } else if (currentCategory == "⭐ Favoritos") {
+                if (isTv) rvSidebarCountries.visibility = View.GONE
+                val favKeys = try {
+                    AppDatabase.getInstance(this).getAllFavorites("cxtv")
+                } catch (_: Exception) {
+                    emptySet()
+                }
+                val favChannels = preSortedAllChannels.filter { favKeys.contains(it.title.trim().lowercase()) }
+                applySubcategories(favChannels, isCountryMode = false)
             } else if (currentCategory == "🌍 Países") {
                 if (isTv) rvSidebarCountries.visibility = View.VISIBLE
                 val countryChannels = cxtvCountryMap[selectedCountry] ?: emptyList()
@@ -2230,6 +2275,8 @@ class MainActivity : AppCompatActivity() {
                 tvEmpty.visibility = View.VISIBLE
                 tvEmpty.text = if (hasSearch) {
                     "No se encontraron canales para \"$globalSearchQuery\"."
+                } else if (currentCategory == "⭐ Favoritos") {
+                    "No tienes canales en Favoritos.\n\nMantén presionado OK sobre cualquier canal para añadirlo o removerlo de Favoritos."
                 } else {
                     "No hay señales disponibles para esta sección."
                 }
@@ -2448,6 +2495,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
         ChannelNavigationManager.clear()
+    }
+
+    private fun handleToggleFavorite(item: EventItem) {
+        val channelKey = item.title.trim().lowercase()
+        val isFav = try {
+            AppDatabase.getInstance(this).toggleFavorite(channelKey, source = "cxtv")
+        } catch (_: Exception) {
+            false
+        }
+        val msg = if (isFav) "⭐ Agregado a Favoritos: ${item.title}" else "Removido de Favoritos: ${item.title}"
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+
+        if (cachedCategoryNavItems.isNotEmpty()) {
+            buildCategoryNavItems()
+            sidebarCategoryAdapter.setItems(cachedCategoryNavItems, currentCategory)
+        }
+
+        filterAndDisplayEvents(silent = true)
     }
 
     private fun handleEventClick(item: EventItem) {

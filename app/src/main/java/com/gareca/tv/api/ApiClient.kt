@@ -214,6 +214,8 @@ object ApiClient {
         list
     }
 
+    private val youtubeResolvedMap = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     suspend fun resolveStreamUrl(stream: StreamOption): StreamOption = withContext(Dispatchers.IO) {
         if (stream.type.equals("config", ignoreCase = true)) {
             try {
@@ -241,6 +243,48 @@ object ApiClient {
                 e.printStackTrace()
             }
         }
+
+        // Resolución dinámica de señales en vivo de YouTube que utilicen channel ID (live_stream?channel=...)
+        if (stream.url.contains("youtube.com") && stream.url.contains("channel=")) {
+            val cachedUrl = youtubeResolvedMap[stream.url]
+            if (cachedUrl != null) {
+                return@withContext StreamOption(
+                    title = stream.title,
+                    url = cachedUrl,
+                    type = "youtube",
+                    drmLicenseUrl = stream.drmLicenseUrl,
+                    userAgent = stream.userAgent
+                )
+            }
+            try {
+                val channelId = Regex("""channel=([a-zA-Z0-9_-]+)""").find(stream.url)?.groupValues?.get(1)
+                if (!channelId.isNullOrEmpty()) {
+                    val liveUrl = "https://www.youtube.com/channel/$channelId/live"
+                    val req = Request.Builder()
+                        .url(liveUrl)
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                        .build()
+                    val res = httpClient.newCall(req).execute()
+                    val html = res.body?.string().orEmpty()
+                    val match = Regex("""\"videoId\":\"([a-zA-Z0-9_-]{11})\"""").find(html)
+                    if (match != null) {
+                        val videoId = match.groupValues[1]
+                        val resolvedUrl = "https://www.youtube.com/embed/$videoId?autoplay=1"
+                        youtubeResolvedMap[stream.url] = resolvedUrl
+                        return@withContext StreamOption(
+                            title = stream.title,
+                            url = resolvedUrl,
+                            type = "youtube",
+                            drmLicenseUrl = stream.drmLicenseUrl,
+                            userAgent = stream.userAgent
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         stream
     }
 

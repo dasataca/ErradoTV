@@ -36,6 +36,15 @@
             android:gravity="center_vertical">
 
             <TextView
+                android:id="@+id/tvFavoriteBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⭐"
+                android:textSize="15sp"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/tvTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

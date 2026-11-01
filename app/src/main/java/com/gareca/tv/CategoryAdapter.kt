@@ -56,9 +56,6 @@ class CategoryAdapter(
                 val rv = holder.itemView.parent as? RecyclerView
                 setSelectedCategory(cat, rv)
                 onCategoryClick(cat)
-                holder.itemView.post {
-                    holder.itemView.requestFocus()
-                }
             },
             onDown = onDownPressed
         )
@@ -90,9 +87,6 @@ class CategoryAdapter(
 
             itemView.setOnClickListener {
                 onClick()
-                itemView.post {
-                    itemView.requestFocus()
-                }
             }
 
             itemView.setOnKeyListener { _, keyCode, event ->

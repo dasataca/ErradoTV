@@ -2,6 +2,28 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.4] - 2026-11-01
+### Añadido y Optimizado (Favoritos en TV Mundial, Navegación Circular D-Pad y Resolutor Dinámico YouTube Live)
+- **⭐ Categoría de Favoritos en Televisión Mundial**:
+  - En la columna izquierda de Televisión Mundial, inmediatamente antes de `⭐ Todos los Canales`, se incorpora la nueva sección **`⭐ Favoritos`** con su respectivo contador numérico en tiempo real (`sidebar_count_badge.xml`).
+  - **Persistencia en Base de Datos Local SQLite (`AppDatabase`)**: Tabla `favorites` con inicialización automática en `onCreate` y `onOpen`, asegurando persistencia de favoritos entre reinicios y actualizaciones sin pérdida de datos.
+  - **Añadir / Remover Favoritos con Control Remoto o Táctil**:
+    - Mantener presionado `OK/Center` (Long-Press) o pulsar la tecla amarilla (`KEYCODE_PROG_YELLOW` / `BUTTON_Y`) en cualquier canal añade o remueve el canal de Favoritos.
+    - Notificación visual inmediata tipo Toast (*"⭐ Agregado a Favoritos: [Canal]"* o *"Removido de Favoritos: [Canal]"*).
+    - Insignia de estrella (`⭐`) en la tarjeta del canal (`tvFavoriteBadge`) reflejada al instante.
+    - Contador de la categoría `⭐ Favoritos` en el rail lateral actualizado dinámicamente.
+    - Mensaje amigable cuando la lista está vacía indicando cómo añadir canales.
+- **Navegación Circular D-Pad y Posicionamiento al Primer Canal**:
+  - Al seleccionar o cambiar cualquier categoría o subcategoría con click/OK, el foco se posiciona automáticamente en el **primer canal de la lista** (`focusFirstEventItem`).
+  - **Navegación Circular Ininterrumpida**: Al llegar al último canal del listado y presionar `▼ Abajo`, la navegación salta fluidamente al primer canal del listado, permitiendo recorrer señales de forma continua sin topar con bordes muertos.
+- **Resolutor Dinámico de Señales YouTube Live (Solución Definitiva a Crónica TV)**:
+  - Detecta automáticamente URLs deprecadas de YouTube (`embed/live_stream?channel=ID`).
+  - Resuelve en tiempo real mediante scraping silencioso el `videoId` activo de la transmisión en directo (`https://www.youtube.com/channel/$channelId/live`), convirtiéndola dinámicamente en una señal 100% reproducible (`embed/$videoId?autoplay=1`).
+  - Caché en memoria concurrente para evitar resoluciones de red repetidas.
+- **Compatibilidad Total Multiplataforma**:
+  - **Android TV / Google TV**: Control 100% mediante control remoto Leanback D-Pad, atajos de color, zapping y zoom.
+  - **Android Celular**: Selector modal de categorías que incluye `⭐ Favoritos`, pulsación prolongada táctil sobre las tarjetas y pantalla full-width.
+
 ## [1.9.3] - 2026-11-01
 ### Corregido y Optimizado (Retención Absoluta de Foco D-Pad en Pestañas Superiores)
 - **Eliminación de Fuga de Foco hacia el Botón "Actualizado"**:
