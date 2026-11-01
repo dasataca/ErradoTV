@@ -2,6 +2,25 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.10] - 2026-11-01
+### Añadido, Optimizado y Corregido (Partidos por Hora con Auto-Foco En Vivo, Contador en Deportes, Retención de Foco en Favoritos y Rendimiento 60 FPS en TV)
+- **Orden Cronológico Estricto de Partidos del Día con Auto-Posicionamiento en Directos**:
+  - Los 43 partidos del día se ordenan de manera estrictamente cronológica por hora de inicio (08:30, 10:00, 11:00, 11:30, 12:00 ... 22:15).
+  - Al abrir la aplicación o entrar a *Partidos del Día*, la lista se desplaza (`scrollToPositionWithOffset`) y enfoca automáticamente el grupo de partidos que están **● EN VIVO** en ese momento (o el próximo partido por empezar si no hay partidos en juego).
+  - El usuario puede presionar `▲ Arriba` en el control remoto para scrollear hacia arriba y revisar los partidos jugados más temprano (mostrados con etiqueta `FINALIZADO` y transparencia al 50%), o presionar `▼ Abajo` para ver la agenda programada de la tarde y noche.
+  - Sincronización dinámica de estados (`calculateTimesAndStatus`) al desplegar el catálogo para reflejar en tiempo real los partidos en juego.
+- **Indicador Ordinal Interactivo en Deportes y Canales**:
+  - El encabezado de conteo dinámico (`tvChannelPositionIndicator`) ahora funciona en ambos modos: tanto en *Deportes y Partidos* (`"Partido X de Y • Categoría"` / `"Canal X de Y • Subgrupo"`) como en *Televisión Mundial*.
+- **Eliminación Definitiva del Salto de Foco a "Actualizar" (`btnUpdate`)**:
+  - Al marcar o desmarcar la estrella de favoritos (`★`), el foco se preserva en la misma tarjeta sin recargar la lista completa ni escapar a la cabecera.
+  - Al eliminar un canal estando dentro de la pestaña `⭐ Favoritos`, el foco se transfiere suavemente al elemento contiguo en la lista.
+  - En `activity_main.xml`, los botones superiores (`btnUpdate`, `btnRefresh`, `btnHelpBadge`) ahora poseen dirección D-Pad explícita (`nextFocusDown="@id/llModeSelector"`).
+- **Optimización de Fluidez a 60 FPS en Navegación D-Pad en Televisores (Sin Trabarse ni Lag)**:
+  - Eliminada la creación de objetos `new GradientDrawable()` y el parseo de colores en cada `bind()` del adaptador mediante un pool estático de caché de drawables y colores.
+  - Cancelación inmediata de animadores (`view.animate().cancel()`) con aceleración a 80ms, evitando la acumulación de animaciones al desplazarse rápido con el D-Pad.
+  - Desactivación de animadores de reciclaje innecesarios (`rvEvents.itemAnimator = null`) y ampliación del pool de vistas (`setMaxRecycledViews(0, 35)`, `setItemViewCacheSize(30)`).
+  - Liberación activa de decodificadores de Glide en miniaturas vacías (`Glide.with().clear()`).
+
 ## [1.9.9] - 2026-11-01
 ### Añadido y Corregido (Sincronización Total de la Agenda Completa de Errado: 43 Partidos del Día)
 - **Desbloqueo de Partidos Programados de la Agenda Diaria de Errado**:
