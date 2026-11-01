@@ -2,6 +2,18 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.12] - 2026-11-01
+### Rendimiento y Fluidez Estilo TiviMate / IPTV Smarters Pro (Fin de Congelamientos y Trabas en TV)
+- **Eliminación del Congelamiento al Presionar Tecla `▼ Abajo` desde Pestañas de Categoría**:
+  - Detectado que al presionar `▼ Abajo` en `rvCategories`, el listener retornaba `false`, provocando que el algoritmo de búsqueda de foco de Android TV realizara una búsqueda recursiva infinita sobre todos los descendientes no enfocables de la pantalla, congelando el hilo principal (UI Thread).
+  - Corregido: `onDownPressed` transfiere ahora de forma instantánea y determinística el foco al primer elemento del catálogo (`focusFirstEventItem()`) y retorna `true`.
+- **Eliminación de Recálculos Masivos de Layout (`requestLayout` Churn)**:
+  - El indicador superior (`tvChannelPositionIndicator`) antes tenía `layout_height="wrap_content"` y alternaba entre `GONE` y `VISIBLE`, lo que forzaba a Android a re-medir y re-calcular la altura completa del `RecyclerView` en cada pulsación del D-Pad.
+  - Se estableció una altura fija de `22dp` y visibilidad `invisible` por defecto; el cambio de texto ahora solo redibuja los píxeles sin provocar re-layout en la lista.
+- **Transición a Selectores GPU 100% Nativos (Cero Animadores CPU)**:
+  - Eliminados los animadores por software `view.animate().scaleX()/scaleY()` en cada fila, los cuales saturaban el Choreographer y el procesador gráfico (Mali GPU) de las cajas Smart TV.
+  - El foco ahora se delega 100% al hardware gráfico mediante `card_selector.xml` (borde de 3dp en color cian neón y fondo resaltado con latencia cero).
+
 ## [1.9.11] - 2026-11-01
 ### Optimizado y Adaptado (Presentación Móvil Responsiva Vertical y Horizontal para Celulares)
 - **Adaptación Integral del Modo Vertical (Portrait) en Celulares**:
