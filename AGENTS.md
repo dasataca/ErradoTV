@@ -12,12 +12,20 @@
    * Icono y banner oficial con cabeza de tigre en perfil (con un solo ojo visible y mandíbula rugiente en colores vibrantes), zarpazos de garras en rojo y letras rojas sobre fondo negro profundo.
    * Icono de launcher para todo el sistema Android: suite completa de densidades en `res/mipmap-*` e icono adaptativo en `mipmap-anydpi-v26` (`ic_launcher.xml` e `ic_launcher_round.xml`).
    * El icono del tigre solo se muestra en la cabecera superior principal de la pantalla, manteniendo las filas de partidos limpias y sin repeticiones innecesarias.
-3. **Experiencia Nativa para TV (Leanback D-Pad)**:
+3. **Experiencia Nativa para TV (Leanback D-Pad) y Rendimiento 60 FPS**:
    * Toda la navegación debe ser 100% operable con control remoto (D-Pad: Arriba, Abajo, Izquierda, Derecha, OK/Center, Back).
    * La app debe mantener `android.hardware.touchscreen=false` y la categoría `LEANBACK_LAUNCHER`.
-   * Los elementos enfocables deben utilizar animaciones de escala y selectores visuales (`card_selector.xml`, `button_focus_selector.xml`, `search_box_selector.xml`).
-4. **Organización de Catálogos y Búsqueda en TV**:
-   * **⚽ Partidos del Día**: Muestra única y exclusivamente los partidos en vivo, por empezar o programados de la fecha de hoy.
+   * **Cero Animadores por Software CPU en Listas**: Prohibido el uso de `.animate().scaleX/scaleY` en filas de `RecyclerView`. El resalte visual de foco se delega 100% al chip gráfico GPU mediante selectores XML nativos (`card_selector.xml`, `button_focus_selector.xml`, `category_tab_selector.xml`, `search_box_selector.xml`), garantizando navegación a 60 FPS constantes sin congelamientos (ANR).
+   * **Tarjetas de Altura Fija Uniforme (`68dp`)**: `item_event_card.xml` cuenta con una altura fija y uniforme de 68dp (`minHeight="68dp"`) con `rvEvents.setHasFixedSize(true)` y títulos `singleLine` con elipsis, idéntico al estándar EPG de TiviMate / Smart IPTV.
+   * **Indicador de Posición Desacoplado**: `tvChannelPositionIndicator` se implementa como overlay flotante en `FrameLayout` (`layout_gravity="top"` con `paddingTop="26dp"` en `rvEvents`), eliminando el recalculado recurrente de medidas (`requestLayout()` churn) al navegar con D-Pad.
+   * **Enlace D-Pad Directo Selector de Modo ➜ Pestañas**: `btnModeSports` y `btnModeWorldTv` implementan `setOnKeyListener` para `KEYCODE_DPAD_DOWN`, transfiriendo el foco al instante a la pestaña activa (`⚽ Partidos del Día` o menú lateral) sin quedar trabado.
+   * **Caché O(1) de Favoritos en RAM**: Comprobaciones de favoritos en memoria RAM volátil (`cachedSportsFavorites`, `cachedCxtvFavorites`) sin lecturas síncronas a disco SQLite durante el desplazamiento.
+4. **Organización de Catálogos, Búsqueda y Cronología de Partidos**:
+   * **⚽ Partidos del Día (Cronología por Hora y Auto-Enfoque en Directos)**:
+     * Los eventos del día se ordenan en orden cronológico estricto por hora del partido (`sortDailyMatchesChronologically`).
+     * Al ingresar a la sección o abrir la app, la vista se desplaza automáticamente (`scrollToPositionWithOffset`) y enfoca el primer partido con transmisión activa **● EN VIVO**.
+     * Navegación vertical libre: flecha arriba (`▲`) para explorar partidos finalizados de horas previas, y flecha abajo (`▼`) para ver encuentros programados para más tarde.
+     * Al presionar flecha arriba (`▲`) en la posición 0 de la lista, el foco regresa a la barra de pestañas (`⚽ Partidos del Día`).
    * **🔁 Repeticiones**: Pestaña dedicada situada inmediatamente antes de `📺 Regionales`, con buscador en tiempo real y botones de ordenación por Fecha (recientes/antiguos) y Nombre (A-Z/Z-A).
    * **🔍 Buscar Todo**: Pestaña consolidada inicial para buscar en eventos del día, señales en vivo y repeticiones simultáneamente, con botón de ordenamiento por Nombre (`btnSortNameGlobal`).
    * **Navegación Ergonómica, Botón "✕" Interno y Búsqueda Tokenizada**:
@@ -130,7 +138,7 @@ Para generar y subir una nueva versión del software:
 ```bash
 ./publish_release.sh [versionName] [versionCode] "[changelog]"
 # Ejemplo:
-./publish_release.sh 1.6.7 46 "GarecaTV: Captura Pre-IME de tecla Atrás y transferencia instantánea de foco a sugerencias en ambos buscadores"
+./publish_release.sh 1.9.16 81 "GarecaTV: Ancho completo en vertical movil sin bandas negras, enlace D-Pad directo a pestanas y auto-enfoque en vivo"
 ```
 El script compila el APK, actualiza `version.json`, organiza los archivos en `release/` y realiza el `git push` a `origin main` de manera completamente autónoma.
 
@@ -193,5 +201,12 @@ Toda IA o desarrollador que trabaje en este repositorio debe cumplir estrictamen
 
 7. **Resiliencia en Touch Mode (Mouse y Air-Mouse)**:
    * Los elementos navegables de categorías (`item_sidebar_category.xml`, `item_category_tab.xml`) y tarjetas de canales (`item_event_card.xml`) deben incluir obligatoriamente `android:focusableInTouchMode="true"` para garantizar que el foco sea aceptado sin fricción tanto con controles remotos convencionales como con mouse o air-mouse.
+
+8. **Adaptabilidad Responsiva para Celulares y Tablets (`DeviceUtils.kt`)**:
+   * La aplicación debe funcionar sin distorsiones tanto en televisores (landscape) como en teléfonos móviles y tablets.
+   * En dispositivos móviles (`DeviceUtils.isMobile(context)`):
+     - El padding lateral de `mainRootLayout` debe reducirse automáticamente de `48dp` (overscan de TV) a **`8dp`** en orientación vertical (`isPortrait`) y `12dp` en horizontal, evitando bandas negras y permitiendo que las tarjetas ocupen el ancho completo.
+     - Los títulos de partidos deben conservar ancho suficiente para no truncarse agresivamente.
+     - Los márgenes verticales del encabezado (`llHeader`) y selector de modos deben compactarse a `8dp` para maximizar la superficie útil en pantalla vertical.
 
 

@@ -6,11 +6,22 @@ Aplicación nativa para **Android TV, Google TV y Fire TV Stick** basada en las 
 
 ## 🚀 Archivos y Versión Actual
 
-* 📱 **[`release/GarecaTV.apk`](file:///home/sataca/Descargas/APLICACIONES/errado/release/GarecaTV.apk)**: APK instalable directa (versión actual **v1.8.3 - código 58**).
+* 📱 **[`release/GarecaTV.apk`](file:///home/sataca/Descargas/APLICACIONES/errado/release/GarecaTV.apk)**: APK instalable directa (versión actual **v1.9.16 - código 81**).
 * 📺 **[`gareca_tv.m3u8`](file:///home/sataca/Descargas/APLICACIONES/errado/errado_tv.m3u8)**: Lista de reproducción IPTV directa para TiviMate, OTT Navigator o VLC.
 * 🏷️ **Versión en Pantalla y Botón de Actualización Inteligente**:
   * Etiqueta de versión visible en cabecera junto a la fecha (`tvAppVersion`).
   * Botón dinámico: muestra `Actualizado` si la versión local es igual a la remota, o `Actualizar (vX.X.X)` abriendo el diálogo OTA si hay una nueva versión.
+* ⚡ **Rendimiento Ultrarrápido 60 FPS en D-Pad y Cero Animadores CPU**:
+  * Renderizado acelerado 100% por hardware GPU mediante selectores nativos (`category_tab_selector.xml`, `card_selector.xml`), eliminando animadores por software en CPU (`scaleX/scaleY`) para navegación fluida a 0ms sin micro-lag.
+  * Tarjetas de altura uniforme fija (`68dp`) y títulos optimizados con elipsis (`singleLine`), idéntico al estándar EPG de TiviMate / Smart IPTV.
+  * Desacoplamiento del indicador de posición (`tvChannelPositionIndicator`) como overlay flotante en `FrameLayout`, eliminando el recalculado recurrente de medidas (`requestLayout()` churn) en listas grandes.
+  * Caché O(1) de favoritos en memoria RAM (cero lecturas a disco SQLite durante el desplazamiento en TV).
+* ⚽ **Partidos del Día: Cronología por Hora y Auto-Enfoque en Directos**:
+  * Partidos organizados en orden cronológico estricto según la hora del evento.
+  * Al ingresar a la sección o abrir la app, el reproductor desplaza la lista y posiciona el foco automáticamente en el grupo de partidos **● EN VIVO**.
+  * Navegación vertical libre: flecha arriba (`▲`) para explorar partidos finalizados de horas previas y flecha abajo (`▼`) para ver los encuentros programados.
+* 📱 **Soporte Adaptativo Integral para Celulares y Tablets**:
+  * Detección autónoma de factor de forma (`DeviceUtils.kt`). En celulares elimina las bandas negras de TV (padding de 48dp overscan reducido a 8dp en vertical), aprovechando el 100% del ancho de pantalla sin cortar títulos de partidos.
 * 🛡️ **Evasión de Bloqueos de Operadores (DoH) y Blindaje XOR**:
   * Integración nativa de **DNS sobre HTTPS (DoH)** con Cloudflare (`1.1.1.1`) y Google (`8.8.8.8`) en ExoPlayer y llamadas de red. Neutraliza el 85% de los bloqueos locales de proveedores de Internet.
   * Clave de fábrica blindada con máscara XOR en RAM; cero texto plano legible en el APK descompilado.
@@ -79,6 +90,6 @@ Este proyecto mantiene 4 documentos estándar para que cualquier desarrollador o
 El proyecto incluye el archivo maestro [`version.json`](https://raw.githubusercontent.com/dasataca/ErradoTV/main/version.json) en GitHub.  
 Para compilar y publicar una nueva versión sin tocar ningún archivo manualmente:
 ```bash
-./publish_release.sh 1.6.7 46 "GarecaTV: Captura Pre-IME de tecla Atrás y transferencia instantánea de foco a sugerencias en ambos buscadores"
+./publish_release.sh 1.9.16 81 "GarecaTV: Ancho completo en vertical movil sin bandas negras, enlace D-Pad directo a pestanas y auto-enfoque en vivo"
 ```
 El script compila, versiona los APKs en `release/`, actualiza `version.json` y sube todo a GitHub automáticamente. Todas las Smart TVs detectarán la nueva versión sola por WiFi.

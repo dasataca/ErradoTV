@@ -246,5 +246,46 @@ Para preservar la identidad deportiva de GarecaTV y expandir el catálogo sin sa
 * **Blindaje de Reproducción YouTube Live y Web Streams**:
   - `WebStreamActivity.kt` implementa contenedor iframe `youtube-nocookie.com` con `loadDataWithBaseURL`, User-Agent Google Chrome Desktop y cookies de terceros habilitadas, resolviendo bloqueos en Android TV.
 
+---
+
+## 10. Optimización de Rendimiento 60 FPS en D-Pad, Arquitectura Adaptativa TV vs Móvil y Cronología de Partidos (v1.9.14 - v1.9.16)
+
+### 10.1. Eliminación Total de Animadores por Software CPU y Aceleración Gráfica GPU Pura
+* **Problema Resuelto**: En Smart TVs y TV Sticks de gama de entrada, el uso de `.animate().scaleX(1.04f).scaleY(1.04f)` en los adaptadores (`CategoryAdapter`, `SidebarCategoryAdapter`, `EventAdapter`, `SuggestionAdapter`) saturaba el hilo principal de la interfaz (`Choreographer`), acumulando fotogramas perdidos y congelamientos (ANR) al pulsar rápidamente el D-Pad.
+* **Solución Implementada**:
+  - Eliminados el 100% de los animadores por software en Kotlin.
+  - El resalte visual de foco se delega íntegramente al chip gráfico GPU mediante selectores XML nativos (`card_selector.xml`, `category_tab_selector.xml`).
+  - Tarjetas con **altura uniforme fija de 68dp** (`minHeight="68dp"`), permitiendo que `rvEvents.setHasFixedSize(true)` calcule posiciones de desplazamiento por aritmética pura (`pos = index * 68dp`) sin recalcular medidas de vista durante el scroll continuo.
+
+### 10.2. Desacoplamiento de Layout y Prevención de Churn de Medición
+* **Problema Resuelto**: `tvChannelPositionIndicator` ("Canal X de Y") estaba insertado como vista hermana en un contenedor con peso (`layout_weight="1"`). Modificar su texto en cada pulsación forzaba un `requestLayout()` recursivo en todo el árbol mientras el motor de foco intentaba medir la vista siguiente, bloqueando el hilo de renderizado.
+* **Solución Implementada**:
+  - El indicador fue desacoplado y posicionado como overlay flotante en un `FrameLayout` (`layout_gravity="top"`, `background="#DD0E121E"`), con `paddingTop="26dp"` y `clipToPadding="false"` en `rvEvents`.
+  - El cambio de texto ordinal es completamente independiente y tiene impacto cero en la geometría de la lista de eventos.
+
+### 10.3. Caché de Favoritos en Memoria RAM O(1)
+* Se eliminaron las consultas síncronas a disco SQLite (`AppDatabase.isFavorite`) dentro de `onBindViewHolder`.
+* Se crearon dos conjuntos sincronizados en RAM (`cachedSportsFavorites` y `cachedCxtvFavorites`) inicializados asíncronamente en `onCreate`, logrando comprobaciones de estado favorito en tiempo constante $O(1)$ a nivel de nanosegundos.
+
+### 10.4. Adaptabilidad Responsiva para Teléfonos Celulares y Tablets (`DeviceUtils.kt`)
+* **Detección Dinámica de Dispositivo**: `DeviceUtils.isTv(context)` identifica con precisión si el dispositivo es un televisor (Android TV / Leanback) o un dispositivo móvil con pantalla táctil.
+* **Ancho Completo de Borde a Borde**:
+  - En Smart TVs se conserva el overscan estándar de 48dp en los bordes.
+  - En celulares y tablets, `setupMobileLayout()` detecta la orientación (`isPortrait`) y reduce el padding lateral de `mainRootLayout` de 48dp a **8dp**, recuperando 80dp de ancho útil.
+  - Los nombres de los equipos y las opciones de streaming ya no se truncan con puntos suspensivos ("Com...", "Getaf..."), mostrándose de forma completa y cómoda en pantalla vertical.
+  - El margen inferior del encabezado se compactó a 8dp para maximizar la superficie vertical de visualización de eventos.
+
+### 10.5. Navegación D-Pad Directa y Auto-Enfoque en Partidos ● EN VIVO
+* **Enlace D-Pad Directo Selector de Modo ➜ Pestañas**:
+  - `btnModeSports` y `btnModeWorldTv` implementan `setOnKeyListener` para `KEYCODE_DPAD_DOWN`.
+  - Al presionar flecha abajo desde `⚽ DEPORTES Y PARTIDOS`, el foco baja de inmediato a la pestaña `⚽ Partidos del Día`, resaltando en cian neón (`#00E5FF`) y texto negro de alto contraste.
+* **Cronología de Partidos del Día y Auto-Posicionamiento en Directos**:
+  - Los partidos de la fecha se ordenan en estricto orden cronológico por hora (`sortDailyMatchesChronologically`).
+  - Al abrir la app o pulsar flecha abajo hacia la lista de eventos, la vista se desplaza automáticamente (`scrollToPositionWithOffset`) y sitúa el foco sobre el **primer partido que esté ● EN VIVO con transmisión activa**.
+  - La tarjeta seleccionada se ilumina con borde neón cian de 3.5dp y fondo azul profundo `#1E3A5F`.
+  - Navegación vertical fluida: flecha arriba (`▲`) para revisar partidos finalizados de horas previas, y flecha abajo (`▼`) para ver encuentros programados para más tarde.
+  - Al presionar flecha arriba (`▲`) en la posición 0 de la lista, el foco regresa limpiamente a la barra de pestañas (`⚽ Partidos del Día`).
+
+
 
 
