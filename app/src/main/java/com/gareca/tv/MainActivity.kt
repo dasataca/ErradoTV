@@ -194,6 +194,8 @@ class MainActivity : AppCompatActivity() {
     // Caché en memoria RAM de favoritos O(1) (Cero lecturas a disco SQLite durante el renderizado en TV)
     private val cachedSportsFavorites = java.util.Collections.synchronizedSet(HashSet<String>())
     private val cachedCxtvFavorites = java.util.Collections.synchronizedSet(HashSet<String>())
+    private val cachedFreeTvFavorites = java.util.Collections.synchronizedSet(HashSet<String>())
+    private lateinit var btnSourceSelector: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -226,6 +228,7 @@ class MainActivity : AppCompatActivity() {
                 val db = AppDatabase.getInstance(this@MainActivity)
                 cachedSportsFavorites.addAll(db.getAllFavorites("sports"))
                 cachedCxtvFavorites.addAll(db.getAllFavorites("cxtv"))
+                cachedFreeTvFavorites.addAll(db.getAllFavorites("freetv"))
             } catch (_: Exception) {}
         }
 
@@ -404,9 +407,28 @@ class MainActivity : AppCompatActivity() {
             if (hasFocus) {
                 tvHeaderButtonHint.text = "Recarga lista de eventos/canales"
                 tvHeaderButtonHint.visibility = View.VISIBLE
-            } else if (!btnUpdate.hasFocus() && findViewById<View>(R.id.btnHelpBadge)?.hasFocus() != true) {
+            } else if (!btnUpdate.hasFocus() && !btnSourceSelector.hasFocus() && findViewById<View>(R.id.btnHelpBadge)?.hasFocus() != true) {
                 tvHeaderButtonHint.visibility = View.GONE
             }
+        }
+
+        ApiClient.initWorldTvProvider(this)
+        btnSourceSelector = findViewById(R.id.btnSourceSelector)
+        updateSourceSelectorButtonLabel()
+
+        btnSourceSelector.setOnFocusChangeListener { _, hasFocus ->
+            btnSourceSelector.setTextColor(if (hasFocus) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+            if (hasFocus) {
+                val currentSrcName = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "Señal 2 (Extendida)" else "Señal 1 (Clásica)"
+                tvHeaderButtonHint.text = "Activa: $currentSrcName. Pulsa OK para cambiar fuente."
+                tvHeaderButtonHint.visibility = View.VISIBLE
+            } else if (!btnUpdate.hasFocus() && !tvRefresh.hasFocus() && findViewById<View>(R.id.btnHelpBadge)?.hasFocus() != true) {
+                tvHeaderButtonHint.visibility = View.GONE
+            }
+        }
+
+        btnSourceSelector.setOnClickListener {
+            showWorldTvSourceDialog()
         }
 
         findViewById<TextView>(R.id.btnHelpBadge)?.let { btnHelp ->
@@ -415,7 +437,7 @@ class MainActivity : AppCompatActivity() {
                 if (hasFocus) {
                     tvHeaderButtonHint.text = "Guía técnica de señales (HLS 100%, YouTube, Web)"
                     tvHeaderButtonHint.visibility = View.VISIBLE
-                } else if (!btnUpdate.hasFocus() && !tvRefresh.hasFocus()) {
+                } else if (!btnUpdate.hasFocus() && !tvRefresh.hasFocus() && !btnSourceSelector.hasFocus()) {
                     tvHeaderButtonHint.visibility = View.GONE
                 }
             }
@@ -625,7 +647,12 @@ class MainActivity : AppCompatActivity() {
             },
             isFavorite = { item ->
                 val key = item.title.trim().lowercase()
-                cachedSportsFavorites.contains(key) || cachedCxtvFavorites.contains(key)
+                val isWorldTvFav = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) {
+                    cachedFreeTvFavorites.contains(key)
+                } else {
+                    cachedCxtvFavorites.contains(key)
+                }
+                cachedSportsFavorites.contains(key) || isWorldTvFav
             },
             onItemLongClick = { item ->
                 handleToggleFavorite(item)
@@ -802,6 +829,57 @@ class MainActivity : AppCompatActivity() {
         }
         dialog.show()
         btnDismiss?.requestFocus()
+    }
+
+    private fun updateSourceSelectorButtonLabel() {
+        if (!::btnSourceSelector.isInitialized) return
+        val isFreeTv = ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV
+        btnSourceSelector.text = if (isFreeTv) "⚡ Señal: Extendida" else "📡 Señal: Clásica"
+    }
+
+    private fun showWorldTvSourceDialog() {
+        val options = arrayOf(
+            "📡 Señal 1: Clásica (2.399 canales - Señal Principal)",
+            "⚡ Señal 2: Extendida (3.966 canales - FreeTV API)"
+        )
+        val currentIndex = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) 1 else 0
+        var selectedIndex = currentIndex
+
+        AlertDialog.Builder(this)
+            .setTitle("Seleccionar Fuente de Televisión")
+            .setSingleChoiceItems(options, currentIndex) { _, which ->
+                selectedIndex = which
+            }
+            .setPositiveButton("Aceptar") { dialog, _ ->
+                dialog.dismiss()
+                val newProvider = if (selectedIndex == 1) ApiClient.WorldTvProvider.FREETV else ApiClient.WorldTvProvider.CXTV
+                if (newProvider != ApiClient.activeWorldTvProvider) {
+                    ApiClient.setWorldTvProvider(this, newProvider)
+                    updateSourceSelectorButtonLabel()
+
+                    // Limpiar memoria y estructuras de navegación de TV Mundial
+                    cachedCxtvChannels = emptyList()
+                    dynamicCxtvCategories = emptyList()
+                    dynamicCxtvCountries = emptyList()
+                    cxtvCategoryMap.clear()
+                    cxtvCountryMap.clear()
+                    preSortedAllChannels = emptyList()
+                    cachedCategoryNavItems = emptyList()
+                    cachedCountryNavItems = emptyList()
+                    if (currentAppMode == AppMode.WORLD_TV) {
+                        currentCategory = "⭐ Todos los Canales"
+                        selectedCountry = ""
+                    }
+
+                    val label = if (newProvider == ApiClient.WorldTvProvider.FREETV) "Señal 2 (Extendida)" else "Señal 1 (Clásica)"
+                    Toast.makeText(this, "Conectando a $label...", Toast.LENGTH_SHORT).show()
+
+                    // Forzar recarga del catálogo para poblar inmediatamente la interfaz
+                    loadData(silent = false, force = true)
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun executeSearch(isGlobal: Boolean) {
@@ -1608,8 +1686,9 @@ class MainActivity : AppCompatActivity() {
         cxtvCountryMap.clear()
         cxtvCountryMap.putAll(countMap)
 
+        val worldTvFavSrc = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
         val favKeys = try {
-            AppDatabase.getInstance(this).getAllFavorites("cxtv")
+            AppDatabase.getInstance(this).getAllFavorites(worldTvFavSrc)
         } catch (_: Exception) {
             emptySet()
         }
@@ -1640,8 +1719,9 @@ class MainActivity : AppCompatActivity() {
         if (cachedCategoryNavItems.isEmpty()) {
             indexCxtvCatalog()
         } else {
+            val worldTvFavSrc = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
             val favKeys = try {
-                AppDatabase.getInstance(this).getAllFavorites("cxtv")
+                AppDatabase.getInstance(this).getAllFavorites(worldTvFavSrc)
             } catch (_: Exception) {
                 emptySet()
             }
@@ -2505,8 +2585,9 @@ class MainActivity : AppCompatActivity() {
                 }
             } else if (currentCategory == "⭐ Favoritos") {
                 if (isTv) rvSidebarCountries.visibility = View.GONE
+                val worldTvFavSrc = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
                 val favKeys = try {
-                    AppDatabase.getInstance(this).getAllFavorites("cxtv")
+                    AppDatabase.getInstance(this).getAllFavorites(worldTvFavSrc)
                 } catch (_: Exception) {
                     emptySet()
                 }
@@ -2808,7 +2889,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleToggleFavorite(item: EventItem) {
         val channelKey = item.title.trim().lowercase()
-        val src = if (currentAppMode == AppMode.SPORTS) "sports" else "cxtv"
+        val worldTvFavSrc = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
+        val src = if (currentAppMode == AppMode.SPORTS) "sports" else worldTvFavSrc
         val isFav = try {
             AppDatabase.getInstance(this).toggleFavorite(channelKey, source = src)
         } catch (_: Exception) {
@@ -2816,6 +2898,8 @@ class MainActivity : AppCompatActivity() {
         }
         if (src == "sports") {
             if (isFav) cachedSportsFavorites.add(channelKey) else cachedSportsFavorites.remove(channelKey)
+        } else if (src == "freetv") {
+            if (isFav) cachedFreeTvFavorites.add(channelKey) else cachedFreeTvFavorites.remove(channelKey)
         } else {
             if (isFav) cachedCxtvFavorites.add(channelKey) else cachedCxtvFavorites.remove(channelKey)
         }

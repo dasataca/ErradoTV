@@ -173,8 +173,29 @@
                     android:paddingBottom="8dp"
                     android:nextFocusDown="@id/btnModeSports"
                     android:nextFocusLeft="@id/btnUpdate"
-                    android:nextFocusRight="@id/btnHelpBadge"
+                    android:nextFocusRight="@id/btnSourceSelector"
                     android:background="@drawable/button_focus_selector" />
+
+                <TextView
+                    android:id="@+id/btnSourceSelector"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📡 Señal: Clásica"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/button_text_selector"
+                    android:focusable="true"
+                    android:clickable="true"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:layout_marginStart="8dp"
+                    android:nextFocusDown="@id/btnModeSports"
+                    android:nextFocusLeft="@id/btnRefresh"
+                    android:nextFocusRight="@id/btnHelpBadge"
+                    android:background="@drawable/button_focus_selector"
+                    android:contentDescription="Cambiar entre Señal Clásica y Señal Extendida" />
 
                 <TextView
                     android:id="@+id/btnHelpBadge"
@@ -192,7 +213,7 @@
                     android:paddingBottom="8dp"
                     android:layout_marginStart="8dp"
                     android:nextFocusDown="@id/btnModeSports"
-                    android:nextFocusLeft="@id/btnRefresh"
+                    android:nextFocusLeft="@id/btnSourceSelector"
                     android:background="@drawable/button_focus_selector"
                     android:contentDescription="Guía de tipos de señal" />
             </LinearLayout>

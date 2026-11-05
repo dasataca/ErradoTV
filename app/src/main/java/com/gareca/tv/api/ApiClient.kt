@@ -569,12 +569,28 @@ object ApiClient {
     // ARQUITECTURA HEXAGONAL: CATÁLOGO DE TV
     // ==========================================
     enum class WorldTvProvider {
-        CXTV,   // Adaptador original CXTv (Preservado intacto)
-        FREETV  // Adaptador FreeTV con API REST y monitor de salud (Activo)
+        CXTV,   // Señal 1: Clásica (CXTv original preservado - Activo por defecto)
+        FREETV  // Señal 2: Extendida (FreeTV con monitor de salud)
     }
 
-    // Conmutador Hexagonal: cambiar a WorldTvProvider.CXTV para reactivar CXTv
-    var activeWorldTvProvider: WorldTvProvider = WorldTvProvider.FREETV
+    // Por defecto activada la lista anterior (CXTV) y desactivada la nueva (FreeTV)
+    var activeWorldTvProvider: WorldTvProvider = WorldTvProvider.CXTV
+
+    fun initWorldTvProvider(context: Context) {
+        val prefs = context.getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
+        val saved = prefs.getString("world_tv_provider", WorldTvProvider.CXTV.name)
+        activeWorldTvProvider = try {
+            WorldTvProvider.valueOf(saved ?: WorldTvProvider.CXTV.name)
+        } catch (_: Exception) {
+            WorldTvProvider.CXTV
+        }
+    }
+
+    fun setWorldTvProvider(context: Context, provider: WorldTvProvider) {
+        activeWorldTvProvider = provider
+        val prefs = context.getSharedPreferences("gareca_tv_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("world_tv_provider", provider.name).apply()
+    }
 
     private const val CXTV_CATALOG_URL = "https://raw.githubusercontent.com/dasataca/ErradoTV/main/cxtv_catalog.json"
     private const val FREETV_CATALOG_URL = "https://raw.githubusercontent.com/dasataca/ErradoTV/main/freetv_catalog.json"

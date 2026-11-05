@@ -144,6 +144,16 @@ class AppDatabase private constructor(context: Context) : SQLiteOpenHelper(
                     created_at INTEGER NOT NULL
                 );
             """.trimIndent())
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS favorites_v2 (
+                    channel_key TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    PRIMARY KEY (channel_key, source)
+                );
+            """.trimIndent())
+            // Migrar datos existentes preservando 100% de favoritos de los usuarios
+            db.execSQL("INSERT OR IGNORE INTO favorites_v2(channel_key, source, created_at) SELECT channel_key, source, created_at FROM favorites;")
         } catch (_: Exception) {}
     }
 
@@ -577,9 +587,13 @@ class AppDatabase private constructor(context: Context) : SQLiteOpenHelper(
     // CANALES FAVORITOS
     // ==========================================
 
-    fun isFavorite(channelKey: String): Boolean {
+    fun isFavorite(channelKey: String, source: String? = null): Boolean {
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT 1 FROM favorites WHERE channel_key = ? LIMIT 1;", arrayOf(channelKey.trim().lowercase()))
+        val cursor = if (source != null) {
+            db.rawQuery("SELECT 1 FROM favorites_v2 WHERE channel_key = ? AND source = ? LIMIT 1;", arrayOf(channelKey.trim().lowercase(), source))
+        } else {
+            db.rawQuery("SELECT 1 FROM favorites_v2 WHERE channel_key = ? LIMIT 1;", arrayOf(channelKey.trim().lowercase()))
+        }
         val exists = cursor.moveToFirst()
         cursor.close()
         return exists
@@ -592,18 +606,22 @@ class AppDatabase private constructor(context: Context) : SQLiteOpenHelper(
             put("source", source)
             put("created_at", System.currentTimeMillis())
         }
-        db.insertWithOnConflict("favorites", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+        db.insertWithOnConflict("favorites_v2", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
-    fun removeFavorite(channelKey: String) {
+    fun removeFavorite(channelKey: String, source: String? = null) {
         val db = writableDatabase
-        db.delete("favorites", "channel_key = ?", arrayOf(channelKey.trim().lowercase()))
+        if (source != null) {
+            db.delete("favorites_v2", "channel_key = ? AND source = ?", arrayOf(channelKey.trim().lowercase(), source))
+        } else {
+            db.delete("favorites_v2", "channel_key = ?", arrayOf(channelKey.trim().lowercase()))
+        }
     }
 
     fun toggleFavorite(channelKey: String, source: String = "cxtv"): Boolean {
         val key = channelKey.trim().lowercase()
-        return if (isFavorite(key)) {
-            removeFavorite(key)
+        return if (isFavorite(key, source)) {
+            removeFavorite(key, source)
             false
         } else {
             addFavorite(key, source)
@@ -614,7 +632,7 @@ class AppDatabase private constructor(context: Context) : SQLiteOpenHelper(
     fun getAllFavorites(source: String = "cxtv"): Set<String> {
         val result = mutableSetOf<String>()
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT channel_key FROM favorites WHERE source = ?;", arrayOf(source))
+        val cursor = db.rawQuery("SELECT channel_key FROM favorites_v2 WHERE source = ?;", arrayOf(source))
         while (cursor.moveToNext()) {
             result.add(cursor.getString(0))
         }
