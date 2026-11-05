@@ -2,6 +2,26 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.19] - 2026-11-04
+### Señal Clásica Activa por Defecto, Selector Interactivo de Señales y Aislamiento Total de Favoritos
+- **Señal Clásica Activa por Defecto**:
+  - Restablecida la lista de canales clásicos (2.399 canales) como la opción por defecto en Televisión Mundial.
+  - La nueva lista de canales (FreeTV) queda desactivada por defecto y disponible para alternar voluntariamente sin mezclas.
+- **Selector Interactivo de Señales en Pantalla (`btnSourceSelector`)**:
+  - Incorporado un botón interactivo en la cabecera superior Leanback entre el botón Recargar y la Guía Técnica.
+  - Muestra dinámicamente `📡 Señal: Clásica` o `⚡ Señal: Extendida` según la fuente activa.
+  - Al pulsar OK/Center con el control remoto, despliega un cuadro de selección intuitivo para conmutar al instante entre ambas fuentes con persistencia en `SharedPreferences`.
+- **Aislamiento Total de Favoritos por Fuente (`favorites_v2`)**:
+  - Implementada clave primaria compuesta `(channel_key, source)` en base de datos SQLite con migración automática y transparente de favoritos previos.
+  - Los canales favoritos guardados en Señal Clásica se mantienen intactos e independientes de los favoritos marcados en Señal Extendida o en Deportes.
+- **Navegación D-Pad 100% Leanback**:
+  - Enlaces de foco directo `nextFocusLeft` y `nextFocusRight` integrados en la cabecera con pista de ayuda dinámica contextual en `tvHeaderButtonHint`.
+
+## [1.9.18] - 2026-11-04
+### Integración Hexagonal de FreeTV (3.966 Canales 100% Online)
+- Arquitectura hexagonal desacoplada en `ApiClient` con soporte de catálogos concurrentes.
+- Script sincronizador `sync_freetv.py` para depuración de emojis duplicados y clasificación estandarizada en español.
+
 ## [1.9.16] - 2026-11-01
 ### Ancho Completo en Modo Vertical Móvil, Enlace D-Pad Directo a Pestañas y Auto-Enfoque en Partidos En Vivo
 - **Ajuste de Ancho Completo en Móviles (Fin de Bandas Negras Laterales)**:
