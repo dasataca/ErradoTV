@@ -669,9 +669,9 @@ class MainActivity : AppCompatActivity() {
         // Comprobación de versión en la web al iniciar
         checkAndPromptUpdate(userInitiated = false)
 
-        // Precargar catálogo CXTv de activos locales para disponibilidad inmediata al presionar Modo TV Mundial
+        // Precargar catálogo de activos locales para disponibilidad inmediata al presionar Modo TV Mundial
         lifecycleScope.launch(Dispatchers.IO) {
-            val localCatalog = ApiClient.fetchCxtvChannels(this@MainActivity)
+            val localCatalog = ApiClient.fetchWorldTvChannels(this@MainActivity)
             withContext(Dispatchers.Main) {
                 if (cachedCxtvChannels.isEmpty()) {
                     cachedCxtvChannels = localCatalog.channels
@@ -1661,32 +1661,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getCategoryTabLabel(category: String): String {
-        val icon = when (category.lowercase()) {
+        val trimmed = category.trim()
+        if (trimmed.startsWith("📰") || trimmed.startsWith("🎵") || trimmed.startsWith("🎬") ||
+            trimmed.startsWith("🏆") || trimmed.startsWith("👶") || trimmed.startsWith("🎞️") ||
+            trimmed.startsWith("🎨") || trimmed.startsWith("📚") || trimmed.startsWith("📽️") ||
+            trimmed.startsWith("🕊️") || trimmed.startsWith("🍳") || trimmed.startsWith("🏎️") ||
+            trimmed.startsWith("⛅") || trimmed.startsWith("🎭") || trimmed.startsWith("🎪") ||
+            trimmed.startsWith("📺")) {
+            return trimmed
+        }
+        val icon = when (trimmed.lowercase()) {
             "noticias" -> "📰"
             "música", "musica" -> "🎵"
-            "cine" -> "🎬"
+            "cine", "películas", "peliculas" -> "🎬"
             "deportes" -> "🏆"
-            "niños", "infantil" -> "👶"
+            "niños", "infantil", "animación", "animacion" -> "👶"
             "serie", "series" -> "🎞️"
             "cultura" -> "🎨"
-            "educación", "educacion" -> "📚"
-            "documentales" -> "📽️"
-            "evangélico", "evangelico", "católico", "catolico" -> "🕊️"
-            "culinario" -> "🍳"
-            "coches" -> "🏎️"
+            "educación", "educacion", "ciencia" -> "📚"
+            "documentales", "documental" -> "📽️"
+            "evangélico", "evangelico", "católico", "catolico", "religión", "religion" -> "🕊️"
+            "culinario", "cocina" -> "🍳"
+            "coches", "automovilismo", "auto" -> "🏎️"
             "clima" -> "⛅"
+            "comedia" -> "🎭"
+            "entretenimiento" -> "🎪"
+            "variedades", "general" -> "📺"
             else -> "📺"
         }
-        return "$icon $category"
+        return "$icon $trimmed"
     }
 
     private fun getCountryTabLabel(country: String): String {
-        val flag = when (country.lowercase()) {
+        val trimmed = country.trim()
+        // Si ya contiene un emoji de bandera al inicio, retornarlo tal cual para evitar duplicados
+        if (trimmed.length >= 2 && Character.isSurrogate(trimmed[0])) {
+            return trimmed
+        }
+        val flag = when (trimmed.lowercase()) {
             "argentina" -> "🇦🇷"
             "brasil", "brazil" -> "🇧🇷"
             "estados unidos", "usa" -> "🇺🇸"
             "españa", "spain" -> "🇪🇸"
-            "méjico", "mexico" -> "🇲🇽"
+            "méjico", "mexico", "méxico" -> "🇲🇽"
             "colombia" -> "🇨🇴"
             "chile" -> "🇨🇱"
             "perú", "peru" -> "🇵🇪"
@@ -1695,14 +1712,24 @@ class MainActivity : AppCompatActivity() {
             "paraguay" -> "🇵🇾"
             "venezuela" -> "🇻🇪"
             "bolivia" -> "🇧🇴"
+            "república dominicana", "republica dominicana", "dominican republic" -> "🇩🇴"
             "italia", "italy" -> "🇮🇹"
             "francia", "france" -> "🇫🇷"
             "alemania", "germany" -> "🇩🇪"
             "reino unido", "uk" -> "🇬🇧"
             "portugal" -> "🇵🇹"
+            "canadá", "canada" -> "🇨🇦"
+            "cuba" -> "🇨🇺"
+            "costa rica" -> "🇨🇷"
+            "panamá", "panama" -> "🇵🇦"
+            "guatemala" -> "🇬🇹"
+            "honduras" -> "🇭🇳"
+            "el salvador" -> "🇸🇻"
+            "nicaragua" -> "🇳🇮"
+            "puerto rico" -> "🇵🇷"
             else -> "🌍"
         }
-        return "$flag $country"
+        return "$flag $trimmed"
     }
 
     private fun sortCxtvChannelList(list: List<EventItem>): List<EventItem> {
@@ -2190,7 +2217,8 @@ class MainActivity : AppCompatActivity() {
                     val cachedDaily = db.getAllChannels("daily")
                     val cachedReplay = db.getAllChannels("replay")
                     val cachedLive = db.getAllChannels("live")
-                    val cachedCxtv = db.getAllChannels("cxtv")
+                    val worldTvKey = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
+                    val cachedCxtv = db.getAllChannels(worldTvKey)
 
                     if (cachedDaily.isNotEmpty()) {
                         withContext(Dispatchers.Main) {
@@ -2332,7 +2360,8 @@ class MainActivity : AppCompatActivity() {
 
                         val db = AppDatabase.getInstance(this@MainActivity)
                         db.saveChannels("live", sortedLive)
-                        db.saveChannels("cxtv", cxtvResult.channels)
+                        val worldTvKey = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
+                        db.saveChannels(worldTvKey, cxtvResult.channels)
                     } catch (_: Exception) {}
                 }
 
@@ -2450,8 +2479,9 @@ class MainActivity : AppCompatActivity() {
                 if (::rvSubcategories.isInitialized) rvSubcategories.visibility = View.GONE
                 currentSubcategory = "⭐ Todos"
                 if (isTv) rvSidebarCountries.visibility = View.GONE
+                val worldTvKey = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
                 val ftsResults = try {
-                    AppDatabase.getInstance(this).searchChannelsFts(globalSearchQuery, source = "cxtv")
+                    AppDatabase.getInstance(this).searchChannelsFts(globalSearchQuery, source = worldTvKey)
                 } catch (_: Exception) { emptyList() }
                 val searchList = if (ftsResults.isNotEmpty()) {
                     ftsResults

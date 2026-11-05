@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "87a233d7bec7c8d7f09596f1402664b3e28e73e73f92bdcdb5228d68a9929b5567044b5484e843d992b5ac5dd27231042d9d71b4a1ba392ba3235cd07cd6e3ba3af906d92e18a9735fc4e5197b10f484",
-  "latest_version_code": 82,
-  "latest_version_name": "1.9.17",
-  "release_timestamp": 1793839061922,
+  "active_key_enc": "25f7758182cd2b9927e02f16ae5190e0498e42503bec84116eadb84e7b02a841c94936561f062dc44e20968e78580cab36093deb6f43084d072f48e4527a365361a8b260d871b0789d796fee97f323c9",
+  "latest_version_code": 83,
+  "latest_version_name": "1.9.18",
+  "release_timestamp": 1793840495055,
   "release_date": "2026-11-04",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Adaptador FreeTV con 3966 canales online y arquitectura hexagonal"
+  "changelog": "GarecaTV: Activacion de catalogo FreeTV con 3966 canales online, precarga limpia y preservacion de preferencias"
 }
