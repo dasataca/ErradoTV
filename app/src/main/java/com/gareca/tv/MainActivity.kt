@@ -2272,7 +2272,7 @@ class MainActivity : AppCompatActivity() {
                         CommunityStreamManager.syncFromCommunity(this@MainActivity)
 
                         val liveChannelsJob = async { ApiClient.fetchTeveplayChannels() }
-                        val cxtvJob = async { ApiClient.fetchCxtvChannels(this@MainActivity) }
+                        val cxtvJob = async { ApiClient.fetchWorldTvChannels(this@MainActivity) }
 
                         val liveChannels = liveChannelsJob.await()
                         val cxtvResult = cxtvJob.await()

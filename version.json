@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "cbca45a4d87e6159b9d3b29277f1b2d149ffbc6f02b869daba82c6995371576e2b88f41c87ea5e9c1f8015b5aa70f727a2d3b40ac90107f248def232a138d7f03af9212e5fb09fd99a2ee53d9af09e88",
-  "latest_version_code": 81,
-  "latest_version_name": "1.9.16",
-  "release_timestamp": 1793550012467,
-  "release_date": "2026-11-01",
+  "active_key_enc": "87a233d7bec7c8d7f09596f1402664b3e28e73e73f92bdcdb5228d68a9929b5567044b5484e843d992b5ac5dd27231042d9d71b4a1ba392ba3235cd07cd6e3ba3af906d92e18a9735fc4e5197b10f484",
+  "latest_version_code": 82,
+  "latest_version_name": "1.9.17",
+  "release_timestamp": 1793839061922,
+  "release_date": "2026-11-04",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Ancho completo en vertical movil sin bandas negras, enlace D-Pad directo a pestanas y auto-enfoque en vivo"
+  "changelog": "GarecaTV: Adaptador FreeTV con 3966 canales online y arquitectura hexagonal"
 }

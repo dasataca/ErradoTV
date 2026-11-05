@@ -13,6 +13,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
+typealias CxtvCatalogResult = ApiClient.WorldTvCatalogResult
+
 object ApiClient {
 
     val httpClient = OkHttpClient.Builder()
@@ -563,13 +565,142 @@ object ApiClient {
         }
     }
 
-    private const val CXTV_CATALOG_URL = "https://raw.githubusercontent.com/dasataca/ErradoTV/main/cxtv_catalog.json"
+    // ==========================================
+    // ARQUITECTURA HEXAGONAL: CATÁLOGO DE TV
+    // ==========================================
+    enum class WorldTvProvider {
+        CXTV,   // Adaptador original CXTv (Preservado intacto)
+        FREETV  // Adaptador FreeTV con API REST y monitor de salud (Activo)
+    }
 
-    data class CxtvCatalogResult(
+    // Conmutador Hexagonal: cambiar a WorldTvProvider.CXTV para reactivar CXTv
+    var activeWorldTvProvider: WorldTvProvider = WorldTvProvider.FREETV
+
+    private const val CXTV_CATALOG_URL = "https://raw.githubusercontent.com/dasataca/ErradoTV/main/cxtv_catalog.json"
+    private const val FREETV_CATALOG_URL = "https://raw.githubusercontent.com/dasataca/ErradoTV/main/freetv_catalog.json"
+
+    data class WorldTvCatalogResult(
         val channels: List<EventItem>,
         val categories: List<String>,
         val countries: List<String>
     )
+
+    suspend fun fetchWorldTvChannels(context: Context? = null): WorldTvCatalogResult {
+        return when (activeWorldTvProvider) {
+            WorldTvProvider.FREETV -> fetchFreeTvChannels(context)
+            WorldTvProvider.CXTV -> fetchCxtvChannels(context)
+        }
+    }
+
+    suspend fun fetchFreeTvChannels(context: Context? = null): WorldTvCatalogResult = withContext(Dispatchers.IO) {
+        val list = mutableListOf<EventItem>()
+        val categoriesList = mutableListOf<String>()
+        val countriesList = mutableListOf<String>()
+
+        var jsonString: String? = null
+
+        // 1. Intentar descargar el catálogo fresco desde GitHub
+        try {
+            val req = Request.Builder()
+                .url(FREETV_CATALOG_URL)
+                .header("User-Agent", "Mozilla/5.0")
+                .build()
+            val response = httpClient.newCall(req).execute()
+            if (response.isSuccessful) {
+                val body = response.body?.string().orEmpty()
+                if (body.startsWith("{")) {
+                    jsonString = body
+                }
+            }
+        } catch (e: Exception) {
+            // Falla de red, recurrir a assets
+        }
+
+        // 2. Fallback instantáneo a assets si no hubo respuesta de red
+        if (jsonString.isNullOrEmpty() && context != null) {
+            try {
+                context.assets.open("freetv_catalog.json").use { stream ->
+                    jsonString = stream.bufferedReader().use { it.readText() }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        if (!jsonString.isNullOrEmpty()) {
+            try {
+                val root = JSONObject(jsonString!!)
+
+                // Extraer categorías dinámicas de FreeTV
+                val catArr = root.optJSONArray("categories")
+                if (catArr != null) {
+                    for (i in 0 until catArr.length()) {
+                        val cObj = catArr.getJSONObject(i)
+                        val cName = cObj.optString("name", "").trim()
+                        if (cName.isNotEmpty() && !categoriesList.contains(cName)) {
+                            categoriesList.add(cName)
+                        }
+                    }
+                }
+
+                // Extraer países dinámicos de FreeTV
+                val ctryArr = root.optJSONArray("countries")
+                if (ctryArr != null) {
+                    for (i in 0 until ctryArr.length()) {
+                        val cObj = ctryArr.getJSONObject(i)
+                        val cName = cObj.optString("name", "").trim()
+                        if (cName.isNotEmpty() && !countriesList.contains(cName)) {
+                            countriesList.add(cName)
+                        }
+                    }
+                }
+
+                // Extraer canales
+                val chArr = root.optJSONArray("channels")
+                if (chArr != null) {
+                    for (i in 0 until chArr.length()) {
+                        val obj = chArr.getJSONObject(i)
+                        val name = obj.optString("name", "Canal").trim()
+                        val cat = obj.optString("category", "Variedades").trim()
+                        val country = obj.optString("country", "Internacional").trim()
+                        val logo = obj.optString("logo", "").ifEmpty { null }
+                        val streamUrl = obj.optString("stream_url", "").trim()
+                        val streamType = obj.optString("stream_type", "hls").trim()
+                        val isAvailable = obj.optBoolean("is_available", true)
+
+                        if (streamUrl.isNotEmpty()) {
+                            val sub = "$country • $cat"
+                            val status = if (isAvailable) EventStatus.CHANNEL_24_7 else EventStatus.REPLAY_UNAVAILABLE
+
+                            list.add(
+                                EventItem(
+                                    title = name,
+                                    time = null,
+                                    subtitle = sub,
+                                    imageUrl = logo,
+                                    streams = listOf(
+                                        StreamOption(
+                                            title = name,
+                                            url = streamUrl,
+                                            type = streamType
+                                        )
+                                    ),
+                                    status = status,
+                                    category = cat,
+                                    country = country,
+                                    streamType = streamType
+                                )
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        WorldTvCatalogResult(list, categoriesList, countriesList)
+    }
 
     suspend fun fetchCxtvChannels(context: Context? = null): CxtvCatalogResult = withContext(Dispatchers.IO) {
         val list = mutableListOf<EventItem>()
