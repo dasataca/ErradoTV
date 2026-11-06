@@ -236,7 +236,7 @@ class EventAdapter(
             boundPosition = position
             boundTotal = total
             tvTitle.text = item.title
-            tvSubtitle.text = item.subtitle
+            tvSubtitle.text = com.gareca.tv.epg.EpgManager.getFormattedSubtitle(item, item.subtitle)
 
             if (!item.imageUrl.isNullOrEmpty()) {
                 ivThumbnail.visibility = View.VISIBLE

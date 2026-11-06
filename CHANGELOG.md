@@ -2,6 +2,24 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.20] - 2026-11-06
+### Reestructuración Modular, Suite JUnit4, EPG para 1GB RAM, Sync Favoritos Supabase y Selector de Audio
+- **Reestructuración Modular y Controladores Desacoplados**:
+  - Extraída la navegación D-Pad a `DpadNavigationController` garantizando foco 100% Leanback TV.
+  - Extraído el motor de búsqueda multidisjuntiva tokenizada y debounce a `SearchFilterController`.
+  - Desacoplada la orquestación de datos y favoritos a `CatalogStateManager` con accesos O(1) en RAM.
+  - Centralizado el ordenamiento cronológico y de prioridades en `EventSorter`.
+- **Suite de Tests Unitarios Base JUnit4**:
+  - Creados tests en `CryptoUtilsTest`, `EventSorterTest`, `EpgManagerTest` y `CloudFavoritesSyncTest`.
+- **Guía Interactiva EPG en Vivo Optimizada para 1GB de RAM (`EpgManager`)**:
+  - Gestión de guía electrónica con límite de memoria (`MAX_CACHED_CHANNELS = 60`), purgado en `onTrimMemory` para TV Sticks de 1GB de RAM y cálculo horario de programación en tarjetas de 68dp.
+- **Sincronización de Favoritos en la Nube con Supabase (`CloudFavoritesSync`)**:
+  - Sincronización bidireccional por unión (Merge) con Supabase (`errado_user_favorites`) protegiendo los favoritos del usuario ante cortes de red.
+- **Selector de Pistas de Audio Alternativas en Reproductor (`PlayerActivity`)**:
+  - Detección de múltiples pistas de audio en transmisiones ExoPlayer Media3.
+  - Botón interactivo "🔊 Audio" en banner superior y atajos en control remoto (`PROG_YELLOW`, `MEDIA_AUDIO_TRACK`, `CAPTIONS`).
+  - Diálogo interactivo con selección de idioma legible, canales de audio y cartel informativo flotante (HUD).
+
 ## [1.9.19] - 2026-11-04
 ### Señal Clásica Activa por Defecto, Selector Interactivo de Señales y Aislamiento Total de Favoritos
 - **Señal Clásica Activa por Defecto**:

@@ -127,6 +127,22 @@
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnAudioTrack"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/button_focus_selector"
+            android:text="🔊 Audio"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- Indicador HUD Flotante de Zoom / Relación de Aspecto -->

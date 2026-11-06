@@ -21,10 +21,10 @@ object CryptoUtils {
         try {
             System.loadLibrary("gareca_crypto")
             nativeLoaded = true
-            android.util.Log.d("CryptoUtils", "C++20 NDK native crypto engine loaded successfully")
+            try { android.util.Log.d("CryptoUtils", "C++20 NDK native crypto engine loaded successfully") } catch (_: Throwable) {}
         } catch (t: Throwable) {
             nativeLoaded = false
-            android.util.Log.w("CryptoUtils", "Could not load native crypto engine, using Kotlin fallback", t)
+            try { android.util.Log.w("CryptoUtils", "Could not load native crypto engine, using Kotlin fallback", t) } catch (_: Throwable) {}
         }
     }
 
@@ -211,9 +211,56 @@ object CryptoUtils {
         return ""
     }
 
+    fun decodeBase64(str: String): ByteArray {
+        val trimmed = str.trim()
+        return try {
+            val res = Base64.decode(trimmed, Base64.NO_WRAP)
+            if (res != null && res.isNotEmpty()) res else java.util.Base64.getDecoder().decode(trimmed)
+        } catch (_: Throwable) {
+            try {
+                java.util.Base64.getDecoder().decode(trimmed)
+            } catch (_: Throwable) {
+                ByteArray(0)
+            }
+        }
+    }
+
+    fun encodeBase64(bytes: ByteArray): String {
+        return try {
+            val res = Base64.encodeToString(bytes, Base64.NO_WRAP)
+            if (!res.isNullOrEmpty()) res else java.util.Base64.getEncoder().encodeToString(bytes)
+        } catch (_: Throwable) {
+            java.util.Base64.getEncoder().encodeToString(bytes)
+        }
+    }
+
+    fun encryptWithKey(plainText: String, b64Key: String): String {
+        return try {
+            val iv = ByteArray(16).apply {
+                java.security.SecureRandom().nextBytes(this)
+            }
+            val digest = MessageDigest.getInstance("SHA-256")
+            val keyBytes = digest.digest(b64Key.toByteArray(Charsets.UTF_8))
+            val secretKey = SecretKeySpec(keyBytes, "AES")
+            val ivSpec = IvParameterSpec(iv)
+
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec)
+            val cipherText = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
+
+            val combined = ByteArray(iv.size + cipherText.size)
+            System.arraycopy(iv, 0, combined, 0, iv.size)
+            System.arraycopy(cipherText, 0, combined, iv.size, cipherText.size)
+
+            encodeBase64(combined)
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
     private fun tryDecryptWithKey(payload: String, b64Key: String): String {
         return try {
-            val rawBytes = Base64.decode(payload, Base64.NO_WRAP)
+            val rawBytes = decodeBase64(payload)
             if (rawBytes.size < 16) return ""
 
             val iv = Arrays.copyOfRange(rawBytes, 0, 16)

@@ -16,6 +16,8 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.gareca.tv.util.DeviceUtils
 import androidx.lifecycle.lifecycleScope
@@ -24,6 +26,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.VideoSize
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -55,10 +58,12 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var tvChannelBannerSub: TextView
     private lateinit var tvChannelBannerIndex: TextView
 
-    // Control y HUD de Zoom / Relación de Aspecto
+    // Control y HUD de Zoom / Relación de Aspecto y Audio
     private lateinit var btnZoomMode: Button
+    private lateinit var btnAudioTrack: Button
     private lateinit var tvZoomHud: TextView
     private var hideZoomHudRunnable: Runnable? = null
+    private var trackSelector: DefaultTrackSelector? = null
 
     private enum class ZoomMode(val resizeMode: Int, val label: String, val shortLabel: String) {
         FIT(AspectRatioFrameLayout.RESIZE_MODE_FIT, "Ajuste Original (Fit)", "Ajuste"),
@@ -120,10 +125,15 @@ class PlayerActivity : AppCompatActivity() {
         tvChannelBannerSub = findViewById(R.id.tvChannelBannerSub)
         tvChannelBannerIndex = findViewById(R.id.tvChannelBannerIndex)
         btnZoomMode = findViewById(R.id.btnZoomMode)
+        btnAudioTrack = findViewById(R.id.btnAudioTrack)
         tvZoomHud = findViewById(R.id.tvZoomHud)
 
         btnZoomMode.setOnClickListener {
             cycleZoomMode()
+        }
+
+        btnAudioTrack.setOnClickListener {
+            showAudioTrackDialog()
         }
 
         findViewById<View>(R.id.btnPlayerBack)?.setOnClickListener {
@@ -165,7 +175,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun initializePlayer(url: String, drmLicenseUrl: String? = null, customUserAgent: String? = null, title: String = "") {
         try {
             // Configuramos el selector de pistas para forzar SIEMPRE la máxima calidad y bitrate disponible
-            val trackSelector = DefaultTrackSelector(this).apply {
+            val selector = DefaultTrackSelector(this).apply {
                 setParameters(
                     buildUponParameters()
                         .setForceHighestSupportedBitrate(true)
@@ -189,8 +199,10 @@ class PlayerActivity : AppCompatActivity() {
                 .setPrioritizeTimeOverSizeThresholds(true)
                 .build()
 
+            trackSelector = selector
+
             val exoPlayer = ExoPlayer.Builder(this)
-                .setTrackSelector(trackSelector)
+                .setTrackSelector(selector)
                 .setLoadControl(loadControl)
                 .build()
 
@@ -198,6 +210,12 @@ class PlayerActivity : AppCompatActivity() {
             playerView.player = exoPlayer
 
             exoPlayer.addListener(object : Player.Listener {
+                override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                    val audioGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
+                    val totalAudio = audioGroups.sumOf { it.length }
+                    btnAudioTrack.visibility = if (totalAudio > 1) View.VISIBLE else View.GONE
+                }
+
                 override fun onVideoSizeChanged(videoSize: VideoSize) {
                     if (videoSize.width > 0 && videoSize.height > 0) {
                         videoFrameReceived = true
@@ -639,6 +657,70 @@ class PlayerActivity : AppCompatActivity() {
         handler.postDelayed(r, 1800)
     }
 
+    private fun showAudioTrackDialog() {
+        val currentTracks = player?.currentTracks ?: return
+        val audioTracks = mutableListOf<Triple<androidx.media3.common.Tracks.Group, Int, String>>()
+
+        var trackCounter = 1
+        for (group in currentTracks.groups) {
+            if (group.type == C.TRACK_TYPE_AUDIO) {
+                val mediaTrackGroup = group.mediaTrackGroup
+                for (i in 0 until mediaTrackGroup.length) {
+                    val format = mediaTrackGroup.getFormat(i)
+                    val lang = format.language
+                    val langName = if (!lang.isNullOrBlank()) {
+                        try {
+                            java.util.Locale(lang).getDisplayLanguage(java.util.Locale("es")).replaceFirstChar { it.uppercase() }
+                        } catch (_: Exception) { lang }
+                    } else {
+                        "Audio $trackCounter"
+                    }
+                    val channels = when (format.channelCount) {
+                        1 -> "Mono"
+                        2 -> "Estéreo"
+                        6 -> "5.1 Surround"
+                        else -> if (format.channelCount > 0) "${format.channelCount} Canales" else ""
+                    }
+                    val details = listOfNotNull(
+                        langName,
+                        format.label?.takeIf { it.isNotBlank() && it != langName },
+                        channels.takeIf { it.isNotBlank() }
+                    ).joinToString(" • ")
+
+                    val isSelected = group.isTrackSelected(i)
+                    val itemLabel = if (isSelected) "✓ $details (Activo)" else details
+                    audioTracks.add(Triple(group, i, itemLabel))
+                    trackCounter++
+                }
+            }
+        }
+
+        if (audioTracks.isEmpty()) {
+            Toast.makeText(this, "Esta señal no dispone de pistas de audio alternativas", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val items = audioTracks.map { it.third }.toTypedArray()
+        val selectedIndex = audioTracks.indexOfFirst { it.first.isTrackSelected(it.second) }.coerceAtLeast(0)
+
+        val dialog = AlertDialog.Builder(this, androidx.appcompat.R.style.Theme_AppCompat_Dialog_Alert)
+            .setTitle("🔊 Seleccionar Pista de Audio")
+            .setSingleChoiceItems(items, selectedIndex) { d, which ->
+                val (group, trackIndex, label) = audioTracks[which]
+                trackSelector?.parameters = trackSelector?.buildUponParameters()
+                    ?.setOverrideForType(
+                        TrackSelectionOverride(group.mediaTrackGroup, trackIndex)
+                    )
+                    ?.build() ?: return@setSingleChoiceItems
+                showHudMessage("🔊 Audio: ${label.replace("✓ ", "").replace(" (Activo)", "")}")
+                d.dismiss()
+            }
+            .setNegativeButton("Cerrar", null)
+            .create()
+
+        dialog.show()
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private fun setupMobileTouchGestures() {
         if (!DeviceUtils.isMobile(this)) return
@@ -805,6 +887,8 @@ class PlayerActivity : AppCompatActivity() {
                     }
                     if (videoFrameReceived && btnZoomMode.visibility == View.VISIBLE) {
                         btnZoomMode.requestFocus()
+                    } else if (btnAudioTrack.visibility == View.VISIBLE) {
+                        btnAudioTrack.requestFocus()
                     }
                     return true
                 }
@@ -824,6 +908,12 @@ class PlayerActivity : AppCompatActivity() {
                         cycleZoomMode()
                         return true
                     }
+                }
+                KeyEvent.KEYCODE_PROG_YELLOW,
+                KeyEvent.KEYCODE_MEDIA_AUDIO_TRACK,
+                KeyEvent.KEYCODE_CAPTIONS -> {
+                    showAudioTrackDialog()
+                    return true
                 }
                 KeyEvent.KEYCODE_INFO -> {
                     showChannelBanner()
@@ -865,5 +955,6 @@ class PlayerActivity : AppCompatActivity() {
         zapJob?.cancel()
         player?.release()
         player = null
+        trackSelector = null
     }
 }

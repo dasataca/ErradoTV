@@ -35,7 +35,14 @@ import com.gareca.tv.updater.AppUpdater
 import com.gareca.tv.updater.UpdateInfo
 import com.gareca.tv.auth.AuthManager
 import com.gareca.tv.auth.SessionState
+import com.gareca.tv.auth.CloudFavoritesSync
 import com.gareca.tv.db.AppDatabase
+import com.gareca.tv.controller.CatalogStateManager
+import com.gareca.tv.controller.DpadNavigationController
+import com.gareca.tv.controller.SearchFilterController
+import com.gareca.tv.util.EventSorter
+import com.gareca.tv.util.GlobalSortMode
+import com.gareca.tv.util.ReplaySortMode
 import androidx.appcompat.app.AlertDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -83,11 +90,6 @@ class MainActivity : AppCompatActivity() {
     private var globalSearchQuery = ""
     private var isVoiceForGlobal = false
 
-    private enum class GlobalSortMode {
-        DEFAULT,
-        NAME_ASC,
-        NAME_DESC
-    }
     private var currentGlobalSortMode = GlobalSortMode.DEFAULT
 
     // Sugerencias en pantalla para Leanback TV
@@ -115,9 +117,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private enum class ReplaySortMode {
-        DATE_DESC, DATE_ASC, NAME_ASC, NAME_DESC
-    }
     private var currentSortMode = ReplaySortMode.DATE_DESC
     private var searchQuery = ""
 
@@ -174,27 +173,49 @@ class MainActivity : AppCompatActivity() {
         "⚽ Otras Copas",
         "🌐 Todos los Canales"
     )
+    val catalogState = CatalogStateManager()
+    val dpadController = DpadNavigationController()
+    val searchController = SearchFilterController()
+
     private var currentCategory = "⚽ Partidos del Día"
-    private var cachedDailyEvents = listOf<EventItem>()
-    private var cachedReplayEvents = listOf<EventItem>()
-    private var cachedLiveChannels = listOf<EventItem>()
 
-    // Catálogo Dinámico de Televisión Mundial (CXTv)
-    private var cachedCxtvChannels = listOf<EventItem>()
-    private var dynamicCxtvCategories = listOf<String>()
-    private var dynamicCxtvCountries = listOf<String>()
+    private var cachedDailyEvents: List<EventItem>
+        get() = catalogState.cachedDailyEvents
+        set(value) { catalogState.cachedDailyEvents = value }
 
-    // Índices de Acceso Inmediato O(1) estilo Streamer TV Pro / TiviMate
-    private val cxtvCategoryMap = mutableMapOf<String, List<EventItem>>()
-    private val cxtvCountryMap = mutableMapOf<String, List<EventItem>>()
-    private var preSortedAllChannels = listOf<EventItem>()
+    private var cachedReplayEvents: List<EventItem>
+        get() = catalogState.cachedReplayEvents
+        set(value) { catalogState.cachedReplayEvents = value }
+
+    private var cachedLiveChannels: List<EventItem>
+        get() = catalogState.cachedLiveChannels
+        set(value) { catalogState.cachedLiveChannels = value }
+
+    private var cachedCxtvChannels: List<EventItem>
+        get() = catalogState.cachedCxtvChannels
+        set(value) { catalogState.cachedCxtvChannels = value }
+
+    private var dynamicCxtvCategories: List<String>
+        get() = catalogState.dynamicCxtvCategories
+        set(value) { catalogState.dynamicCxtvCategories = value }
+
+    private var dynamicCxtvCountries: List<String>
+        get() = catalogState.dynamicCxtvCountries
+        set(value) { catalogState.dynamicCxtvCountries = value }
+
+    private var preSortedAllChannels: List<EventItem>
+        get() = catalogState.preSortedAllChannels
+        set(value) { catalogState.preSortedAllChannels = value }
+
+    private val cxtvCategoryMap get() = catalogState.cxtvCategoryMap
+    private val cxtvCountryMap get() = catalogState.cxtvCountryMap
+
     private var cachedCategoryNavItems = listOf<NavItem>()
     private var cachedCountryNavItems = listOf<NavItem>()
 
-    // Caché en memoria RAM de favoritos O(1) (Cero lecturas a disco SQLite durante el renderizado en TV)
-    private val cachedSportsFavorites = java.util.Collections.synchronizedSet(HashSet<String>())
-    private val cachedCxtvFavorites = java.util.Collections.synchronizedSet(HashSet<String>())
-    private val cachedFreeTvFavorites = java.util.Collections.synchronizedSet(HashSet<String>())
+    private val cachedSportsFavorites get() = catalogState.cachedSportsFavorites
+    private val cachedCxtvFavorites get() = catalogState.cachedCxtvFavorites
+    private val cachedFreeTvFavorites get() = catalogState.cachedFreeTvFavorites
     private lateinit var btnSourceSelector: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -222,14 +243,10 @@ class MainActivity : AppCompatActivity() {
             defaultHandler?.uncaughtException(thread, throwable)
         }
 
-        // Carga inicial asíncrona de favoritos a memoria RAM
+        // Carga inicial asíncrona de favoritos a memoria RAM y sincronización con Supabase
         lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val db = AppDatabase.getInstance(this@MainActivity)
-                cachedSportsFavorites.addAll(db.getAllFavorites("sports"))
-                cachedCxtvFavorites.addAll(db.getAllFavorites("cxtv"))
-                cachedFreeTvFavorites.addAll(db.getAllFavorites("freetv"))
-            } catch (_: Exception) {}
+            catalogState.loadFavoritesFromDb(this@MainActivity)
+            CloudFavoritesSync.syncFavorites(this@MainActivity, catalogState)
         }
 
         // Configurar orientación adaptativa: Fija landscape en TV, flexible en celular
@@ -903,32 +920,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun filterSuggestions(query: String) {
-        val q = query.trim().lowercase()
-        if (q.length < 2) {
-            if (::rvSuggestions.isInitialized) {
-                rvSuggestions.visibility = View.GONE
-                suggestionAdapter.submitList(emptyList())
-            }
-            return
-        }
-
-        val dbSuggestions = try {
-            AppDatabase.getInstance(this).getSuggestions(q, limit = 6)
-        } catch (_: Exception) { emptyList() }
-
-        val matches = if (dbSuggestions.isNotEmpty()) {
-            dbSuggestions
-        } else {
-            val tokens = q.split(Regex("""\s+""")).filter { it.isNotBlank() }
-            allKeywords.filter { keyword ->
-                val lower = keyword.lowercase()
-                tokens.all { lower.contains(it) }
-            }.sortedBy { item ->
-                val lower = item.lowercase()
-                if (lower.startsWith(q)) 0 else 1
-            }.take(6)
-        }
-
+        val matches = searchController.getSuggestions(this, query, allKeywords.toList(), limit = 6)
         if (matches.isNotEmpty() && ::rvSuggestions.isInitialized) {
             suggestionAdapter.submitList(matches)
             rvSuggestions.visibility = View.VISIBLE
@@ -1812,20 +1804,8 @@ class MainActivity : AppCompatActivity() {
         return "$flag $trimmed"
     }
 
-    private fun sortCxtvChannelList(list: List<EventItem>): List<EventItem> {
-        return list.sortedWith(
-            compareBy<EventItem> { item ->
-                when {
-                    // Canales no disponibles SIEMPRE al final de la lista
-                    item.status == EventStatus.REPLAY_UNAVAILABLE || item.status == EventStatus.FINISHED -> 100
-                    else -> 0
-                }
-            }
-            .thenBy { it.category.lowercase().trim() }
-            .thenBy { it.country.orEmpty().lowercase().trim() }
-            .thenBy { it.title.lowercase().trim() }
-        )
-    }
+    private fun sortCxtvChannelList(list: List<EventItem>): List<EventItem> =
+        EventSorter.sortCxtvChannelList(list)
 
     private fun applySubcategories(channels: List<EventItem>, isCountryMode: Boolean): List<EventItem> {
         if (!::rvSubcategories.isInitialized) return channels
@@ -1923,22 +1903,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun focusSelectedCountry() {
-        val pos = sidebarCountryAdapter.getSelectedPosition()
-        val targetPos = if (pos >= 0) pos else 0
-        rvSidebarCountries.scrollToPosition(targetPos)
-        rvSidebarCountries.post {
-            val vh = rvSidebarCountries.findViewHolderForAdapterPosition(targetPos)
-            val view = vh?.itemView ?: rvSidebarCountries.layoutManager?.findViewByPosition(targetPos)
-            if (view != null) {
-                view.requestFocus()
-            } else {
-                rvSidebarCountries.postDelayed({
-                    val retryView = rvSidebarCountries.findViewHolderForAdapterPosition(targetPos)?.itemView
-                        ?: rvSidebarCountries.layoutManager?.findViewByPosition(targetPos)
-                    retryView?.requestFocus() ?: rvSidebarCountries.requestFocus()
-                }, 50)
-            }
-        }
+        dpadController.focusSelectedCountry(rvSidebarCountries, sidebarCountryAdapter)
     }
 
     private fun updateChannelPositionIndicator(pos: Int, total: Int) {
@@ -1993,14 +1958,8 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-    private fun sortDailyMatchesChronologically(list: List<EventItem>): List<EventItem> {
-        return list.sortedWith(
-            compareBy<EventItem> { item ->
-                if (item.startEpochMillis > 0L) item.startEpochMillis else Long.MAX_VALUE
-            }.thenBy { it.time.orEmpty() }
-            .thenBy { it.title.lowercase().trim() }
-        )
-    }
+    private fun sortDailyMatchesChronologically(list: List<EventItem>): List<EventItem> =
+        EventSorter.sortDailyMatchesChronologically(list)
 
     private fun refreshDailyEventsTiming(list: List<EventItem>): List<EventItem> {
         for (item in list) {
@@ -2017,47 +1976,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun focusFirstEventItem() {
-        if (adapter.itemCount == 0) return
-        val lm = rvEvents.layoutManager as? LinearLayoutManager
-
-        val targetPos = if (currentCategory == "⚽ Partidos del Día") {
-            // Prioridad 1: Primer partido con señal activa EN VIVO
-            val liveWithStreams = adapter.currentList.indexOfFirst {
-                it.status == EventStatus.LIVE && it.streams.isNotEmpty()
-            }
-            if (liveWithStreams != -1) {
-                liveWithStreams
-            } else {
-                // Prioridad 2: Cualquier partido marcado EN VIVO
-                val liveAny = adapter.currentList.indexOfFirst { it.status == EventStatus.LIVE }
-                if (liveAny != -1) {
-                    liveAny
-                } else {
-                    // Prioridad 3: Primer partido por comenzar
-                    val startingSoon = adapter.currentList.indexOfFirst { it.status == EventStatus.STARTING_SOON }
-                    if (startingSoon != -1) {
-                        startingSoon
-                    } else {
-                        // Prioridad 4: Primer partido programado pendiente (no finalizado)
-                        val scheduled = adapter.currentList.indexOfFirst { it.status == EventStatus.SCHEDULED }
-                        if (scheduled != -1) scheduled else 0
-                    }
-                }
-            }
-        } else {
-            val firstPos = lm?.findFirstVisibleItemPosition() ?: 0
-            if (firstPos in 0 until adapter.itemCount) firstPos else 0
-        }
-
-        lm?.scrollToPositionWithOffset(targetPos, 0)
-        rvEvents.post {
-            val child = rvEvents.findViewHolderForAdapterPosition(targetPos)?.itemView
-                ?: lm?.findViewByPosition(targetPos)
-                ?: rvEvents.getChildAt(0)
-            if (child != null && !child.hasFocus()) {
-                child.requestFocus()
-            }
-        }
+        dpadController.focusFirstEventItem(rvEvents, adapter, currentCategory == "⚽ Partidos del Día")
     }
 
     private fun focusSelectedSubcategory(targetPosition: Int = -1) {
@@ -2080,46 +1999,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun focusSelectedSidebarCategory() {
-        val pos = sidebarCategoryAdapter.getSelectedPosition()
-        if (pos >= 0) {
-            rvSidebarCategories.scrollToPosition(pos)
-            rvSidebarCategories.post {
-                val vh = rvSidebarCategories.findViewHolderForAdapterPosition(pos)
-                val view = vh?.itemView ?: rvSidebarCategories.layoutManager?.findViewByPosition(pos)
-                if (view != null) {
-                    view.requestFocus()
-                } else {
-                    rvSidebarCategories.postDelayed({
-                        val retryView = rvSidebarCategories.findViewHolderForAdapterPosition(pos)?.itemView
-                            ?: rvSidebarCategories.layoutManager?.findViewByPosition(pos)
-                        retryView?.requestFocus() ?: rvSidebarCategories.requestFocus()
-                    }, 50)
-                }
-            }
-        } else {
-            rvSidebarCategories.requestFocus()
-        }
+        dpadController.focusSelectedSidebarCategory(rvSidebarCategories, sidebarCategoryAdapter)
     }
 
     private fun focusSelectedSportsCategory() {
-        val pos = categoryAdapter.getSelectedPosition()
-        val target = if (pos >= 0 && pos < categoryAdapter.itemCount) pos else 0
-        if (categoryAdapter.itemCount > 0) {
-            rvCategories.scrollToPosition(target)
-            rvCategories.post {
-                val vh = rvCategories.findViewHolderForAdapterPosition(target)
-                val view = vh?.itemView ?: rvCategories.layoutManager?.findViewByPosition(target)
-                if (view != null) {
-                    view.requestFocus()
-                } else {
-                    rvCategories.postDelayed({
-                        val retryView = rvCategories.findViewHolderForAdapterPosition(target)?.itemView
-                            ?: rvCategories.layoutManager?.findViewByPosition(target)
-                        retryView?.requestFocus() ?: rvCategories.requestFocus()
-                    }, 50)
-                }
-            }
-        }
+        dpadController.focusSelectedSportsCategory(rvCategories, categoryAdapter)
     }
 
     private fun activateSearchInput() {
@@ -2503,30 +2387,12 @@ class MainActivity : AppCompatActivity() {
         if (ftsResults.isNotEmpty()) {
             return ftsResults
         }
-        val tokens = q.lowercase().split(Regex("""\s+""")).filter { it.isNotBlank() }
-        val results = mutableListOf<EventItem>()
-
-        fun matchesTokens(item: EventItem): Boolean {
-            val target = "${item.title} ${item.subtitle} ${item.category}".lowercase()
-            return tokens.all { target.contains(it) }
-        }
-
-        for (item in cachedDailyEvents) {
-            if (matchesTokens(item)) {
-                results.add(item)
-            }
-        }
-        for (item in cachedLiveChannels) {
-            if (matchesTokens(item)) {
-                results.add(item)
-            }
-        }
-        for (item in cachedReplayEvents) {
-            if (matchesTokens(item)) {
-                results.add(item)
-            }
-        }
-        return results
+        return searchController.searchSportsAcrossSources(
+            q,
+            cachedDailyEvents,
+            cachedLiveChannels,
+            cachedReplayEvents
+        )
     }
 
     private fun filterAndDisplayEvents(silent: Boolean = false) {
@@ -2780,69 +2646,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        return when (currentSortMode) {
-            ReplaySortMode.DATE_DESC -> list.sortedWith(
-                compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
-                    .thenByDescending { it.timestamp }
-                    .thenBy { it.title.lowercase() }
-            )
-            ReplaySortMode.DATE_ASC -> list.sortedWith(
-                compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
-                    .thenBy { it.timestamp }
-                    .thenBy { it.title.lowercase() }
-            )
-            ReplaySortMode.NAME_ASC -> list.sortedWith(
-                compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
-                    .thenBy { it.title.lowercase() }
-            )
-            ReplaySortMode.NAME_DESC -> list.sortedWith(
-                compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
-                    .thenByDescending { it.title.lowercase() }
-            )
-        }
+        return EventSorter.sortReplayEvents(list, currentSortMode)
     }
 
-    /**
-     * Ordenación estricta de eventos y canales según la regla oficial:
-     * 1. ● EN VIVO van primero (LIVE y STARTING_SOON)
-     * 2. PROGRAMADOS van después (SCHEDULED, orden cronológico por hora de inicio)
-     * 3. CANALES 24/7 van luego (los canales 24/7 con NO DISPONIBLE se quedan en su lugar entre los 24/7)
-     * 4. Partidos no disponibles que no sean 24/7 ni finalizados
-     * 5. FINALIZADOS van SIEMPRE al último de todo
-     */
-    private fun sortEventList(list: List<EventItem>): List<EventItem> {
-        return list.sortedWith(
-            compareBy<EventItem> { item ->
-                when {
-                    // Finalizados SIEMPRE van al final de la lista
-                    item.status == EventStatus.FINISHED || item.originalStatus == EventStatus.FINISHED -> 100
-
-                    // En vivo van primero
-                    item.status == EventStatus.LIVE -> 10
-                    item.status == EventStatus.STARTING_SOON -> 20
-
-                    // Programados van después
-                    item.status == EventStatus.SCHEDULED -> 30
-
-                    // Luego los canales 24/7 (nunca se etiquetan como NO DISPONIBLE)
-                    item.status == EventStatus.CHANNEL_24_7 || item.originalStatus == EventStatus.CHANNEL_24_7 || item.category != "Partidos" -> 40
-
-                    // Repeticiones (en búsqueda global)
-                    item.status == EventStatus.REPLAY -> 50
-
-                    // Partidos no disponibles (que no sean 24/7 ni finalizados)
-                    item.status == EventStatus.REPLAY_UNAVAILABLE -> 90
-
-                    else -> 60
-                }
-            }.thenBy { item ->
-                // Dentro de la misma prioridad, ordenar cronológicamente si tienen hora programada
-                if (item.startEpochMillis > 0L) item.startEpochMillis else Long.MAX_VALUE
-            }
-            .thenBy { it.category.lowercase().trim() }
-            .thenBy { it.title.lowercase().trim() }
-        )
-    }
+    private fun sortEventList(list: List<EventItem>): List<EventItem> =
+        EventSorter.sortEventList(list)
 
     private fun checkAndPromptUpdate(userInitiated: Boolean) {
         lifecycleScope.launch {
@@ -2891,18 +2699,16 @@ class MainActivity : AppCompatActivity() {
         val channelKey = item.title.trim().lowercase()
         val worldTvFavSrc = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
         val src = if (currentAppMode == AppMode.SPORTS) "sports" else worldTvFavSrc
-        val isFav = try {
-            AppDatabase.getInstance(this).toggleFavorite(channelKey, source = src)
-        } catch (_: Exception) {
-            false
+        val isFav = catalogState.toggleFavorite(this, channelKey, src)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (isFav) {
+                CloudFavoritesSync.pushFavoriteAsync(this@MainActivity, channelKey, src)
+            } else {
+                CloudFavoritesSync.removeFavoriteAsync(this@MainActivity, channelKey, src)
+            }
         }
-        if (src == "sports") {
-            if (isFav) cachedSportsFavorites.add(channelKey) else cachedSportsFavorites.remove(channelKey)
-        } else if (src == "freetv") {
-            if (isFav) cachedFreeTvFavorites.add(channelKey) else cachedFreeTvFavorites.remove(channelKey)
-        } else {
-            if (isFav) cachedCxtvFavorites.add(channelKey) else cachedCxtvFavorites.remove(channelKey)
-        }
+
         val msg = if (isFav) "⭐ Agregado a Favoritos: ${item.title}" else "Removido de Favoritos: ${item.title}"
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 
@@ -3112,5 +2918,10 @@ class MainActivity : AppCompatActivity() {
                 SupabaseLogger.warn("play_stream_error", "Error al abrir stream: ${e.message}", mapOf("title" to stream.title, "url" to stream.url))
             }
         }
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        com.gareca.tv.epg.EpgManager.trimMemory(level)
     }
 }
