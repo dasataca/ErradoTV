@@ -302,6 +302,11 @@ class WebStreamActivity : AppCompatActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(0, 0)
+    }
+
     override fun onDestroy() {
         webView.destroy()
         super.onDestroy()

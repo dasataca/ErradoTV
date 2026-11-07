@@ -138,13 +138,15 @@ La aplicación consume archivos JSON cifrados alojados en el CDN global **Cloudf
 
 ---
 
-## 6. Publicación Automatizada
+## 6. Publicación Automatizada Obligatoria al Finalizar Ajustes en el APK
+
+> **REGLA DE ORO DEL USUARIO**: Al finalizar cualquier ajuste, corrección, optimización o modificación en el código nativo Kotlin / XML / Android, la IA **DEBE SIEMPRE ejecutar de inmediato la publicación al repositorio** mediante `./publish_release.sh [versionName] [versionCode] "[changelog]"`. No debe dejarse el cambio en local ni delegarlo al usuario; la app debe compilarse, actualizarse en `version.json` y enviarse con `git push` para que las Smart TVs detecten y descarguen la actualización OTA de forma automática.
 
 Para generar y subir una nueva versión del software:
 ```bash
 ./publish_release.sh [versionName] [versionCode] "[changelog]"
 # Ejemplo:
-./publish_release.sh 1.9.16 81 "GarecaTV: Ancho completo en vertical movil sin bandas negras, enlace D-Pad directo a pestanas y auto-enfoque en vivo"
+./publish_release.sh 1.9.23 88 "GarecaTV: Optimizacion extrema estilo IPTV, EPG O(1) sin pausas GC, Glide RGB_565 y transiciones instantaneas"
 ```
 El script compila el APK, actualiza `version.json`, organiza los archivos en `release/` y realiza el `git push` a `origin main` de manera completamente autónoma.
 
@@ -154,9 +156,8 @@ El script compila el APK, actualiza `version.json`, organiza los archivos en `re
 
 Toda IA o desarrollador que trabaje en este repositorio debe cumplir estrictamente las siguientes directivas:
 
-1. **Notificación Explícita de Actualización de APK vs. Caliente**:
-   * **Cuando se modifica código nativo Kotlin / XML / Android**: La IA **DEBE** avisar explícitamente al usuario que se requiere compilar y actualizar el APK, indicando el comando exacto:
-     > *"He modificado el código nativo de la aplicación. Para aplicar estos cambios en la TV, ejecutamos `./publish_release.sh [versionName] [versionCode] "[changelog]"` y se compila e instala la nueva versión."*
+1. **Publicación y Notificación Explícita de Actualización de APK vs. Caliente**:
+   * **Cuando se modifica código nativo Kotlin / XML / Android**: La IA **DEBE ejecutar `./publish_release.sh`** de inmediato para publicar la nueva versión en GitHub y notificar al usuario confirmando que la versión ya está lista y disponible para las TVs.
    * **Cuando se modifican catálogos, servidores, JSON, watchdogs o scripts de scraping**: La IA **DEBE** aclarar que se trata de una actualización en caliente:
      > *"Este cambio fue en caliente en los datos. No necesitas compilar ni actualizar el APK; la TV lo refleja automáticamente."*
 

@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "0496287eeeb7bd591053504638f2af4d72bf7f62448a1bd2b274f7caba34438af4a777fb2cf96591be99f289547f98903c7f629fbc39811ae0537c292b5402d26d23f8454d1d579704c75ca2c7b7f0e7",
-  "latest_version_code": 87,
-  "latest_version_name": "1.9.22",
-  "release_timestamp": 1794013741669,
+  "active_key_enc": "ff840c4b0339c538368a3dd7245439535ae6704b55c3908061543d2683b1c5dda2a1055a388b73e204b8ba08c48422b9c41fb66d526feb953c1b4d3fe57f77ba2f927ed5a1a7f891fa0187fcfa5c796c",
+  "latest_version_code": 88,
+  "latest_version_name": "1.9.23",
+  "release_timestamp": 1794016917669,
   "release_date": "2026-11-06",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Retencion de foco en pestanas y cabecera de paises, eliminacion de rebote a Actualizado"
+  "changelog": "GarecaTV: Optimizacion extrema estilo IPTV, EPG O(1) sin pausas GC, Glide RGB_565 y transiciones instantaneas"
 }

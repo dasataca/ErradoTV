@@ -252,7 +252,9 @@ class EventAdapter(
                 Glide.with(itemView.context)
                     .load(item.imageUrl)
                     .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
-                    .override(160, 90)
+                    .format(com.bumptech.glide.load.DecodeFormat.PREFER_RGB_565)
+                    .dontAnimate()
+                    .override(120, 68)
                     .centerCrop()
                     .into(ivThumbnail)
             } else {

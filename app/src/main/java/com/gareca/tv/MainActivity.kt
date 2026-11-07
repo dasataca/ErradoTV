@@ -1677,11 +1677,7 @@ class MainActivity : AppCompatActivity() {
         cxtvCountryMap.putAll(countMap)
 
         val worldTvFavSrc = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
-        val favKeys = try {
-            AppDatabase.getInstance(this).getAllFavorites(worldTvFavSrc)
-        } catch (_: Exception) {
-            emptySet()
-        }
+        val favKeys = if (worldTvFavSrc == "freetv") cachedFreeTvFavorites else cachedCxtvFavorites
         val favCount = sortedAll.count { favKeys.contains(it.title.trim().lowercase()) }
 
         val catNavs = mutableListOf<NavItem>()
@@ -1710,11 +1706,7 @@ class MainActivity : AppCompatActivity() {
             indexCxtvCatalog()
         } else {
             val worldTvFavSrc = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
-            val favKeys = try {
-                AppDatabase.getInstance(this).getAllFavorites(worldTvFavSrc)
-            } catch (_: Exception) {
-                emptySet()
-            }
+            val favKeys = if (worldTvFavSrc == "freetv") cachedFreeTvFavorites else cachedCxtvFavorites
             val favCount = preSortedAllChannels.count { favKeys.contains(it.title.trim().lowercase()) }
             if (cachedCategoryNavItems.isNotEmpty() && cachedCategoryNavItems[0].title == "⭐ Favoritos") {
                 val updated = cachedCategoryNavItems.toMutableList()
@@ -2450,11 +2442,7 @@ class MainActivity : AppCompatActivity() {
             } else if (currentCategory == "⭐ Favoritos") {
                 if (isTv) rvSidebarCountries.visibility = View.GONE
                 val worldTvFavSrc = if (ApiClient.activeWorldTvProvider == ApiClient.WorldTvProvider.FREETV) "freetv" else "cxtv"
-                val favKeys = try {
-                    AppDatabase.getInstance(this).getAllFavorites(worldTvFavSrc)
-                } catch (_: Exception) {
-                    emptySet()
-                }
+                val favKeys = if (worldTvFavSrc == "freetv") cachedFreeTvFavorites else cachedCxtvFavorites
                 val favChannels = preSortedAllChannels.filter { favKeys.contains(it.title.trim().lowercase()) }
                 applySubcategories(favChannels, isCountryMode = false)
             } else if (currentCategory == "🌍 Países") {
@@ -2544,11 +2532,7 @@ class MainActivity : AppCompatActivity() {
             "⚽ Partidos del Día" -> refreshDailyEventsTiming(cachedDailyEvents)
             "🔁 Repeticiones" -> getFilteredAndSortedReplays()
             "⭐ Favoritos" -> {
-                val favKeys = try {
-                    AppDatabase.getInstance(this).getAllFavorites("sports")
-                } catch (_: Exception) {
-                    emptySet()
-                }
+                val favKeys = cachedSportsFavorites
                 sortEventList(cachedLiveChannels.filter { favKeys.contains(it.title.trim().lowercase()) })
             }
             "🌐 Todos los Canales" -> sortEventList(cachedLiveChannels)
@@ -2904,11 +2888,13 @@ class MainActivity : AppCompatActivity() {
                         putExtra("EXTRA_ORIGINAL_TYPE", stream.type)
                     }
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                 } else {
                     val intent = Intent(this@MainActivity, WebStreamActivity::class.java).apply {
                         putExtra("EXTRA_URL", resolved.url)
                     }
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                 }
             } catch (e: Exception) {
                 progressBar.visibility = View.GONE

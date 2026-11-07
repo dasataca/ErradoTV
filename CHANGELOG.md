@@ -2,6 +2,21 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.23] - 2026-11-06
+### Optimización Extrema Estilo IPTV, EPG O(1) sin Pausas GC, Glide RGB_565 y Transición Instantánea
+- **Memoización EPG O(1) con Cero Asignaciones de CPU (`EpgManager`)**:
+  - Implementada caché por minuto de subtítulos formateados (`subtitleCache`), eliminando cálculos en cada fotograma del scroll.
+  - Ventana sintética compartida de 2 horas: se erradicó la instanciación repetitiva de `Calendar.getInstance()` y `SimpleDateFormat` en listas largas de canales.
+  - Caché de rango horario formateado (`@Volatile private var cachedTimeRange`) en `EpgProgram`.
+- **Ahorro de Memoria del 50% en Decodificación de Logos (`EventAdapter`)**:
+  - Configurado Glide con `DecodeFormat.PREFER_RGB_565` (16 bits/píxel en lugar de 32 bits ARGB_8888).
+  - Incorporado `.dontAnimate()` para suprimir animaciones de software en CPU durante el desplazamiento rápido con D-Pad.
+  - Reescalado estricto a dimensiones de tarjeta (`override(120, 68)`).
+- **Eliminación Total de Consultas SQLite en el Hilo Principal**:
+  - Sustituidas las lecturas de favoritos a disco en `indexCxtvCatalog`, `buildCategoryNavItems` y `filterAndDisplayEvents` por conjuntos en memoria RAM volátil (`cachedFreeTvFavorites`, `cachedCxtvFavorites`, `cachedSportsFavorites`).
+- **Transiciones Instantáneas de Ventana (Zero-Delay)**:
+  - Incorporado `overridePendingTransition(0, 0)` en `MainActivity`, `PlayerActivity` y `WebStreamActivity` al abrir y cerrar reproductores, eliminando el parpadeo negro y la latencia del sistema operativo.
+
 ## [1.9.22] - 2026-11-06
 ### Retención de Foco en Pestañas y Cabecera de Países (Cero Rebotes a Actualizado)
 - **Retención de Foco en Pestañas Superiores de Deportes (`rvCategories`)**:

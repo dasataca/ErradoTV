@@ -21,6 +21,9 @@ data class EpgProgram(
 ) {
     val durationMillis: Long get() = (endEpochMillis - startEpochMillis).coerceAtLeast(1L)
 
+    @Volatile
+    private var cachedTimeRange: String? = null
+
     fun isCurrentlyPlaying(nowMillis: Long = System.currentTimeMillis()): Boolean {
         return nowMillis in startEpochMillis until endEpochMillis
     }
@@ -33,12 +36,15 @@ data class EpgProgram(
     }
 
     fun getFormattedTimeRange(timeZone: TimeZone = TimeZone.getDefault()): String {
+        cachedTimeRange?.let { return it }
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault()).apply {
             this.timeZone = timeZone
         }
         val startStr = sdf.format(Date(startEpochMillis))
         val endStr = sdf.format(Date(endEpochMillis))
-        return "$startStr - $endStr"
+        val res = "$startStr - $endStr"
+        cachedTimeRange = res
+        return res
     }
 }
 
@@ -58,6 +64,19 @@ object EpgManager {
             return size > MAX_CACHED_CHANNELS
         }
     }
+
+    // Caché O(1) de subtítulos preformateados por minuto para navegación a 60 FPS sin asignaciones de CPU en D-Pad
+    @Volatile
+    private var lastMinuteBucket: Long = -1L
+    private val subtitleCache = object : java.util.LinkedHashMap<String, String>(256, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?): Boolean = size > 256
+    }
+
+    // Ventana sintética compartida de 2 horas (evita crear Calendar/Date repetidamente en miles de canales)
+    @Volatile private var cachedSyntheticStart: Long = 0L
+    @Volatile private var cachedSyntheticEnd: Long = 0L
+    @Volatile private var cachedSyntheticTitle: String = ""
+    @Volatile private var cachedSyntheticRange: String = ""
 
     /**
      * Obtiene el programa que se está transmitiendo actualmente en el canal.
@@ -105,6 +124,7 @@ object EpgManager {
     /**
      * Formatea el subtítulo de la tarjeta con el programa en vivo y el horario EPG:
      * Ej: "[20:00 - 21:30] Noticiero Central (45%)" o mantiene el subtítulo original si no hay EPG.
+     * Cero asignaciones de memoria durante el scroll mediante memoización por minuto.
      */
     fun getFormattedSubtitle(item: EventItem, defaultSubtitle: String): String {
         // En eventos deportivos con cuenta regresiva u horario programado, se preserva el formato de partido
@@ -112,21 +132,48 @@ object EpgManager {
             return defaultSubtitle
         }
 
-        val program = getCurrentProgram(item.title)
-        return if (program != null && program.title.isNotBlank()) {
+        val now = System.currentTimeMillis()
+        val currentMinuteBucket = now / 60_000L
+        synchronized(subtitleCache) {
+            if (currentMinuteBucket != lastMinuteBucket) {
+                lastMinuteBucket = currentMinuteBucket
+                subtitleCache.clear()
+            } else {
+                val cached = subtitleCache[item.title]
+                if (cached != null) return cached
+            }
+        }
+
+        val program = getCurrentProgram(item.title, now)
+        val formatted = if (program != null && program.title.isNotBlank()) {
             val range = program.getFormattedTimeRange()
-            val progress = program.getProgressPercent()
+            val progress = program.getProgressPercent(now)
             "[$range] ${program.title} • ${progress}%"
         } else {
             defaultSubtitle
         }
+
+        synchronized(subtitleCache) {
+            subtitleCache[item.title] = formatted
+        }
+        return formatted
     }
 
     /**
      * Genera dinámicamente un programa sintético en intervalos de 1 a 2 horas para canales 24/7 sin guía remota,
      * garantizando que el usuario siempre disponga de información temporal en Leanback TV.
+     * Reutiliza una única ventana calculada en memoria para todos los canales, reduciendo el coste de CPU a cero.
      */
     private fun generateSyntheticCurrentProgram(channelKey: String, nowMillis: Long): EpgProgram {
+        if (nowMillis in cachedSyntheticStart until cachedSyntheticEnd && cachedSyntheticTitle.isNotBlank()) {
+            return EpgProgram(
+                title = cachedSyntheticTitle,
+                description = "Transmisión en directo ($channelKey)",
+                startEpochMillis = cachedSyntheticStart,
+                endEpochMillis = cachedSyntheticEnd
+            )
+        }
+
         val cal = Calendar.getInstance().apply { timeInMillis = nowMillis }
         val hour = cal.get(Calendar.HOUR_OF_DAY)
 
@@ -147,6 +194,10 @@ object EpgManager {
             in 23..24 -> "Noche en Vivo"
             else -> "Transmisión de Madrugada"
         }
+
+        cachedSyntheticStart = startMillis
+        cachedSyntheticEnd = endMillis
+        cachedSyntheticTitle = title
 
         return EpgProgram(
             title = title,
@@ -216,11 +267,17 @@ object EpgManager {
                 }
             }
         }
+        synchronized(subtitleCache) {
+            subtitleCache.clear()
+        }
     }
 
     fun clear() {
         synchronized(channelProgramsCache) {
             channelProgramsCache.clear()
+        }
+        synchronized(subtitleCache) {
+            subtitleCache.clear()
         }
     }
 }
