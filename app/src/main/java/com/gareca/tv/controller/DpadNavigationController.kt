@@ -28,7 +28,7 @@ class DpadNavigationController {
         adapter: EventAdapter,
         isDailyMatches: Boolean
     ) {
-        if (adapter.itemCount == 0) return
+        if (adapter.itemCount == 0 && adapter.currentList.isEmpty()) return
         val lm = rvEvents.layoutManager as? LinearLayoutManager
 
         val targetPos = if (isDailyMatches) {
@@ -55,8 +55,8 @@ class DpadNavigationController {
                 rvEvents.postDelayed({
                     val retryView = rvEvents.findViewHolderForAdapterPosition(targetPos)?.itemView
                         ?: lm?.findViewByPosition(targetPos)
-                    retryView?.requestFocus() ?: rvEvents.requestFocus()
-                }, 50)
+                    retryView?.requestFocus()
+                }, 100)
             }
         }
     }
@@ -80,7 +80,7 @@ class DpadNavigationController {
                 rvSidebarCountries.postDelayed({
                     val retryView = rvSidebarCountries.findViewHolderForAdapterPosition(targetPos)?.itemView
                         ?: rvSidebarCountries.layoutManager?.findViewByPosition(targetPos)
-                    retryView?.requestFocus() ?: rvSidebarCountries.requestFocus()
+                    retryView?.requestFocus()
                 }, 50)
             }
         }
@@ -105,7 +105,7 @@ class DpadNavigationController {
                 rvSidebarCategories.postDelayed({
                     val retryView = rvSidebarCategories.findViewHolderForAdapterPosition(targetPos)?.itemView
                         ?: rvSidebarCategories.layoutManager?.findViewByPosition(targetPos)
-                    retryView?.requestFocus() ?: rvSidebarCategories.requestFocus()
+                    retryView?.requestFocus()
                 }, 50)
             }
         }
@@ -130,7 +130,7 @@ class DpadNavigationController {
                 rvCategories.postDelayed({
                     val retryView = rvCategories.findViewHolderForAdapterPosition(targetPos)?.itemView
                         ?: rvCategories.layoutManager?.findViewByPosition(targetPos)
-                    retryView?.requestFocus() ?: rvCategories.requestFocus()
+                    retryView?.requestFocus()
                 }, 50)
             }
         }

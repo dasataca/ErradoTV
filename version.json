@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "67caa027d713104af29d92f189b2888e673846c6331d28e1c92082cb6fe6b910e2d7b99381e3d978d1db53be1260816f38dd333744d71c5f42669d936d123f8b0d63e328b3a922d55dab4479f94eca97",
-  "latest_version_code": 86,
-  "latest_version_name": "1.9.21",
-  "release_timestamp": 1794010301128,
+  "active_key_enc": "0496287eeeb7bd591053504638f2af4d72bf7f62448a1bd2b274f7caba34438af4a777fb2cf96591be99f289547f98903c7f629fbc39811ae0537c292b5402d26d23f8454d1d579704c75ca2c7b7f0e7",
+  "latest_version_code": 87,
+  "latest_version_name": "1.9.22",
+  "release_timestamp": 1794013741669,
   "release_date": "2026-11-06",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Fast-Start TiviMate (<800ms), DNS RAM cache O(1), ConnectionPool streaming y ListAdapter DiffUtil 60 FPS"
+  "changelog": "GarecaTV: Retencion de foco en pestanas y cabecera de paises, eliminacion de rebote a Actualizado"
 }

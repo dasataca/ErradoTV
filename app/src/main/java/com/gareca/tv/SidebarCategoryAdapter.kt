@@ -30,13 +30,26 @@ class SidebarCategoryAdapter(
         notifyDataSetChanged()
     }
 
-    fun setSelectedCategory(category: String) {
+    fun setSelectedCategory(category: String, rv: RecyclerView? = null) {
         if (selectedCategory != category) {
             val oldIndex = items.indexOfFirst { it.title == selectedCategory }
             val newIndex = items.indexOfFirst { it.title == category }
             selectedCategory = category
-            if (oldIndex != -1) notifyItemChanged(oldIndex)
-            if (newIndex != -1) notifyItemChanged(newIndex)
+            if (rv != null) {
+                if (oldIndex != -1) {
+                    val oldVh = rv.findViewHolderForAdapterPosition(oldIndex)
+                    oldVh?.itemView?.isSelected = false
+                    oldVh?.itemView?.findViewById<View>(R.id.viewAccentBar)?.visibility = View.INVISIBLE
+                }
+                if (newIndex != -1) {
+                    val newVh = rv.findViewHolderForAdapterPosition(newIndex)
+                    newVh?.itemView?.isSelected = true
+                    newVh?.itemView?.findViewById<View>(R.id.viewAccentBar)?.visibility = View.VISIBLE
+                }
+            } else {
+                if (oldIndex != -1) notifyItemChanged(oldIndex)
+                if (newIndex != -1) notifyItemChanged(newIndex)
+            }
         }
     }
 
@@ -78,7 +91,8 @@ class SidebarCategoryAdapter(
                 if (hasFocus) {
                     viewAccentBar.visibility = View.VISIBLE
                     if (selectedCategory != item.title) {
-                        setSelectedCategory(item.title)
+                        val rv = itemView.parent as? RecyclerView
+                        setSelectedCategory(item.title, rv)
                         itemView.removeCallbacks(categoryDebounceRunnable)
                         categoryDebounceRunnable = Runnable {
                             if (itemView.hasFocus()) {
@@ -93,7 +107,8 @@ class SidebarCategoryAdapter(
             }
 
             itemView.setOnClickListener {
-                setSelectedCategory(item.title)
+                val rv = itemView.parent as? RecyclerView
+                setSelectedCategory(item.title, rv)
                 onCategorySelected(item.title)
                 itemView.post {
                     onRightPressed?.invoke()
@@ -114,7 +129,8 @@ class SidebarCategoryAdapter(
                             }
                         }
                         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                            setSelectedCategory(item.title)
+                            val rv = itemView.parent as? RecyclerView
+                            setSelectedCategory(item.title, rv)
                             onCategorySelected(item.title)
                             itemView.post {
                                 onRightPressed?.invoke()

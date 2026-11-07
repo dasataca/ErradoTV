@@ -18,12 +18,12 @@ class SubcategoryAdapter(
 
     private val items = initialItems.toMutableList()
 
-    fun setItems(newItems: List<NavItem>, newSelected: String) {
+    fun setItems(newItems: List<NavItem>, newSelected: String, rv: RecyclerView? = null) {
         val sameItems = items.size == newItems.size && items.indices.all { i ->
             items[i].title == newItems[i].title && items[i].count == newItems[i].count
         }
         if (sameItems) {
-            setSelected(newSelected)
+            setSelected(newSelected, rv)
             return
         }
         items.clear()

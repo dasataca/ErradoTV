@@ -473,7 +473,6 @@ class MainActivity : AppCompatActivity() {
                     rvSuggestions.visibility = View.GONE
                 }
                 filterAndDisplayEvents(silent = false)
-                focusFirstEventItem()
             },
             onDownPressed = { category ->
                 if ((category == "🔍 Buscar Todo" || category == "🔍 Buscar TV") && globalSearchContainer.visibility == View.VISIBLE) {
@@ -581,7 +580,6 @@ class MainActivity : AppCompatActivity() {
             onSubcategoryClick = { subcat ->
                 currentSubcategory = subcat
                 filterAndDisplayEvents(silent = false)
-                focusFirstEventItem()
             },
             onDownPressed = {
                 focusFirstEventItem()
@@ -1834,7 +1832,7 @@ class MainActivity : AppCompatActivity() {
             val focusedChild = rvSubcategories.findFocus()
             val focusedPos = if (focusedChild != null) rvSubcategories.getChildAdapterPosition(focusedChild) else subcategoryAdapter.getSelectedPosition()
 
-            subcategoryAdapter.setItems(subcatNavItems, currentSubcategory)
+            subcategoryAdapter.setItems(subcatNavItems, currentSubcategory, rvSubcategories)
             rvSubcategories.visibility = View.VISIBLE
 
             if (hadFocus) {
@@ -1992,7 +1990,7 @@ class MainActivity : AppCompatActivity() {
                 rvSubcategories.postDelayed({
                     val retryView = rvSubcategories.findViewHolderForAdapterPosition(pos)?.itemView
                         ?: rvSubcategories.layoutManager?.findViewByPosition(pos)
-                    retryView?.requestFocus() ?: rvSubcategories.requestFocus()
+                    retryView?.requestFocus()
                 }, 50)
             }
         }

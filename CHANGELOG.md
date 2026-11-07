@@ -2,6 +2,24 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.22] - 2026-11-06
+### Retención de Foco en Pestañas y Cabecera de Países (Cero Rebotes a Actualizado)
+- **Retención de Foco en Pestañas Superiores de Deportes (`rvCategories`)**:
+  - Al pulsar sobre pestañas como `🔁 Repeticiones` o `⭐ Favoritos`, el foco permanece en la pestaña seleccionada mientras la lista inferior se actualiza, evitando saltos accidentales a la cabecera.
+- **Retención de Foco en Cabecera Horizontal de Países y Subcategorías (`rvSubcategories`)**:
+  - Al pulsar sobre filtros de países (ej. `Alemania`), la vista de canales se filtra y actualiza abajo manteniendo el foco firmemente en el país activo.
+- **Actualización Quirúrgica de Selección sin Reciclado de Vistas (`SubcategoryAdapter` / `SidebarCategoryAdapter`)**:
+  - La selección actualiza `isSelected` directamente sobre la vista existente, eliminando `notifyItemChanged` destructivo sobre el elemento enfocado.
+- **Eliminación de Fallbacks Inválidos y Direccionamiento Jerárquico D-Pad**:
+  - Removidos los intentos de foco sobre `RecyclerView` con `focusable="false"`.
+  - Agregado `android:nextFocusUp="@id/btnModeSports"` en tarjetas de categorías y `@id/btnModeWorldTv` en subcategorías para navegación vertical determinista.
+
+## [1.9.21] - 2026-11-06
+### Fast-Start TiviMate (<800ms), DNS RAM Cache O(1), ConnectionPool y ListAdapter DiffUtil
+- Arranque instantáneo ABR con colchón adaptativo y live edge de 3.5s.
+- Caché DNS DoH en RAM volátil (TTL 30 min) y ConnectionPool persistente de 32 sockets.
+- Transición a `DiffUtil.ItemCallback` para renderizado fluido a 60 FPS en Android TV.
+
 ## [1.9.20] - 2026-11-06
 ### Reestructuración Modular, Suite JUnit4, EPG para 1GB RAM, Sync Favoritos Supabase y Selector de Audio
 - **Reestructuración Modular y Controladores Desacoplados**:
