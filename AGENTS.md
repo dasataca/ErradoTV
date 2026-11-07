@@ -20,6 +20,7 @@
    * **Indicador de Posición Desacoplado**: `tvChannelPositionIndicator` se implementa como overlay flotante en `FrameLayout` (`layout_gravity="top"` con `paddingTop="26dp"` en `rvEvents`), eliminando el recalculado recurrente de medidas (`requestLayout()` churn) al navegar con D-Pad.
    * **Enlace D-Pad Directo Selector de Modo ➜ Pestañas**: `btnModeSports` y `btnModeWorldTv` implementan `setOnKeyListener` para `KEYCODE_DPAD_DOWN`, transfiriendo el foco al instante a la pestaña activa (`⚽ Partidos del Día` o menú lateral) sin quedar trabado.
    * **Caché O(1) de Favoritos en RAM**: Comprobaciones de favoritos en memoria RAM volátil (`cachedSportsFavorites`, `cachedCxtvFavorites`) sin lecturas síncronas a disco SQLite durante el desplazamiento.
+   * **DiffUtil Obligatorio en Listas (`EventAdapter`)**: Prohibido el uso de `notifyDataSetChanged()` y dobles submits con listas vacías (`adapter.submitList(emptyList())`). Toda actualización de catálogo debe gestionarse mediante `DiffUtil.ItemCallback` (o `ListAdapter`), garantizando cero churn de layout y 60 FPS estables.
 4. **Organización de Catálogos, Búsqueda y Cronología de Partidos**:
    * **⚽ Partidos del Día (Cronología por Hora y Auto-Enfoque en Directos)**:
      * Los eventos del día se ordenan en orden cronológico estricto por hora del partido (`sortDailyMatchesChronologically`).
@@ -39,8 +40,11 @@
      * **Resiliencia Touch Mode**: `rvSuggestions` y cada fila (`item_search_suggestion.xml`) implementan `android:focusableInTouchMode="true"` para garantizar que el foco sea aceptado tras cerrar el teclado en Android TV.
    * **Resiliencia de Disponibilidad**: Los partidos etiquetados como `NO DISPONIBLE` se desplazan siempre de forma automática al fondo de la lista (los canales 24/7 nunca se etiquetan como `NO DISPONIBLE`).
 5. **Reproducción de Video Nativa y Zapping en TV**:
-   * Prioridad absoluta a **AndroidX Media3 ExoPlayer** para reproducir flujos HLS (`.m3u8`).
-   * Configuración de `DefaultTrackSelector` forzando siempre la máxima resolución (`setMaxVideoSize(3840, 2160)`) y bitrate disponible (`setForceHighestSupportedBitrate(true)`).
+   * **Arquitectura de Zapping Sub-Segundo Estilo TiviMate (Fast-Start ABR y TTFF < 800ms)**:
+     - `DefaultTrackSelector`: `setForceHighestSupportedBitrate(false)` para permitir arranque instantáneo de audio/video con el primer chunk ligero disponible y conmutación adaptativa fluida a 1080p en el segundo fragmento.
+     - `DefaultLoadControl`: `bufferForPlaybackMs = 300ms`, `bufferForPlaybackAfterRebufferMs = 1000ms`, `minBufferMs = 15000ms` y `maxBufferMs = 25000ms` (elimina la saturación del Heap JVM y pausas de GC en Android TV).
+     - `LiveConfiguration`: `targetOffsetMs = 3500ms` (3.5s), alineado a la ventana deslizante real del CDN sin retroceder 12s ni generar caídas fuera del live edge.
+     - **Zapping Continuo Sin Destrucción de Pipeline**: Reutilización persistente de `DefaultMediaSourceFactory` en `PlayerActivity`. Prohibido llamar a `player.stop()` o recrear extractores al cambiar de canal con `◀` o `▶`.
    * **Zapping de Canales con D-Pad**: En categorías de canales de flujo único (`📺 Regionales`, `🏆 Deportes`, países, etc.), las teclas `◀ Izquierda` y `▶ Derecha` del control remoto ejecutan zapping directo entre canales (`ChannelNavigationManager`) reutilizando la instancia de ExoPlayer.
    * **Banner Informativo de Canal (`llChannelBanner`)**: Al ingresar a un canal o cambiar de señal, se despliega en la parte superior el logo, nombre del canal, subtítulo y contador de posición (ej. `Canal 5 de 42  [◀ ▶ Zapping]`), auto-ocultándose a los 3.5 segundos.
    * **Invocación Contextual con Teclas Arriba / Abajo**: Al presionar `▲ Arriba` o `▼ Abajo` durante la reproducción, se reactiva el banner informativo y se despliegan los controles multimedia nativos del reproductor.
@@ -116,8 +120,10 @@ La aplicación consume archivos JSON cifrados alojados en el CDN global **Cloudf
   * Para generar nuevos sobres cifrados sin exponer la clave en GitHub ni en sniffers, se utiliza el script ejecutable [`herramientas/cifrador_clave/encrypt_key.py`](file:///home/sataca/Descargas/APLICACIONES/errado/herramientas/cifrador_clave/encrypt_key.py).
 * **Validación Estricta de JSON en Descifrado**:
   * `CryptoUtils.decrypt()` comprueba obligatoriamente que el payload comience con `{` o `[`. Si arroja bytes corruptos por desfase de clave o caché, conmuta de inmediato y de forma autónoma a la clave de fábrica en memoria RAM (`getFactoryKey()`).
-* **DNS sobre HTTPS (DoH) Remoto**:
-  `SecureDns.kt` resuelve dominios con Cloudflare (`https://cloudflare-dns.com/dns-query`) y Google (`8.8.8.8`). Si se desea cambiar el proveedor DoH globalmente, se añade el campo `"doh_url"` en `version.json`.
+* **DNS sobre HTTPS (DoH) Remoto y Caché RAM O(1)**:
+  - `SecureDns.kt` resuelve dominios con Cloudflare (`https://cloudflare-dns.com/dns-query`) y Google (`8.8.8.8`). Si se desea cambiar el proveedor DoH globalmente, se añade el campo `"doh_url"` en `version.json`.
+  - **Caché en RAM Volátil (0 ms Lookup)**: `SecureDns` debe implementar un `ConcurrentHashMap` con TTL de 30 minutos para evitar consultas de red DoH repetitivas en cada solicitud HLS de chunks y variantes.
+  - **ConnectionPool para IPTV**: `ApiClient.httpClient` debe configurar un `ConnectionPool` de 32 sockets inactivos con keep-alive de 5 minutos, y mantener un caché en memoria RAM para las URLs finales de canales resueltos (`event_type_url = "config"`).
 
 ---
 
@@ -208,5 +214,27 @@ Toda IA o desarrollador que trabaje en este repositorio debe cumplir estrictamen
      - El padding lateral de `mainRootLayout` debe reducirse automáticamente de `48dp` (overscan de TV) a **`8dp`** en orientación vertical (`isPortrait`) y `12dp` en horizontal, evitando bandas negras y permitiendo que las tarjetas ocupen el ancho completo.
      - Los títulos de partidos deben conservar ancho suficiente para no truncarse agresivamente.
      - Los márgenes verticales del encabezado (`llHeader`) y selector de modos deben compactarse a `8dp` para maximizar la superficie útil en pantalla vertical.
+
+---
+
+## 8. Escuadrón de Agentes y Modelos Fijos
+* **Planificador / Arquitecto**: Model `Argon` (`inherit` / `pro`)
+* **Desarrollador y Especialistas**: Model `flash`
+* **Tester QA / Build Auditor**: Model `flash`
+* **Documentador / Scribe**: Model `flash`
+* **Versionador Git / Release**: Model `flash_lite`
+* **Candado Anti-Exploración Redundante**: Queda estrictamente prohibido disparar al Explorador Forense en cada actividad diaria; toda tarea consulta directamente las rutas mapeadas en `ROADMAP.md` y `doc/`.
+
+## ⚡ DICCIONARIO DE MICRO-COMANDOS ([auto] y [ver] — ESCUADRÓN CON SUBAGENTES Y MODELOS FIJOS)
+El chat principal actúa como Planificador (Argon) y delega cada actividad en subagentes (`invoke_subagent`):
+- Desarrollador / Especialista (Model: "flash") ➔ Tester QA (Model: "flash") ➔ Documentador (Model: "flash") ➔ Versionador Git (Model: "flash_lite").
+- `[auto]`: Primero analiza y espera un único "APROBADO"; luego corre la cadena de subagentes en lote sin pausas intermedias.
+- `[ver]`: Frena antes de codificar mostrando el diseño línea por línea esperando "APROBADO"; ejecuta en subagente limpio; y frena al terminar mostrando el log de tests esperando confirmación antes de seguir.
+- **Tabla con los 4 ejemplos de 1 línea:**
+  1. `/goal 2.2, 2.3 y 2.4 [auto]`
+  2. `/goal 2.1 [ver], 2.2 [auto], 2.3 [auto], 2.4 [ver]`
+  3. `/goal Ejecuta Fase 2`
+  4. `Ejecuta 2.1 [ver]`
+
 
 

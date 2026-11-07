@@ -18,6 +18,7 @@ typealias CxtvCatalogResult = ApiClient.WorldTvCatalogResult
 object ApiClient {
 
     val httpClient = OkHttpClient.Builder()
+        .connectionPool(okhttp3.ConnectionPool(32, 5, TimeUnit.MINUTES))
         .dns(com.gareca.tv.network.SecureDns)
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
@@ -223,10 +224,15 @@ object ApiClient {
         list
     }
 
+    private val configResolvedMap = java.util.concurrent.ConcurrentHashMap<String, StreamOption>()
     private val youtubeResolvedMap = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     suspend fun resolveStreamUrl(stream: StreamOption): StreamOption = withContext(Dispatchers.IO) {
         if (stream.type.equals("config", ignoreCase = true)) {
+            val cached = configResolvedMap[stream.url]
+            if (cached != null) {
+                return@withContext cached
+            }
             try {
                 val req = Request.Builder()
                     .url(stream.url)
@@ -240,13 +246,15 @@ object ApiClient {
                     val realType = json.optString("type", "exo")
                     val drmLic = json.optString("drmlicenceurl", json.optString("license", "")).trim().ifEmpty { null }
                     val ua = json.optString("user_agent", "").trim().ifEmpty { null }
-                    return@withContext StreamOption(
+                    val resolved = StreamOption(
                         title = stream.title,
                         url = realUrl,
                         type = realType,
                         drmLicenseUrl = drmLic,
                         userAgent = ua
                     )
+                    configResolvedMap[stream.url] = resolved
+                    return@withContext resolved
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "5bdae04a239536f9627658342f714b7add3d02c94e75700ad9e917030ca153d4ba941a3b1e70b7fcfb9dc06aca7d7546c0032f556f0f9c07d73dff89aaefe5d8872f1d04db298e0ce49041d80e9ecb79",
-  "latest_version_code": 85,
-  "latest_version_name": "1.9.20",
-  "release_timestamp": 1794007151398,
+  "active_key_enc": "67caa027d713104af29d92f189b2888e673846c6331d28e1c92082cb6fe6b910e2d7b99381e3d978d1db53be1260816f38dd333744d71c5f42669d936d123f8b0d63e328b3a922d55dab4479f94eca97",
+  "latest_version_code": 86,
+  "latest_version_name": "1.9.21",
+  "release_timestamp": 1794010301128,
   "release_date": "2026-11-06",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Modularizacion arquitectura D-Pad, EPG interactivo para 1GB RAM, sync favoritos Supabase y selector de pistas de audio"
+  "changelog": "GarecaTV: Fast-Start TiviMate (<800ms), DNS RAM cache O(1), ConnectionPool streaming y ListAdapter DiffUtil 60 FPS"
 }

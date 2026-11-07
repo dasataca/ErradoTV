@@ -5,12 +5,30 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import com.bumptech.glide.Glide
 import com.gareca.tv.model.EventItem
 import com.gareca.tv.model.EventStatus
+
+object EventDiffCallback : DiffUtil.ItemCallback<EventItem>() {
+    override fun areItemsTheSame(oldItem: EventItem, newItem: EventItem): Boolean {
+        val oldStreamUrl = oldItem.streams.firstOrNull()?.url
+        val newStreamUrl = newItem.streams.firstOrNull()?.url
+        return if (!oldStreamUrl.isNullOrEmpty() && !newStreamUrl.isNullOrEmpty()) {
+            oldStreamUrl == newStreamUrl && oldItem.title == newItem.title
+        } else {
+            oldItem.title == newItem.title && oldItem.category == newItem.category && oldItem.time == newItem.time
+        }
+    }
+
+    override fun areContentsTheSame(oldItem: EventItem, newItem: EventItem): Boolean {
+        return oldItem == newItem
+    }
+}
 
 class EventAdapter(
     private val onItemClick: (EventItem) -> Unit,
@@ -20,17 +38,10 @@ class EventAdapter(
     private val onDownAtEnd: (() -> Boolean)? = null,
     private val isFavorite: ((EventItem) -> Boolean)? = null,
     private val onItemLongClick: ((EventItem) -> Unit)? = null
-) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
+) : ListAdapter<EventItem, EventAdapter.EventViewHolder>(EventDiffCallback) {
 
-    private val items = mutableListOf<EventItem>()
-
-    val currentList: List<EventItem>
-        get() = items
-
-    fun submitList(newItems: List<EventItem>) {
-        items.clear()
-        items.addAll(newItems)
-        notifyDataSetChanged()
+    override fun submitList(newItems: List<EventItem>?) {
+        super.submitList(if (newItems != null) ArrayList(newItems) else null)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
@@ -39,10 +50,8 @@ class EventAdapter(
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
-        holder.bind(items[position], position, items.size)
+        holder.bind(getItem(position), position, itemCount)
     }
-
-    override fun getItemCount(): Int = items.size
 
     class EventViewHolder(
         itemView: View,

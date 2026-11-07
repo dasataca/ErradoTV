@@ -2472,6 +2472,7 @@ class MainActivity : AppCompatActivity() {
                 applySubcategories(catChannels, isCountryMode = false)
             }
 
+            adapter.submitList(displayList)
             if (displayList.isEmpty()) {
                 tvChannelPositionIndicator.visibility = View.INVISIBLE
                 tvEmpty.visibility = View.VISIBLE
@@ -2482,10 +2483,8 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     "No hay señales disponibles para esta sección."
                 }
-                adapter.submitList(emptyList())
             } else {
                 tvEmpty.visibility = View.GONE
-                adapter.submitList(displayList)
                 updateChannelPositionIndicator(0, displayList.size)
                 if (!silent && !rvCategories.hasFocus() && !rvSidebarCategories.hasFocus() && (!::rvSidebarCountries.isInitialized || !rvSidebarCountries.hasFocus())
                     && (!::rvSubcategories.isInitialized || !rvSubcategories.hasFocus())
@@ -2566,6 +2565,7 @@ class MainActivity : AppCompatActivity() {
         } else -1
         val focusedId = focusedChild?.id ?: -1
 
+        adapter.submitList(displayList)
         if (displayList.isEmpty()) {
             tvChannelPositionIndicator.visibility = View.INVISIBLE
             tvEmpty.visibility = View.VISIBLE
@@ -2584,10 +2584,8 @@ class MainActivity : AppCompatActivity() {
                 "⭐ Favoritos" -> "No tienes canales favoritos en Deportes.\n\nPulsa en ★ en cualquier canal de Regionales o Deportes para guardarlo aquí."
                 else -> "No hay señales disponibles actualmente para esta categoría."
             }
-            adapter.submitList(emptyList())
         } else {
             tvEmpty.visibility = View.GONE
-            adapter.submitList(displayList)
 
             if (currentCategory == "⚽ Partidos del Día" && !rvHadFocus && (focusedPos == -1)) {
                 // Auto-posicionamiento y foco inicial en los partidos EN VIVO (con opciones de transmisión reales)
@@ -2866,7 +2864,10 @@ class MainActivity : AppCompatActivity() {
                             }
                             if (item.status == EventStatus.REPLAY_UNAVAILABLE) {
                                 item.status = item.originalStatus
-                                adapter.notifyDataSetChanged()
+                                val pos = adapter.currentList.indexOfFirst { it.title.trim().equals(item.title.trim(), ignoreCase = true) }
+                                if (pos >= 0) {
+                                    adapter.notifyItemChanged(pos)
+                                }
                             }
                         } else {
                             btn.text = "⚪ ${stream.title}  [SIN SEÑAL / CAÍDO]"

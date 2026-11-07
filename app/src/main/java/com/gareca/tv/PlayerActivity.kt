@@ -65,6 +65,14 @@ class PlayerActivity : AppCompatActivity() {
     private var hideZoomHudRunnable: Runnable? = null
     private var trackSelector: DefaultTrackSelector? = null
 
+    // Fábrica persistente de MediaSource para zapping continuo a velocidad sub-segundo sin recrear extractores
+    private val httpDataSourceFactory: OkHttpDataSource.Factory by lazy {
+        OkHttpDataSource.Factory(ApiClient.httpClient)
+    }
+    private val persistentMediaSourceFactory: DefaultMediaSourceFactory by lazy {
+        DefaultMediaSourceFactory(this).setDataSourceFactory(httpDataSourceFactory)
+    }
+
     private enum class ZoomMode(val resizeMode: Int, val label: String, val shortLabel: String) {
         FIT(AspectRatioFrameLayout.RESIZE_MODE_FIT, "Ajuste Original (Fit)", "Ajuste"),
         FILL(AspectRatioFrameLayout.RESIZE_MODE_FILL, "Rellenar Pantalla (16:9)", "Rellenar"),
@@ -174,11 +182,11 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun initializePlayer(url: String, drmLicenseUrl: String? = null, customUserAgent: String? = null, title: String = "") {
         try {
-            // Configuramos el selector de pistas para forzar SIEMPRE la máxima calidad y bitrate disponible
+            // Fast-Start ABR adaptativo: arranque instantáneo con primer chunk y conmutación fluida a 1080p
             val selector = DefaultTrackSelector(this).apply {
                 setParameters(
                     buildUponParameters()
-                        .setForceHighestSupportedBitrate(true)
+                        .setForceHighestSupportedBitrate(false)
                         .clearVideoSizeConstraints()
                         .setMaxVideoSize(3840, 2160) // Apunta a la mayor resolución
                         .setAllowVideoMixedMimeTypeAdaptiveness(true)
@@ -188,13 +196,13 @@ class PlayerActivity : AppCompatActivity() {
                 )
             }
 
-            // Capa 1 (Búfer de absorción): DefaultLoadControl para tolerar micro-cortes HLS en RAM (25s a 40s)
+            // Capa 1 (Búfer Fast-Start estilo TiviMate TTFF < 800ms): buffer inicio 300ms, min 15s, max 25s
             val loadControl = DefaultLoadControl.Builder()
                 .setBufferDurationsMs(
-                    25_000, // minBufferMs: 25s
-                    40_000, // maxBufferMs: 40s
-                    1_000,  // bufferForPlaybackMs: 1s para inicio veloz
-                    1_500   // bufferForPlaybackAfterRebufferMs: 1500ms
+                    15_000, // minBufferMs: 15s
+                    25_000, // maxBufferMs: 25s
+                    300,    // bufferForPlaybackMs: 300ms para Fast-Start
+                    1_000   // bufferForPlaybackAfterRebufferMs: 1000ms
                 )
                 .setPrioritizeTimeOverSizeThresholds(true)
                 .build()
@@ -204,6 +212,7 @@ class PlayerActivity : AppCompatActivity() {
             val exoPlayer = ExoPlayer.Builder(this)
                 .setTrackSelector(selector)
                 .setLoadControl(loadControl)
+                .setMediaSourceFactory(persistentMediaSourceFactory)
                 .build()
 
             player = exoPlayer
@@ -362,8 +371,7 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun buildMediaSource(url: String, drmLicenseUrl: String? = null, customUserAgent: String? = null): MediaSource {
         val defaultUa = customUserAgent ?: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        val httpDataSourceFactory = OkHttpDataSource.Factory(ApiClient.httpClient)
-            .setUserAgent(defaultUa)
+        httpDataSourceFactory.setUserAgent(defaultUa)
 
         if (url.contains("teveplay.net")) {
             val channelId = url.substringAfter("/api/stream/").substringBefore("/index.m3u8")
@@ -385,10 +393,9 @@ class PlayerActivity : AppCompatActivity() {
                     "Origin" to "http://www.fawanews.sc"
                 )
             )
+        } else {
+            httpDataSourceFactory.setDefaultRequestProperties(emptyMap())
         }
-
-        val mediaSourceFactory = DefaultMediaSourceFactory(this)
-            .setDataSourceFactory(httpDataSourceFactory)
 
         val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(url))
         if (url.contains(".mpd")) {
@@ -405,21 +412,21 @@ class PlayerActivity : AppCompatActivity() {
             )
         }
 
-        // Colchón de Latencia Objetivo para Canales en Vivo (12s de margen de protección constante)
+        // Colchón de Latencia Objetivo para Canales en Vivo (3.5s alineado a ventana real del CDN)
         val isReplay = url.contains("refooty") || url.contains("_replay") || (currentSubtitle?.contains("Repetición", ignoreCase = true) == true)
         if (!isReplay) {
             val liveConfig = MediaItem.LiveConfiguration.Builder()
-                .setTargetOffsetMs(12_000L) // 12 segundos detrás del live edge para absorber micro-cortes del CDN
-                .setMinOffsetMs(6_000L)     // Mínimo 6s para evitar caer en el borde del CDN
-                .setMaxOffsetMs(20_000L)    // Máximo 20s
-                .setMinPlaybackSpeed(0.97f) // Micro-ajuste imperceptible de velocidad para preservar el colchón
+                .setTargetOffsetMs(3_500L) // 3.5s alineado a la ventana deslizante real del CDN sin retroceder 12s
+                .setMinOffsetMs(1_500L)
+                .setMaxOffsetMs(8_000L)
+                .setMinPlaybackSpeed(0.97f)
                 .setMaxPlaybackSpeed(1.03f)
                 .build()
             mediaItemBuilder.setLiveConfiguration(liveConfig)
         }
 
         val mediaItem = mediaItemBuilder.build()
-        return mediaSourceFactory.createMediaSource(mediaItem)
+        return persistentMediaSourceFactory.createMediaSource(mediaItem)
     }
 
     private fun loadAndPlayMedia(url: String, drmLicenseUrl: String? = null, customUserAgent: String? = null, title: String = "") {
@@ -585,9 +592,7 @@ class PlayerActivity : AppCompatActivity() {
         playerView.hideController()
         hideControlsRunnable?.let { handler.removeCallbacks(it) }
 
-        // Detener stream anterior y mostrar buffering
-        player?.stop()
-        player?.clearMediaItems()
+        // Zapping continuo sin destrucción de pipeline: NO llamar a player.stop() para preservar codecs y buffers
         playerBuffering.visibility = View.VISIBLE
         playerError.visibility = View.GONE
 

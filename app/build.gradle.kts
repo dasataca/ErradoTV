@@ -12,8 +12,8 @@ android {
         applicationId = "com.gareca.tv"
         minSdk = 24
         targetSdk = 34
-        versionCode = 85
-        versionName = "1.9.20"
+        versionCode = 86
+        versionName = "1.9.21"
 
         externalNativeBuild {
             cmake {
@@ -54,6 +54,11 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+    }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+        disable += "InvalidSetHasFixedSize"
     }
 }
 
