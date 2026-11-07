@@ -473,6 +473,9 @@ class MainActivity : AppCompatActivity() {
                     rvSuggestions.visibility = View.GONE
                 }
                 filterAndDisplayEvents(silent = false)
+                if (selectedCat == "⚽ Partidos del Día") {
+                    focusFirstEventItem()
+                }
             },
             onDownPressed = { category ->
                 if ((category == "🔍 Buscar Todo" || category == "🔍 Buscar TV") && globalSearchContainer.visibility == View.VISIBLE) {
@@ -2236,7 +2239,7 @@ class MainActivity : AppCompatActivity() {
                 if (!silent) {
                     progressBar.visibility = View.GONE
                 }
-                filterAndDisplayEvents(silent = true)
+                filterAndDisplayEvents(silent = silent)
 
                 // Persistir eventos frescos a SQLite
                 lifecycleScope.launch(Dispatchers.IO) {
@@ -2547,73 +2550,77 @@ class MainActivity : AppCompatActivity() {
         } else -1
         val focusedId = focusedChild?.id ?: -1
 
-        adapter.submitList(displayList)
-        if (displayList.isEmpty()) {
-            tvChannelPositionIndicator.visibility = View.INVISIBLE
-            tvEmpty.visibility = View.VISIBLE
-            tvEmpty.text = when (currentCategory) {
-                "🔍 Buscar Todo" -> if (globalSearchQuery.isNotEmpty()) {
-                    "No se encontraron partidos ni canales para \"$globalSearchQuery\"."
-                } else {
-                    "Escribe un equipo o pulsa 🎙️ para buscar en partidos de hoy, TevePlay y repeticiones."
-                }
-                "⚽ Partidos del Día" -> getString(R.string.no_events)
-                "🔁 Repeticiones" -> if (searchQuery.isNotEmpty()) {
-                    "No se encontraron repeticiones para \"$searchQuery\"."
-                } else {
-                    "No hay repeticiones disponibles en este momento."
-                }
-                "⭐ Favoritos" -> "No tienes canales favoritos en Deportes.\n\nPulsa en ★ en cualquier canal de Regionales o Deportes para guardarlo aquí."
-                else -> "No hay señales disponibles actualmente para esta categoría."
-            }
-        } else {
-            tvEmpty.visibility = View.GONE
-
-            if (currentCategory == "⚽ Partidos del Día" && !rvHadFocus && (focusedPos == -1)) {
-                // Auto-posicionamiento y foco inicial en los partidos EN VIVO (con opciones de transmisión reales)
-                val firstLiveIndex = displayList.indexOfFirst { it.status == EventStatus.LIVE && it.streams.isNotEmpty() }.let { liveIdx ->
-                    if (liveIdx != -1) liveIdx
-                    else displayList.indexOfFirst { it.status == EventStatus.STARTING_SOON && it.streams.isNotEmpty() }.let { soonIdx ->
-                        if (soonIdx != -1) soonIdx
-                        else displayList.indexOfFirst { it.status == EventStatus.SCHEDULED }.let { schedIdx ->
-                            if (schedIdx != -1) schedIdx else 0
-                        }
-                    }
-                }
-                if (firstLiveIndex > 0) {
-                    (rvEvents.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(firstLiveIndex, 0)
-                }
-                updateChannelPositionIndicator(firstLiveIndex, displayList.size)
-                if (!silent && !isAnyHeaderOrSearchFocused()) {
-                    rvEvents.post {
-                        val vh = rvEvents.findViewHolderForAdapterPosition(firstLiveIndex)
-                        vh?.itemView?.requestFocus() ?: rvEvents.requestFocus()
-                    }
-                }
-            } else if (rvHadFocus && displayList.isNotEmpty()) {
-                val targetPos = if (focusedPos >= 0) minOf(focusedPos, displayList.size - 1) else 0
-                rvEvents.post {
-                    val vh = rvEvents.findViewHolderForAdapterPosition(targetPos)
-                    if (vh != null) {
-                        val targetView = if (focusedId != -1) vh.itemView.findViewById<View>(focusedId) else null
-                        targetView?.requestFocus() ?: vh.itemView.requestFocus()
+        val commitRunnable = Runnable {
+            if (displayList.isEmpty()) {
+                tvChannelPositionIndicator.visibility = View.INVISIBLE
+                tvEmpty.visibility = View.VISIBLE
+                tvEmpty.text = when (currentCategory) {
+                    "🔍 Buscar Todo" -> if (globalSearchQuery.isNotEmpty()) {
+                        "No se encontraron partidos ni canales para \"$globalSearchQuery\"."
                     } else {
-                        (rvEvents.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(targetPos, 0)
+                        "Escribe un equipo o pulsa 🎙️ para buscar en partidos de hoy, TevePlay y repeticiones."
+                    }
+                    "⚽ Partidos del Día" -> getString(R.string.no_events)
+                    "🔁 Repeticiones" -> if (searchQuery.isNotEmpty()) {
+                        "No se encontraron repeticiones para \"$searchQuery\"."
+                    } else {
+                        "No hay repeticiones disponibles en este momento."
+                    }
+                    "⭐ Favoritos" -> "No tienes canales favoritos en Deportes.\n\nPulsa en ★ en cualquier canal de Regionales o Deportes para guardarlo aquí."
+                    else -> "No hay señales disponibles actualmente para esta categoría."
+                }
+            } else {
+                tvEmpty.visibility = View.GONE
+
+                if (currentCategory == "⚽ Partidos del Día" && (!rvHadFocus || focusedPos == -1)) {
+                    // Auto-posicionamiento y presentación en el partido EN VIVO de la hora actual
+                    val targetLiveIndex = EventSorter.findLiveOrCurrentMatchIndex(displayList)
+                    if (targetLiveIndex > 0) {
+                        (rvEvents.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(targetLiveIndex, 0)
+                    } else {
+                        rvEvents.scrollToPosition(0)
+                    }
+                    updateChannelPositionIndicator(targetLiveIndex, displayList.size)
+                    if (!silent && !isAnyHeaderOrSearchFocused()) {
                         rvEvents.post {
-                            val retryVh = rvEvents.findViewHolderForAdapterPosition(targetPos)
-                            val targetView = if (focusedId != -1) retryVh?.itemView?.findViewById<View>(focusedId) else null
-                            targetView?.requestFocus() ?: retryVh?.itemView?.requestFocus() ?: rvEvents.requestFocus()
+                            val vh = rvEvents.findViewHolderForAdapterPosition(targetLiveIndex)
+                            vh?.itemView?.requestFocus() ?: rvEvents.requestFocus()
                         }
                     }
-                }
-                updateChannelPositionIndicator(targetPos, displayList.size)
-            } else {
-                updateChannelPositionIndicator(0, displayList.size)
-                if (!silent && !isAnyHeaderOrSearchFocused()) {
-                    rvEvents.requestFocus()
+                } else if (rvHadFocus && displayList.isNotEmpty()) {
+                    val targetPos = if (focusedPos >= 0) minOf(focusedPos, displayList.size - 1) else 0
+                    rvEvents.post {
+                        val vh = rvEvents.findViewHolderForAdapterPosition(targetPos)
+                        if (vh != null) {
+                            val targetView = if (focusedId != -1) vh.itemView.findViewById<View>(focusedId) else null
+                            targetView?.requestFocus() ?: vh.itemView.requestFocus()
+                        } else {
+                            (rvEvents.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(targetPos, 0)
+                            rvEvents.post {
+                                val retryVh = rvEvents.findViewHolderForAdapterPosition(targetPos)
+                                val targetView = if (focusedId != -1) retryVh?.itemView?.findViewById<View>(focusedId) else null
+                                targetView?.requestFocus() ?: retryVh?.itemView?.requestFocus() ?: rvEvents.requestFocus()
+                            }
+                        }
+                    }
+                    updateChannelPositionIndicator(targetPos, displayList.size)
+                } else {
+                    updateChannelPositionIndicator(0, displayList.size)
+                    if (!silent && !isAnyHeaderOrSearchFocused()) {
+                        rvEvents.requestFocus()
+                    }
                 }
             }
         }
+
+        if (displayList.isNotEmpty() && currentCategory == "⚽ Partidos del Día" && (!rvHadFocus || focusedPos == -1)) {
+            val preLiveIndex = EventSorter.findLiveOrCurrentMatchIndex(displayList)
+            if (preLiveIndex > 0) {
+                (rvEvents.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(preLiveIndex, 0)
+            }
+        }
+
+        adapter.submitList(displayList, commitRunnable)
     }
 
     private fun getFilteredAndSortedReplays(): List<EventItem> {

@@ -44,6 +44,10 @@ class EventAdapter(
         super.submitList(if (newItems != null) ArrayList(newItems) else null)
     }
 
+    override fun submitList(newItems: List<EventItem>?, commitCallback: Runnable?) {
+        super.submitList(if (newItems != null) ArrayList(newItems) else null, commitCallback)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_event_card, parent, false)
         return EventViewHolder(view, onItemClick, onLeftPressed, onItemFocus, onUpPressed, onDownAtEnd, isFavorite, onItemLongClick)

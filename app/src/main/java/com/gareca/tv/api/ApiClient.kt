@@ -106,6 +106,7 @@ object ApiClient {
                                 imageUrl = null,
                                 streams = streams,
                                 status = eventStatus,
+                                rawDate = eventDate,
                                 localTime = localTime,
                                 startEpochMillis = startMillis,
                                 countdownText = countdown

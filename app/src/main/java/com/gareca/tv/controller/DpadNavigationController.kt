@@ -32,10 +32,7 @@ class DpadNavigationController {
         val lm = rvEvents.layoutManager as? LinearLayoutManager
 
         val targetPos = if (isDailyMatches) {
-            val liveWithStreams = adapter.currentList.indexOfFirst {
-                it.status == EventStatus.LIVE && it.streams.isNotEmpty()
-            }
-            if (liveWithStreams >= 0) liveWithStreams else 0
+            com.gareca.tv.util.EventSorter.findLiveOrCurrentMatchIndex(adapter.currentList)
         } else {
             0
         }

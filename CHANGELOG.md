@@ -2,6 +2,18 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.24] - 2026-11-06
+### Cronología Ascendente por Hora en Partidos del Día con Auto-Enfoque y Posicionamiento en Directos Activos
+- **Cronología Ascendente Estricta por Hora (`EventSorter`)**:
+  - `sortDailyMatchesChronologically`: Ordena los encuentros de menor a mayor hora (08:00 a 23:59) según su timestamp real (`startEpochMillis`), desplazando los no disponibles al fondo.
+- **Detección y Auto-Posicionamiento en Directos (`findLiveOrCurrentMatchIndex`)**:
+  - Al abrir la aplicación o conmutar al modo Deportes y Partidos, calcula automáticamente el índice del primer encuentro activo **● EN VIVO** o en franja horaria de juego actual.
+  - Ejecuta `scrollToPositionWithOffset(targetLiveIndex, 0)` en el callback de commit de `DiffUtil`, garantizando que la lista presente inmediatamente los partidos que se están jugando a esa hora.
+- **Navegación D-Pad Bidireccional Fluida en TV**:
+  - El usuario puede presionar `▲ Arriba` con el control remoto para explorar los encuentros de horas previas ya finalizados, o `▼ Abajo` para ver los partidos de horas posteriores.
+  - Al presionar `▲ Arriba` desde el primer partido de la mañana (posición 0), el foco regresa limpiamente a la barra de pestañas (`categoryAdapter`).
+  - Al presionar OK o `▼ Abajo` en la pestaña `⚽ Partidos del Día`, el foco desciende directamente al partido en directo.
+
 ## [1.9.23] - 2026-11-06
 ### Optimización Extrema Estilo IPTV, EPG O(1) sin Pausas GC, Glide RGB_565 y Transición Instantánea
 - **Memoización EPG O(1) con Cero Asignaciones de CPU (`EpgManager`)**:

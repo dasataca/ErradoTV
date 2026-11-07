@@ -26,14 +26,74 @@ object EventSorter {
     /**
      * Ordena los partidos del día en orden cronológico estricto según su hora (startEpochMillis).
      * Los eventos con epoch no nulo van primero en orden ascendente; los que no tienen hora van al final.
+     * Los partidos no disponibles (REPLAY_UNAVAILABLE) van siempre al fondo.
      */
     fun sortDailyMatchesChronologically(list: List<EventItem>): List<EventItem> {
         return list.sortedWith(
-            compareBy<EventItem> { item ->
-                if (item.startEpochMillis > 0L) item.startEpochMillis else Long.MAX_VALUE
-            }.thenBy { it.time.orEmpty() }
-            .thenBy { it.title.lowercase().trim() }
+            compareBy<EventItem> { if (it.status == EventStatus.REPLAY_UNAVAILABLE) 1 else 0 }
+                .thenBy { item ->
+                    if (item.startEpochMillis > 0L) item.startEpochMillis else Long.MAX_VALUE
+                }.thenBy { it.time.orEmpty() }
+                .thenBy { it.title.lowercase().trim() }
         )
+    }
+
+    /**
+     * Encuentra el índice del partido que debe presentarse y enfocarse prioritariamente:
+     * 1. Primer partido en vivo activo (LIVE) con transmisiones disponibles.
+     * 2. Cualquier partido en vivo (LIVE).
+     * 3. Partido que se está jugando actualmente según la hora del día (startEpochMillis <= now < startEpochMillis + 2h15m).
+     * 4. Partido por empezar en breve (STARTING_SOON).
+     * 5. Primer partido programado a partir de la hora actual (startEpochMillis >= now - 10m).
+     * 6. Primer partido programado (SCHEDULED).
+     * 7. Fallback: 0.
+     */
+    fun findLiveOrCurrentMatchIndex(list: List<EventItem>): Int {
+        if (list.isEmpty()) return 0
+        val now = System.currentTimeMillis()
+
+        // 1. Partido en vivo activo con opciones de transmisión
+        val liveWithStreams = list.indexOfFirst {
+            it.status == EventStatus.LIVE && it.streams.isNotEmpty()
+        }
+        if (liveWithStreams >= 0) return liveWithStreams
+
+        // 2. Cualquier partido marcado como LIVE
+        val anyLive = list.indexOfFirst { it.status == EventStatus.LIVE }
+        if (anyLive >= 0) return anyLive
+
+        // 3. Partido dentro de la ventana de juego actual (hora inicio hasta 135 minutos después) que no esté terminado
+        val currentMatch = list.indexOfFirst { item ->
+            item.startEpochMillis > 0L &&
+                now >= item.startEpochMillis &&
+                now <= (item.startEpochMillis + 135 * 60 * 1000L) &&
+                item.status != EventStatus.FINISHED &&
+                item.status != EventStatus.REPLAY_UNAVAILABLE
+        }
+        if (currentMatch >= 0) return currentMatch
+
+        // 4. Por empezar pronto con opciones de transmisión
+        val startingSoon = list.indexOfFirst {
+            it.status == EventStatus.STARTING_SOON && it.streams.isNotEmpty()
+        }
+        if (startingSoon >= 0) return startingSoon
+
+        val anyStartingSoon = list.indexOfFirst { it.status == EventStatus.STARTING_SOON }
+        if (anyStartingSoon >= 0) return anyStartingSoon
+
+        // 5. Próximo partido programado a partir de ahora
+        val nextUpcoming = list.indexOfFirst {
+            it.startEpochMillis >= (now - 10 * 60 * 1000L) &&
+                it.status != EventStatus.FINISHED &&
+                it.status != EventStatus.REPLAY_UNAVAILABLE
+        }
+        if (nextUpcoming >= 0) return nextUpcoming
+
+        // 6. Primer partido programado
+        val firstScheduled = list.indexOfFirst { it.status == EventStatus.SCHEDULED }
+        if (firstScheduled >= 0) return firstScheduled
+
+        return 0
     }
 
     /**
