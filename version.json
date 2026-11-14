@@ -1,9 +1,9 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "2c42111b883e92914c830dce308d418a49734a8e6e9d767322fe4c499e38a060b3c56608bc67702e82e5b481380f7f01640c67b416a6219b604cdc69ea33dbac315e17887d4ae22098c868dc295f8407",
-  "latest_version_code": 91,
-  "latest_version_name": "1.9.26",
-  "release_timestamp": 1794660461672,
+  "active_key_enc": "019f7c9673a6e6fed27af0ba7d81fc320893c29d344f884f8790cabdce3391415c7924ba743f25772ca36691cfed0d47075f70afef4fca0cd20496c86fc40df44ab8e28fbfc2b4119527d9666901bd0a",
+  "latest_version_code": 92,
+  "latest_version_name": "1.9.27",
+  "release_timestamp": 1794662582617,
   "release_date": "2026-11-14",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
   "changelog": "Added hexagonal WebStreamResolver for generic web streams, enabling direct HLS playback without WebView fallback."
