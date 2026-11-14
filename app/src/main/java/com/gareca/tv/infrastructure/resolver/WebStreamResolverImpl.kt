@@ -54,6 +54,12 @@ class WebStreamResolverImpl : WebStreamResolver {
                         }
                     }
                 }
+                // Skip GET for known blocking domains (e.g., la18hd.su)
+                if (stream.url.contains("la18hd.su")) {
+                    logger.log("warn", "WebStreamResolver", "Domain ${stream.url} is known to block requests, skipping GET fallback.")
+                    // Return null to let caller handle as unavailable
+                    return null
+                }
                 // GET fallback – try to detect an HLS playlist in the response body
                 val getRequest = Request.Builder()
                     .url(stream.url)

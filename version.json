@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "019f7c9673a6e6fed27af0ba7d81fc320893c29d344f884f8790cabdce3391415c7924ba743f25772ca36691cfed0d47075f70afef4fca0cd20496c86fc40df44ab8e28fbfc2b4119527d9666901bd0a",
-  "latest_version_code": 92,
-  "latest_version_name": "1.9.27",
-  "release_timestamp": 1794662582617,
+  "active_key_enc": "309dd46551a19d2cb244856de70cc0be4cc35c63fe790b91f4099e865a2d65cff762a331c77b1b4ab5225c16b95e90eae6e471b4b5c028a68be5b0a9a551c87c27e676a89226dc4b3a5338037956fa12",
+  "latest_version_code": 93,
+  "latest_version_name": "1.9.28",
+  "release_timestamp": 1794662975066,
   "release_date": "2026-11-14",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "Added hexagonal WebStreamResolver for generic web streams, enabling direct HLS playback without WebView fallback."
+  "changelog": "Fix WebStreamResolver: skip GET/HEAD for la18hd.su to avoid 403 and return null (channel shown as unavailable)."
 }
