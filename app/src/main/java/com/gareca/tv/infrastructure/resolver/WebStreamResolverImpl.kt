@@ -54,26 +54,29 @@ class WebStreamResolverImpl : WebStreamResolver {
                         }
                     }
                 }
-                // Specific handling for streamx723.sbs – try to extract a .m3u8 URL from the HTML page
-if (stream.url.contains("streamx723.sbs")) {
-    val specialRequest = Request.Builder()
+                // Generic handling for HTML pages that may embed an HLS playlist URL
+if (!stream.url.contains("la18hd.su")) {
+    val htmlRequest = Request.Builder()
         .url(stream.url)
         .header("User-Agent", "Mozilla/5.0 (Android TV; Linux) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         .build()
-    ApiClient.httpClient.newCall(specialRequest).execute().use { specialRes ->
-        if (specialRes.isSuccessful) {
-            val html = specialRes.body?.string().orEmpty()
-            val regex = "https?://[^\"]+\\.m3u8".toRegex()
-            val match = regex.find(html)
-            if (match != null) {
-                val playlistUrl = match.value
-                logger.log("info", "WebStreamResolver", "extracted HLS playlist from ${stream.url}: $playlistUrl")
-                return stream.copy(url = playlistUrl, type = "exo")
-            } else {
-                logger.log("warn", "WebStreamResolver", "could not find HLS playlist in page for ${stream.url}")
+    ApiClient.httpClient.newCall(htmlRequest).execute().use { htmlRes ->
+        if (htmlRes.isSuccessful) {
+            val contentType = htmlRes.header("Content-Type") ?: ""
+            if (contentType.contains("text/html") || contentType.contains("application/xhtml+xml")) {
+                val html = htmlRes.body?.string().orEmpty()
+                val regex = "https?://[^\"'\\s]+\\.m3u8[^\"'\\s]*".toRegex()
+                val match = regex.find(html)
+                if (match != null) {
+                    val playlistUrl = match.value
+                    logger.log("info", "WebStreamResolver", "extracted HLS playlist from HTML page: $playlistUrl")
+                    return stream.copy(url = playlistUrl, type = "exo")
+                } else {
+                    logger.log("warn", "WebStreamResolver", "could not find HLS playlist in HTML page for ${stream.url}")
+                }
             }
         } else {
-            logger.log("warn", "WebStreamResolver", "GET request failed for special handling of ${stream.url}, code=${specialRes.code}")
+            logger.log("warn", "WebStreamResolver", "GET request failed for HTML page ${stream.url}, code=${htmlRes.code}")
         }
     }
 }

@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "fff7081f84d3ebc1bc1339f32e12d31c2cd75c55fb563ec1222140a2e08a2e5aea9c749fa3442624ee667e54aa7cdc8fe3fafdb1cf5420276451675a39da63b13ea21d4e0c785921e64099e50257dcf8",
-  "latest_version_code": 94,
-  "latest_version_name": "1.9.29",
-  "release_timestamp": 1794663688913,
+  "active_key_enc": "558a60f98ceafb279faa5212d3d30dfd66ceaff932ad923da567df16efc347b4c08745edd51999913524595de0717a7cb6e5df7a3307e4c4e97b61cfd227f30b87756885d71a9e7c04c73aa3b4c7cb91",
+  "latest_version_code": 95,
+  "latest_version_name": "1.9.30",
+  "release_timestamp": 1794664204346,
   "release_date": "2026-11-14",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Añadido soporte especial para streamx723.sbs, extracción de .m3u8 desde HTML y corrección de bloqueos de dominio la18hd.su"
+  "changelog": "GarecaTV: Generic HTML HLS extraction for web streams, fallback to WebView when no playlist found"
 }
