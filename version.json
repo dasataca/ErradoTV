@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "dd42d8cb2714ee056d35bc1fe5f7a5cfdf03a5980c6018a88ae0ad87cf09e7fd3201504ad6bab2c594a983026682630fce88e9f5539e1e013ad81d4e1598a203330905ba869aeac05aab99474df75592",
-  "latest_version_code": 89,
-  "latest_version_name": "1.9.24",
-  "release_timestamp": 1794019894616,
-  "release_date": "2026-11-06",
+  "active_key_enc": "fb518441e91c4f77dc4627f52e5ee685066e066194a615cceeb7fad49b27e29e30a79c7aa59059f75751b34fcb0e4ac701b88440427a6fd40e1a7a80d4fe70f8e4c5ea4cc41aaac105a273d60223ccd6",
+  "latest_version_code": 90,
+  "latest_version_name": "1.9.25",
+  "release_timestamp": 1794659004208,
+  "release_date": "2026-11-14",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Cronologia ascendente por hora en Partidos del Dia con auto-enfoque y posicionamiento en directos activos"
+  "changelog": "GarecaTV: Sincronizacion directa sin cache de event.json y precision en partidos de madrugada"
 }

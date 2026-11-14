@@ -1956,13 +1956,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshDailyEventsTiming(list: List<EventItem>): List<EventItem> {
         for (item in list) {
-            val extractedTime = item.time
-            if (!extractedTime.isNullOrBlank()) {
-                val timing = EventItem.calculateTimesAndStatus(extractedTime, item.rawDate, item.streams.isNotEmpty())
+            if (item.startEpochMillis > 0L) {
+                val timing = EventItem.calculateTimesFromEpoch(item.startEpochMillis, item.streams.isNotEmpty())
                 item.status = timing.status
                 item.localTime = timing.localTime
                 item.countdownText = timing.countdown
-                item.startEpochMillis = timing.startEpochMillis
+            } else {
+                val extractedTime = item.time
+                if (!extractedTime.isNullOrBlank()) {
+                    val timing = EventItem.calculateTimesAndStatus(extractedTime, item.rawDate, item.streams.isNotEmpty())
+                    item.status = timing.status
+                    item.localTime = timing.localTime
+                    item.countdownText = timing.countdown
+                    item.startEpochMillis = timing.startEpochMillis
+                }
             }
         }
         return sortDailyMatchesChronologically(list)

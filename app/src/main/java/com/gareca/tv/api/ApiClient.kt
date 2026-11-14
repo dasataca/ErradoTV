@@ -40,6 +40,8 @@ object ApiClient {
             val req = Request.Builder()
                 .url(EVENTS_URL)
                 .header("User-Agent", "Mozilla/5.0")
+                .header("Cache-Control", "no-cache")
+                .header("Pragma", "no-cache")
                 .build()
 
             val response = httpClient.newCall(req).execute()
@@ -52,6 +54,7 @@ object ApiClient {
 
                 val eventsArray = root.optJSONArray("events")
                 if (eventsArray != null) {
+                    var seenEveningMatch = false
                     for (i in 0 until eventsArray.length()) {
                         val item = eventsArray.getJSONObject(i)
                         val rawTitle = item.optString("event_name_time", "Partido").trim()
@@ -63,6 +66,12 @@ object ApiClient {
                         } else {
                             rawTitle
                         }
+
+                        val matchHour = extractedTime?.split(":")?.firstOrNull()?.toIntOrNull()
+                        if (matchHour != null && matchHour >= 14) {
+                            seenEveningMatch = true
+                        }
+                        val isNextDayMadrugada = seenEveningMatch && matchHour != null && matchHour in 0..4
 
                         val streams = mutableListOf<StreamOption>()
 
@@ -83,7 +92,12 @@ object ApiClient {
                             }
                         }
 
-                        val (eventStatus, localTime, countdown, startMillis) = EventItem.calculateTimesAndStatus(extractedTime, eventDate, streams.isNotEmpty())
+                        val (eventStatus, localTime, countdown, startMillis) = EventItem.calculateTimesAndStatus(
+                            extractedTime,
+                            eventDate,
+                            streams.isNotEmpty(),
+                            isNextDayMadrugada
+                        )
                         val subtitleText = if (streams.isNotEmpty()) {
                             if (localTime != null && localTime != extractedTime) {
                                 "${streams.size} opciones • Tu hora: $localTime (Arg: $extractedTime)"

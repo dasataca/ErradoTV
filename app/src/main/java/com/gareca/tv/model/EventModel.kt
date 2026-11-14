@@ -48,10 +48,72 @@ data class EventItem(
     companion object {
         private val SERVER_TZ: TimeZone = TimeZone.getTimeZone("America/Argentina/Buenos_Aires")
 
+        fun calculateTimesFromEpoch(startMillis: Long, hasStreams: Boolean): EventTimingInfo {
+            val nowMillis = System.currentTimeMillis()
+            val localCal = Calendar.getInstance(TimeZone.getDefault()).apply {
+                timeInMillis = startMillis
+            }
+            val localH = String.format("%02d", localCal.get(Calendar.HOUR_OF_DAY))
+            val localM = String.format("%02d", localCal.get(Calendar.MINUTE))
+            val localFormattedTime = "$localH:$localM"
+
+            val diffMillis = startMillis - nowMillis
+
+            val (calculatedStatus, countdown) = when {
+                !hasStreams -> {
+                    when {
+                        diffMillis > 24 * 3600 * 1000L -> {
+                            val days = diffMillis / (24 * 3600 * 1000L)
+                            val hours = (diffMillis % (24 * 3600 * 1000L)) / (3600 * 1000L)
+                            EventStatus.SCHEDULED to "⏳ En ${days}d ${hours}h"
+                        }
+                        diffMillis in 30 * 60 * 1000L .. 24 * 3600 * 1000L -> {
+                            val hours = diffMillis / (3600 * 1000L)
+                            val mins = (diffMillis % (3600 * 1000L)) / (60 * 1000L)
+                            EventStatus.SCHEDULED to if (hours > 0) "⏳ En ${hours}h ${mins}m" else "⏳ En ${mins}m"
+                        }
+                        diffMillis in 0L until 30 * 60 * 1000L -> {
+                            val mins = Math.max(1L, diffMillis / (60 * 1000L))
+                            EventStatus.SCHEDULED to "⏳ ¡En $mins min!"
+                        }
+                        diffMillis < 0 && -diffMillis <= 180 * 60 * 1000L -> {
+                            EventStatus.SCHEDULED to "⏳ Señal al iniciar"
+                        }
+                        else -> {
+                            EventStatus.FINISHED to "FINALIZADO"
+                        }
+                    }
+                }
+                diffMillis > 24 * 3600 * 1000L -> {
+                    val days = diffMillis / (24 * 3600 * 1000L)
+                    val hours = (diffMillis % (24 * 3600 * 1000L)) / (3600 * 1000L)
+                    EventStatus.SCHEDULED to "⏳ En ${days}d ${hours}h"
+                }
+                diffMillis in 30 * 60 * 1000L .. 24 * 3600 * 1000L -> {
+                    val hours = diffMillis / (3600 * 1000L)
+                    val mins = (diffMillis % (3600 * 1000L)) / (60 * 1000L)
+                    EventStatus.SCHEDULED to if (hours > 0) "⏳ En ${hours}h ${mins}m" else "⏳ En ${mins}m"
+                }
+                diffMillis in 0L until 30 * 60 * 1000L -> {
+                    val mins = Math.max(1L, diffMillis / (60 * 1000L))
+                    EventStatus.STARTING_SOON to "⏳ ¡En $mins min!"
+                }
+                diffMillis < 0 && -diffMillis <= 180 * 60 * 1000L -> {
+                    EventStatus.LIVE to "● EN JUEGO"
+                }
+                else -> {
+                    EventStatus.LIVE to "● EN JUEGO"
+                }
+            }
+
+            return EventTimingInfo(calculatedStatus, localFormattedTime, countdown, startMillis)
+        }
+
         fun calculateTimesAndStatus(
             timeStr: String?,
             dateStr: String? = null,
-            hasStreams: Boolean = true
+            hasStreams: Boolean = true,
+            isNextDayMadrugada: Boolean = false
         ): EventTimingInfo {
             if (timeStr == null || !timeStr.contains(":")) {
                 return EventTimingInfo(EventStatus.CHANNEL_24_7, null, null, 0L)
@@ -66,8 +128,9 @@ data class EventItem(
                 val currH = nowServerCal.get(Calendar.HOUR_OF_DAY)
 
                 val matchCal = Calendar.getInstance(SERVER_TZ)
-                if (dateStr != null && dateStr.contains("-")) {
-                    val dParts = dateStr.split("-")
+                val hasIsoDate = dateStr != null && dateStr.contains("-")
+                if (hasIsoDate) {
+                    val dParts = dateStr!!.split("-")
                     if (dParts.size == 3) {
                         matchCal.set(Calendar.YEAR, dParts[0].toInt())
                         matchCal.set(Calendar.MONTH, dParts[1].toInt() - 1)
@@ -80,76 +143,12 @@ data class EventItem(
                 matchCal.set(Calendar.SECOND, 0)
                 matchCal.set(Calendar.MILLISECOND, 0)
 
-                // Si no había fecha fija y es madrugada tras noche previa
-                if (dateStr == null && matchH < 4 && currH > 18) {
+                // Si es madrugada tras partidos de la tarde/noche en el JSON, o tras noche previa
+                if (!hasIsoDate && (isNextDayMadrugada || (matchH < 4 && currH > 18))) {
                     matchCal.add(Calendar.DAY_OF_MONTH, 1)
                 }
 
-                val startMillis = matchCal.timeInMillis
-                val nowMillis = System.currentTimeMillis()
-
-                // Formatear en huso horario local del usuario
-                val localCal = Calendar.getInstance(TimeZone.getDefault()).apply {
-                    timeInMillis = startMillis
-                }
-                val localH = String.format("%02d", localCal.get(Calendar.HOUR_OF_DAY))
-                val localM = String.format("%02d", localCal.get(Calendar.MINUTE))
-                val localFormattedTime = "$localH:$localM"
-
-                val diffMillis = startMillis - nowMillis
-
-                val (calculatedStatus, countdown) = when {
-                    // Si el partido NO tiene opciones de transmisión cargadas por el operador en el JSON,
-                    // NUNCA debe marcarse como EN VIVO (es un evento pendiente / programado)
-                    !hasStreams -> {
-                        when {
-                            diffMillis > 24 * 3600 * 1000L -> {
-                                val days = diffMillis / (24 * 3600 * 1000L)
-                                val hours = (diffMillis % (24 * 3600 * 1000L)) / (3600 * 1000L)
-                                EventStatus.SCHEDULED to "⏳ En ${days}d ${hours}h"
-                            }
-                            diffMillis in 30 * 60 * 1000L .. 24 * 3600 * 1000L -> {
-                                val hours = diffMillis / (3600 * 1000L)
-                                val mins = (diffMillis % (3600 * 1000L)) / (60 * 1000L)
-                                EventStatus.SCHEDULED to if (hours > 0) "⏳ En ${hours}h ${mins}m" else "⏳ En ${mins}m"
-                            }
-                            diffMillis in 0L until 30 * 60 * 1000L -> {
-                                val mins = Math.max(1L, diffMillis / (60 * 1000L))
-                                EventStatus.SCHEDULED to "⏳ ¡En $mins min!"
-                            }
-                            diffMillis < 0 && -diffMillis <= 180 * 60 * 1000L -> {
-                                EventStatus.SCHEDULED to "⏳ Señal al iniciar"
-                            }
-                            else -> {
-                                EventStatus.FINISHED to "FINALIZADO"
-                            }
-                        }
-                    }
-                    // Si el partido SÍ tiene opciones de transmisión cargadas activas
-                    diffMillis > 24 * 3600 * 1000L -> {
-                        val days = diffMillis / (24 * 3600 * 1000L)
-                        val hours = (diffMillis % (24 * 3600 * 1000L)) / (3600 * 1000L)
-                        EventStatus.SCHEDULED to "⏳ En ${days}d ${hours}h"
-                    }
-                    diffMillis in 30 * 60 * 1000L .. 24 * 3600 * 1000L -> {
-                        val hours = diffMillis / (3600 * 1000L)
-                        val mins = (diffMillis % (3600 * 1000L)) / (60 * 1000L)
-                        EventStatus.SCHEDULED to if (hours > 0) "⏳ En ${hours}h ${mins}m" else "⏳ En ${mins}m"
-                    }
-                    diffMillis in 0L until 30 * 60 * 1000L -> {
-                        val mins = Math.max(1L, diffMillis / (60 * 1000L))
-                        EventStatus.STARTING_SOON to "⏳ ¡En $mins min!"
-                    }
-                    diffMillis < 0 && -diffMillis <= 180 * 60 * 1000L -> {
-                        EventStatus.LIVE to "● EN JUEGO"
-                    }
-                    else -> {
-                        // Si ya pasaron más de 3 horas pero el operador mantiene la señal activa en event.json
-                        EventStatus.LIVE to "● EN JUEGO"
-                    }
-                }
-
-                EventTimingInfo(calculatedStatus, localFormattedTime, countdown, startMillis)
+                calculateTimesFromEpoch(matchCal.timeInMillis, hasStreams)
             } catch (_: Exception) {
                 EventTimingInfo(EventStatus.SCHEDULED, timeStr, null, 0L)
             }

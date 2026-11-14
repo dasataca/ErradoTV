@@ -2,6 +2,14 @@
 
 Todas las modificaciones, análisis y versiones del proyecto quedan documentadas en este archivo según el estándar de desarrollo.
 
+## [1.9.25] - 2026-11-14
+### Sincronización Exacta con Agenda Original y Precisión de Horarios Nocturnos/Madrugada
+- **Descarga Directa Sin Caché (`ApiClient.fetchDailyEvents`)**:
+  - Agregadas cabeceras `Cache-Control: no-cache` y `Pragma: no-cache` para garantizar que la TV reciba exactamente la misma cantidad de partidos publicados en el servidor sin copias intermedias.
+- **Preservación de Madrugada Nocturna (`EventModel` / `ApiClient`)**:
+  - Detección automática de partidos de madrugada (`00:00` a `04:59`) que aparecen al final de la jornada nocturna en `event.json`, asignándolos correctamente al final del día en lugar de moverlos al inicio.
+  - Implementado `EventItem.calculateTimesFromEpoch` para refrescar el estado y cuenta regresiva en `MainActivity` sin alterar ni desfasar el timestamp original del partido.
+
 ## [1.9.24] - 2026-11-06
 ### Cronología Ascendente por Hora en Partidos del Día con Auto-Enfoque y Posicionamiento en Directos Activos
 - **Cronología Ascendente Estricta por Hora (`EventSorter`)**:
