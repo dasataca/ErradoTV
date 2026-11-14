@@ -12,8 +12,8 @@ android {
         applicationId = "com.gareca.tv"
         minSdk = 24
         targetSdk = 34
-        versionCode = 93
-        versionName = "1.9.28"
+        versionCode = 94
+        versionName = "1.9.29"
 
         externalNativeBuild {
             cmake {

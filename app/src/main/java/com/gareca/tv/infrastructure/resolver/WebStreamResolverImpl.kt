@@ -54,11 +54,34 @@ class WebStreamResolverImpl : WebStreamResolver {
                         }
                     }
                 }
-                // Skip GET for known blocking domains (e.g., la18hd.su)
+                // Specific handling for streamx723.sbs – try to extract a .m3u8 URL from the HTML page
+if (stream.url.contains("streamx723.sbs")) {
+    val specialRequest = Request.Builder()
+        .url(stream.url)
+        .header("User-Agent", "Mozilla/5.0 (Android TV; Linux) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .build()
+    ApiClient.httpClient.newCall(specialRequest).execute().use { specialRes ->
+        if (specialRes.isSuccessful) {
+            val html = specialRes.body?.string().orEmpty()
+            val regex = "https?://[^\"]+\\.m3u8".toRegex()
+            val match = regex.find(html)
+            if (match != null) {
+                val playlistUrl = match.value
+                logger.log("info", "WebStreamResolver", "extracted HLS playlist from ${stream.url}: $playlistUrl")
+                return stream.copy(url = playlistUrl, type = "exo")
+            } else {
+                logger.log("warn", "WebStreamResolver", "could not find HLS playlist in page for ${stream.url}")
+            }
+        } else {
+            logger.log("warn", "WebStreamResolver", "GET request failed for special handling of ${stream.url}, code=${specialRes.code}")
+        }
+    }
+}
+// Skip GET for known blocking domains (e.g., la18hd.su)
                 if (stream.url.contains("la18hd.su")) {
                     logger.log("warn", "WebStreamResolver", "Domain ${stream.url} is known to block requests, skipping GET fallback.")
-                    // Return null to let caller handle as unavailable
-                    return null
+                    // Return the original stream so the UI can fallback to a WebView
+                    return stream
                 }
                 // GET fallback – try to detect an HLS playlist in the response body
                 val getRequest = Request.Builder()
