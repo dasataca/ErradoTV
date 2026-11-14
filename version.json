@@ -1,10 +1,10 @@
 {
   "active_key": "R29sYXpvb0FwcFNlY3JldEtleTIwMjRTZWN1cmUhIQ==",
-  "active_key_enc": "fb518441e91c4f77dc4627f52e5ee685066e066194a615cceeb7fad49b27e29e30a79c7aa59059f75751b34fcb0e4ac701b88440427a6fd40e1a7a80d4fe70f8e4c5ea4cc41aaac105a273d60223ccd6",
-  "latest_version_code": 90,
-  "latest_version_name": "1.9.25",
-  "release_timestamp": 1794659004208,
+  "active_key_enc": "2c42111b883e92914c830dce308d418a49734a8e6e9d767322fe4c499e38a060b3c56608bc67702e82e5b481380f7f01640c67b416a6219b604cdc69ea33dbac315e17887d4ae22098c868dc295f8407",
+  "latest_version_code": 91,
+  "latest_version_name": "1.9.26",
+  "release_timestamp": 1794660461672,
   "release_date": "2026-11-14",
   "apk_url": "https://raw.githubusercontent.com/dasataca/ErradoTV/main/release/GarecaTV.apk",
-  "changelog": "GarecaTV: Sincronizacion directa sin cache de event.json y precision en partidos de madrugada"
+  "changelog": "Added hexagonal WebStreamResolver for generic web streams, enabling direct HLS playback without WebView fallback."
 }

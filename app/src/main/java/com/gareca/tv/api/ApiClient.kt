@@ -241,6 +241,8 @@ object ApiClient {
 
     private val configResolvedMap = java.util.concurrent.ConcurrentHashMap<String, StreamOption>()
     private val youtubeResolvedMap = java.util.concurrent.ConcurrentHashMap<String, String>()
+    // Hexagonal resolver for web streams
+    private val webStreamResolver: com.gareca.tv.domain.WebStreamResolver = com.gareca.tv.infrastructure.resolver.WebStreamResolverImpl()
 
     suspend fun resolveStreamUrl(stream: StreamOption): StreamOption = withContext(Dispatchers.IO) {
         if (stream.type.equals("config", ignoreCase = true)) {
@@ -317,6 +319,13 @@ object ApiClient {
             }
         }
 
+        // Hexagonal resolution for generic web streams
+        if (stream.type.equals("web", ignoreCase = true)) {
+            val resolved = webStreamResolver.resolve(stream)
+            if (resolved != null) {
+                return@withContext resolved
+            }
+        }
         stream
     }
 
